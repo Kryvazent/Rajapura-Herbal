@@ -9,3 +9,8 @@ export const getProductsByCount = async (count) => {
 
     return await Product.aggregate([{ $sample: { size: count } }]);
 }
+
+export const getProductsByPage = async (skip, limit) => {
+
+    return await Product.find({}).skip(skip).limit(limit);
+}
