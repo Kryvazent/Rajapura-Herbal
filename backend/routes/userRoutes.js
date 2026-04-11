@@ -5,8 +5,6 @@ const router = express.Router();
 
 router.get('/products', productController.getAllProducts);
 
-router.get('/home', (req, res) => {
-    res.send('Welcome to the user home page!');
-});
+router.get('/product-count/:count', productController.getProductCount);
 
 export default router;

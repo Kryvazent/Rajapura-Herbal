@@ -4,3 +4,8 @@ export const getAllProducts = async () => {
 
     return await Product.find({});
 };
+
+export const getProductsByCount = async (count) => {
+
+    return await Product.aggregate([{ $sample: { size: count } }]);
+}
