@@ -16,5 +16,4 @@ router.get('/services', ServiceController.getAllServices);
 // shop routes
 router.get('/shops', ShopController.getAllShops);
 
-
 export default router;

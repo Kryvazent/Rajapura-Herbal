@@ -1,9 +1,10 @@
 import { Link } from "react-router";
 import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucide-react";
-import { getProducts } from "../admin/adminData";
+// import { getProducts } from "../admin/adminData";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Product } from "../../../admin/interfaces/productInterface";
 import "../../styles/index.css";
-
-const featuredProducts = getProducts().slice(0, 3);
 
 const stats = [
   { value: "200+", label: "Years of Heritage" },
@@ -36,6 +37,25 @@ const values = [
 ];
 
 export default function Home() {
+  const [products,setProducts] = useState<Product[]>([]);
+
+  useEffect(()=>{
+
+    loadData()
+
+  },[]);
+
+  async function loadData(){
+    await axios.get("http://localhost:3000/user/product-count/3")
+    .then(res=>{
+      console.log(res)
+      setProducts(res.data);
+    })
+    .catch(err=>{
+      console.error("Error fetching featured products:", err);
+    });
+  }
+
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
       {/* ── Hero ── */}
@@ -374,9 +394,9 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {featuredProducts.map((product) => (
+          {products.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               style={{
                 backgroundColor: "#FAF6EE",
                 borderRadius: "20px",
