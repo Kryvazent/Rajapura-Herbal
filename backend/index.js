@@ -7,7 +7,7 @@ import session from 'express-session';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js'
-import { verifyUser } from './middleware/auth.js';
+import { verifyUserRole } from './middleware/auth.js';
 
 dotenv.config();
 const app = express();
@@ -31,7 +31,7 @@ app.use(session({
 }));
 
 app.use("/auth", authRoutes);
-app.use("/admin", verifyUser, adminRoutes);
+app.use("/admin", verifyUserRole, adminRoutes);
 app.use("/user", userRoutes);
 
 app.listen(3000, () => {

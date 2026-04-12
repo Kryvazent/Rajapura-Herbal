@@ -16,3 +16,18 @@ export const login = async (req, res) => {
     }
 
 };
+
+export const logout = (req, res) => {
+    
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Could not log out' });
+        }
+
+        // 2. Clear the cookie from the user's browser
+        // 'connect.sid' is the default name, change it if you renamed yours
+        res.clearCookie('connect.sid'); 
+        
+        res.status(200).json({ message: 'Logged out successfully' });
+    });
+};
