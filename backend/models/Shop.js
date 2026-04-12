@@ -1,7 +1,6 @@
 import mongoose, { Mongoose, Schema } from "mongoose";
 
 const storeSchema = new mongoose.Schema({
-  _id: { type: Schema.Types.ObjectId, required: true },
   name: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
@@ -36,7 +35,7 @@ const provinceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const ShopSchema = new Mongoose.Schema({
+const ShopSchema = new mongoose.Schema({
   provinces: [provinceSchema]
 })
 

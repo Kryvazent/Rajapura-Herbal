@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { Schema } from "mongoose";
 
 const serviceItem = new mongoose.Schema({
-  _id: Schema.Types.ObjectId, 
   name: { type: String, required: true },
   description: String,
   duration: String,
@@ -11,11 +10,6 @@ const serviceItem = new mongoose.Schema({
 
 const service = new mongoose.Schema(
   {
-    _id: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      unique: true
-    },
     name: {
       type: String,
       required: true,
