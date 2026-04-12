@@ -1,20 +1,41 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import session from 'express-session';
+import { verifyUser } from './middleware/auth.js';
 
-const app = express(); 
+const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true
+}));
 app.use(express.json());
-app.use("/admin", adminRoutes);
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    rolling: true,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,           
+        maxAge: 60 * 60 * 1000,
+        sameSite: 'lax',
+        httpOnly: true       
+    }
+}))
+
+app.use("/admin", verifyUser, adminRoutes);
 app.use("/user", userRoutes);
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
-    mongoose.connect('mongodb+srv://root:root@cluster0.ftqxq5x.mongodb.net/rajapura-herbal?appName=Cluster0').then(() => {
+    mongoose.connect(process.env.MONGO_URL).then(() => {
         console.log('Connected to MongoDB');
     }).catch((err) => {
         console.error('Failed to connect to MongoDB', err);
