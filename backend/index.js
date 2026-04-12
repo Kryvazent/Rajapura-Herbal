@@ -2,11 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import session from 'express-session';
 
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import session from 'express-session';
-import { verifyNotLoggin, verifyUser } from './middleware/auth.js';
+import authRoutes from './routes/authRoutes.js'
+import { verifyUser } from './middleware/auth.js';
 
 dotenv.config();
 const app = express();
