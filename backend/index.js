@@ -3,13 +3,12 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
-dotenv.config();
-
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import session from 'express-session';
-import { verifyUser } from './middleware/auth.js';
+import { verifyNotLoggin, verifyUser } from './middleware/auth.js';
 
+dotenv.config();
 const app = express();
 
 app.use(cors({
@@ -28,8 +27,9 @@ app.use(session({
         sameSite: 'lax',
         httpOnly: true       
     }
-}))
+}));
 
+app.use("/auth", authRoutes);
 app.use("/admin", verifyUser, adminRoutes);
 app.use("/user", userRoutes);
 

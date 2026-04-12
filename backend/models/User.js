@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from 'bcrypt';
 
 const userSchema = new mongoose.Schema(
   {
@@ -49,23 +50,8 @@ const userSchema = new mongoose.Schema(
       province: String
     },
 
-    profileImage: String,
-
-    auth: {
-      provider: {
-        type: String,
-        enum: ["LOCAL", "GOOGLE"],
-        default: "LOCAL"
-      },
-      lastLogin: Date
-    },
-
     flags: {
       isEmailVerified: {
-        type: Boolean,
-        default: false
-      },
-      isBlocked: {
         type: Boolean,
         default: false
       }
@@ -73,5 +59,26 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.pre('save', async function(next) {
+
+    // Only hash the password if it has been modified (or is new)
+    if (!this.isModified('password')) {
+      return next();
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
+
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
 
 export default mongoose.model("User", userSchema);
