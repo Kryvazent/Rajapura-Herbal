@@ -1,44 +1,43 @@
-import mongoose from "mongoose";
+import mongoose, { Mongoose, Schema } from "mongoose";
 
-const shopSchema = new mongoose.Schema(
+const storeSchema = new mongoose.Schema({
+  _id: { type: Schema.Types.ObjectId, required: true },
+  name: { type: String, required: true },
+  address: { type: String, required: true },
+  phone: { type: String, required: true },
+  hours: { type: String, required: true },
+  type: {
+    type: String,
+    enum: ["Pharmacy", "Ayurvedic Store", "Health Center", "Supermarket"],
+    required: true
+  }
+});
+
+const townSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  shops: [storeSchema]
+});
+
+const districtSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  towns: [townSchema]
+});
+
+const provinceSchema = new mongoose.Schema(
   {
-    shopId: {
-      type: Number,
+    name: {
+      type: String,
       required: true,
       unique: true
     },
-
-    name: {
-      type: String,
-      required: true
-    },
-
-    location: {
-      province: {
-        type: String,
-        index: true
-      },
-      district: {
-        type: String,
-        index: true
-      },
-      town: String
-    },
-
-    address: String,
-
-    phone: String,
-
-    hours: String,
-
-    type: {
-      type: String,
-      enum: ["Pharmacy", "Ayurvedic Store", "Health Center", "Supermarket"],
-      required: true,
-      index: true
-    }
+    icon: { type: String, required: true },
+    districts: [districtSchema]
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Shop", shopSchema);
+const ShopSchema = new Mongoose.Schema({
+  provinces: [provinceSchema]
+})
+
+export default mongoose.model("Shop", ShopSchema);

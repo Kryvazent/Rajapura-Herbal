@@ -1,4 +1,4 @@
-import service from "../models/service";
+import service from "../models/service.js";
 
 export const getAllServices = async () => {
 
