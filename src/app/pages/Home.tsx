@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucide-react";
 import { getProducts } from "../admin/adminData";
-import "./../../styles/index.css";
+import "../../styles/index.css";
 
 const featuredProducts = getProducts().slice(0, 3);
 
