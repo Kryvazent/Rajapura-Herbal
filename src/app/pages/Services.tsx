@@ -1,11 +1,9 @@
 import { Phone, MapPin, Leaf, Clock, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Service } from "../interfaces/serviceInterface";
-// import { getServiceLocations } from "../admin/adminData";
 import axios from "axios";
 
 export default function Services() {
-  // const serviceLocations = getServiceLocations();
 
   const [service, setService] = useState<Service[]>([]);
   
@@ -16,7 +14,7 @@ export default function Services() {
     }, []);
   
     async function loadData(){
-      await axios.get("http://localhost:3000/user/services")
+      await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/services")
         .then(res => {
           setService(res.data);
         })

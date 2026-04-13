@@ -1,11 +1,42 @@
 import { Link } from "react-router";
 import { Package, Store, MapPin, ChevronRight, TrendingUp, Leaf } from "lucide-react";
-import { getProducts } from "./adminData";
-import { getProvinces } from "./adminData";
+import { useEffect, useState } from "react";
+import { Product } from "../interfaces/productInterface";
+import axios from "axios";
 
 export default function AdminDashboard() {
-  const products = getProducts();
-  const provinces = getProvinces();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [provinces, setProvinces] = useState([]);
+
+    useEffect(() => {
+  
+      loadData()
+      loadData2()
+  
+    }, []);
+  
+    async function loadData() {
+      await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
+        .then(res => {
+          setProducts(res.data);
+        })
+        .catch(err => {
+          console.error("Error fetching featured products:", err);
+        })
+    }
+
+    const loadData2 = async () => {
+    
+        await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
+          .then(res => {
+            setProvinces(res.data);
+          })
+          .catch(err => {
+            console.error("Error fetching featured products:", err);
+          })
+      }
+
   const totalDistricts = provinces.reduce((acc, p) => acc + (p.districts?.length ?? 0), 0);
   const totalTowns = provinces.reduce(
     (acc, p) => acc + (p.districts ?? []).reduce((da, d) => da + (d.towns?.length ?? 0), 0),
@@ -216,7 +247,7 @@ export default function AdminDashboard() {
           <div style={{ padding: "8px 12px" }}>
             {products.slice(0, 5).map((p) => (
               <div
-                key={p.id}
+                key={p._id.toString()}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -320,7 +351,7 @@ export default function AdminDashboard() {
               );
               return (
                 <div
-                  key={prov.name}
+                  key={prov._id.toString()}
                   style={{
                     display: "flex",
                     alignItems: "center",

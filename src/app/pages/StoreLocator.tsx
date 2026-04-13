@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, ChevronRight, ChevronDown, Leaf, Store } from "lucide-react";
 import { District, PanelProps, Province, Shop, Town } from "../interfaces/storeInterface";
 import axios from "axios";
-// import { getProvinces } from "../admin/adminData";
-// import type { Province, District, Town, Shop } from "../data/stores";
 
 const typeColors: Record<Shop["type"], { bg: string; text: string; icon: string }> = {
   "Ayurvedic Store": { bg: "rgba(45,80,22,0.1)", text: "#2D5016", icon: "🌿" },
@@ -104,7 +102,7 @@ export default function StoreLocator() {
 
   const loadData = async () => {
 
-    await axios.get("http://localhost:3000/user/shops")
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
       .then(res => {
         setProvinces(res.data);
       })

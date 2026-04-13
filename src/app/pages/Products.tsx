@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { Search, Leaf, ChevronRight, X } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
-// import { getProducts, type Product } from "../admin/adminData";
 
 export default function Products() {
 
@@ -15,8 +14,8 @@ export default function Products() {
 
   }, []);
 
-  async function loadData(){
-    await axios.get("http://localhost:3000/user/products-all")
+  async function loadData() {
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
       .then(res => {
         setProducts(res.data);
       })

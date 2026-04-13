@@ -3,8 +3,8 @@ import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucid
 // import { getProducts } from "../admin/adminData";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Product } from "../../../admin/interfaces/productInterface";
 import "../../styles/index.css";
+import { Product } from "../interfaces/productInterface";
 
 const stats = [
   { value: "200+", label: "Years of Heritage" },
@@ -46,7 +46,7 @@ export default function Home() {
   },[]);
 
   async function loadData(){
-    await axios.get("http://localhost:3000/user/product-count/3")
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/product-count/3")
     .then(res=>{
       console.log(res)
       setProducts(res.data);

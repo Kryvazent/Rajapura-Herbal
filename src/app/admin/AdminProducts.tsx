@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -10,8 +10,9 @@ import {
   AlertTriangle,
   ChevronDown,
 } from "lucide-react";
-import { getProducts, addProduct, updateProduct, deleteProduct } from "./adminData";
-import type { Product } from "../data/products";
+import { Product } from "../interfaces/productInterface";
+import axios from "axios";
+import { Schema } from "mongoose";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -25,6 +26,7 @@ const CATEGORIES = [
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 
 const emptyForm = (): Omit<Product, "id"> => ({
+  _id: "",
   name: "",
   sinhalaName: "",
   category: CATEGORIES[0],
@@ -52,6 +54,9 @@ function InputField({
   type?: string;
   required?: boolean;
 }) {
+
+
+
   return (
     <div>
       <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>
@@ -165,15 +170,81 @@ function TagsField({
 }
 
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>(getProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
-  const [formData, setFormData] = useState<Omit<Product, "id">>(emptyForm());
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<Omit<Product, "_id">>(emptyForm());
+  const [editingId, setEditingId] = useState<Schema.Types.ObjectId | string>("");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-  const refresh = () => setProducts(getProducts());
+  useEffect(() => {
+
+    getProducts()
+
+  }, []);
+
+  async function getProducts() {
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
+      .then(res => {
+        setProducts(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
+
+  async function saveProduct(product: Product): Promise<void> {
+
+    await axios.post(import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
+      {
+        product
+      },
+      {
+        withCredentials: true,
+      }
+    )
+      .then(res => {
+        console.log("Product added");
+      })
+      .catch(err => {
+        console.error("Error adding product:", err);
+      })
+  }
+
+  async function editProduct(product: Product): Promise<void> {
+
+    await axios.put(import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
+      {
+        product
+      },
+      {
+        withCredentials: true,
+      }
+    )
+      .then(res => {
+        console.log("Product edited");
+      })
+      .catch(err => {
+        console.error("Error editing product:", err);
+      })
+  }
+
+  async function deleteProduct(id: Schema.Types.ObjectId | string): Promise<void> {
+
+    await axios.delete(import.meta.env.VITE_BACKEND_URL + "/admin/delete-product",
+      {
+        data: { id },
+        withCredentials: true,
+      }
+    )
+      .then(res => {
+        console.log("Product deleted");
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
 
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
@@ -185,36 +256,49 @@ export default function AdminProducts() {
 
   const openAdd = () => {
     setFormData(emptyForm());
-    setEditingId(null);
+    setEditingId("");
     setModalMode("add");
   };
 
   const openEdit = (product: Product) => {
-    const { id, ...rest } = product;
+    const { _id, ...rest } = product;
     setFormData({ ...rest, benefits: [...rest.benefits], ingredients: [...rest.ingredients], howToUse: [...(rest.howToUse ?? [])] });
-    setEditingId(id);
+    setEditingId(_id);
     setModalMode("edit");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.price || !formData.image || !formData.description) return;
-    if (modalMode === "add") {
-      addProduct({ ...formData, badge: formData.badge || undefined });
-    } else if (editingId !== null) {
-      updateProduct({ id: editingId, ...formData, badge: formData.badge || undefined });
+
+    try {
+      if (modalMode === "add") {
+        await saveProduct({ ...formData, badge: formData.badge || undefined } as Product);
+      } else if (editingId) {
+        await editProduct({ _id: editingId, ...formData, badge: formData.badge || undefined } as Product);
+      }
+
+      await getProducts();   // ✅ ONLY after DB update completes
+      setModalMode(null);
+
+    } catch (err) {
+      console.error("Save failed:", err);
     }
-    refresh();
-    setModalMode(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteProduct(deleteTarget.id);
-    refresh();
-    setDeleteTarget(null);
+
+    try {
+      await deleteProduct(deleteTarget._id);
+      await getProducts();   // ✅ wait for delete first
+      setDeleteTarget(null);
+
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
   };
 
-  const set = (field: keyof Omit<Product, "id">, value: any) =>
+  const set = (field: keyof Omit<Product, "_id">, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   return (
@@ -346,7 +430,7 @@ export default function AdminProducts() {
             <tbody>
               {filtered.map((product, i) => (
                 <tr
-                  key={product.id}
+                  key={product._id.toString()}
                   style={{
                     borderBottom: i < filtered.length - 1 ? "1px solid rgba(45,80,22,0.06)" : "none",
                     transition: "background-color 0.15s",
@@ -580,7 +664,22 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <InputField label="Price (LKR)" value={formData.price} onChange={(v) => set("price", v)} placeholder="e.g. LKR 850" required />
+              <InputField
+                label="Price (LKR)"
+                value={formData.price}
+                onChange={(v) => {
+                  // remove non-numbers
+                  const numeric = v.replace(/\D/g, "");
+
+                  // format with commas
+                  const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+                  // add LKR prefix
+                  set("price", numeric ? `LKR ${formatted}` : "");
+                }}
+                placeholder="e.g. LKR 850"
+                required
+              />
 
               <div>
                 <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>

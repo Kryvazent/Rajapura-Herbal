@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Leaf, Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react";
-import { login } from "./adminAuth";
+import axios from "axios";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -10,21 +10,44 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loggedin = localStorage.getItem("adminAuth");
+    if (loggedin) {
+      navigate("/admin/dashboard");
+    }else{
+      setIsChecking(false);
+    }
+  }, []);
+
+  if (isChecking) return null;
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // Simulate network delay
-    setTimeout(() => {
-      const ok = login(username.trim(), password);
-      if (ok) {
-        navigate("/admin/dashboard");
-      } else {
-        setError("Invalid username or password. Please try again.");
+
+    await axios.post(import.meta.env.VITE_BACKEND_URL + "/auth/login",
+      { username, password },
+      {
+        withCredentials: true,
       }
-      setLoading(false);
-    }, 600);
+    )
+      .then(res => {
+        if (res.status == 200) {
+          localStorage.setItem("adminAuth", "true");
+          navigate("/admin/dashboard");
+        } else {
+          setError("Invalid username or password. Please try again.");
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+        setError("Invalid username or password. Please try again.");
+      })
+
+    setLoading(false);
   };
 
   return (
@@ -331,20 +354,6 @@ export default function AdminLogin() {
               )}
             </button>
 
-            {/* Hint */}
-            <div
-              style={{
-                marginTop: "20px",
-                backgroundColor: "rgba(45,80,22,0.06)",
-                border: "1px solid rgba(45,80,22,0.12)",
-                borderRadius: "10px",
-                padding: "10px 14px",
-              }}
-            >
-              <p style={{ color: "#6B4423", fontSize: "0.78rem", margin: 0 }}>
-                <strong>Demo credentials:</strong> admin / rajapura2026
-              </p>
-            </div>
           </form>
         </div>
 

@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Bell,
 } from "lucide-react";
-import { logout, isAuthenticated } from "./adminAuth";
+import axios from "axios";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,20 +26,56 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate("/admin");
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get(import.meta.env.VITE_BACKEND_URL + "/auth/status", {
+          withCredentials: true
+        });
+
+        if (res.data.authenticated) {
+          setIsLoading(false);
+        } else {
+          navigate("/admin");
+        }
+      } catch (err) {
+        localStorage.removeItem("adminAuth");
+        navigate("/admin");
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
-  if (!isAuthenticated()) {
-    return null;
-  }
+  if (isLoading) return null;
 
   const handleLogout = () => {
     logout();
     navigate("/admin");
   };
+
+  const logout = async () => {
+    await axios.post(import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+      {},
+      {
+        withCredentials: true,
+      }
+    )
+      .then(res => {
+        if (res.status == 200) {
+          localStorage.removeItem("adminAuth");
+          navigate("/admin");
+        } else {
+          console.error("Logout failed:", res);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  };
+
 
   const isActive = (to: string) => location.pathname === to;
 
