@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, ChevronRight, ChevronDown, Leaf, Store } from "lucide-react";
-import { getProvinces } from "../admin/adminData";
-import type { Province, District, Town, Shop } from "../data/stores";
+import { District, PanelProps, Province, Shop, Town } from "../interfaces/storeInterface";
+import axios from "axios";
+// import { getProvinces } from "../admin/adminData";
+// import type { Province, District, Town, Shop } from "../data/stores";
 
 const typeColors: Record<Shop["type"], { bg: string; text: string; icon: string }> = {
   "Ayurvedic Store": { bg: "rgba(45,80,22,0.1)", text: "#2D5016", icon: "🌿" },
@@ -19,13 +21,6 @@ function EmptyState({ icon, message }: { icon: React.ReactNode; message: string 
   );
 }
 
-interface PanelProps {
-  active: boolean;
-  color: string;
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}
 function Panel({ active, color, icon, title, children }: PanelProps) {
   return (
     <div
@@ -62,12 +57,7 @@ function Panel({ active, color, icon, title, children }: PanelProps) {
   );
 }
 
-function SelectionButton({
-  isSelected,
-  activeColor,
-  onClick,
-  children,
-}: {
+function SelectionButton({ isSelected, activeColor, onClick, children }: {
   isSelected: boolean;
   activeColor: string;
   onClick: () => void;
@@ -96,7 +86,8 @@ function SelectionButton({
 }
 
 export default function StoreLocator() {
-  const provinces = getProvinces();
+
+  const [provinces, setProvinces] = useState([]);
 
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
@@ -105,6 +96,23 @@ export default function StoreLocator() {
 
   // Mobile accordion expansion
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3 | 4>(1);
+
+
+  useEffect(() => {
+    loadData();
+  }, [])
+
+  const loadData = async () => {
+
+    await axios.get("http://localhost:3000/user/shops")
+      .then(res => {
+        setProvinces(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
+
 
   const handleProvinceClick = (province: Province) => {
     if (selectedProvince?.name === province.name) {

@@ -1,8 +1,29 @@
 import { Phone, MapPin, Leaf, Clock, Star } from "lucide-react";
-import { getServiceLocations } from "../admin/adminData";
+import { useEffect, useState } from "react";
+import { Service } from "../interfaces/serviceInterface";
+// import { getServiceLocations } from "../admin/adminData";
+import axios from "axios";
 
 export default function Services() {
-  const serviceLocations = getServiceLocations();
+  // const serviceLocations = getServiceLocations();
+
+  const [service, setService] = useState<Service[]>([]);
+  
+    useEffect(() => {
+  
+      loadData()
+  
+    }, []);
+  
+    async function loadData(){
+      await axios.get("http://localhost:3000/user/services")
+        .then(res => {
+          setService(res.data);
+        })
+        .catch(err => {
+          console.error("Error fetching featured products:", err);
+        })
+    }
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
@@ -46,7 +67,7 @@ export default function Services() {
 
         {/* Location Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-          {serviceLocations.map((location) => (
+          {service.map((location) => (
             <div
               key={location.id}
               style={{
@@ -180,7 +201,7 @@ export default function Services() {
         </div>
 
         {/* Bottom info strip */}
-        {serviceLocations.length > 0 && (
+        {service.length > 0 && (
           <div
             style={{
               marginTop: "40px",
@@ -203,7 +224,7 @@ export default function Services() {
               </p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", minWidth: "180px" }}>
-              {serviceLocations.map((loc) => (
+              {service.map((loc) => (
                 <div key={loc.id}>
                   <p style={{ color: "#8B5E3C", fontSize: "0.68rem", margin: "0 0 2px", letterSpacing: "0.08em" }}>
                     {loc.area.toUpperCase()} CENTRE

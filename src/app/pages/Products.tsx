@@ -1,10 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Search, Leaf, ChevronRight, X } from "lucide-react";
-import { getProducts, type Product } from "../admin/adminData";
+import { Product } from "../interfaces/productInterface";
+import axios from "axios";
+// import { getProducts, type Product } from "../admin/adminData";
 
 export default function Products() {
-  const products = getProducts();
+
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+
+    loadData()
+
+  }, []);
+
+  async function loadData(){
+    await axios.get("http://localhost:3000/user/products-all")
+      .then(res => {
+        setProducts(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
+
   const categories = ["All", ...Array.from(new Set(products.map((p) => p.category)))];
 
   const [activeCategory, setActiveCategory] = useState("All");
@@ -107,7 +127,7 @@ export default function Products() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
           {filtered.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               style={{
                 backgroundColor: "#FAF6EE",
                 borderRadius: "20px",
