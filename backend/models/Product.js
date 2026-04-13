@@ -40,14 +40,8 @@ const productSchema = new mongoose.Schema(
     },
 
     price: {
-      amount: {
-        type: Number,
-        required: true
-      },
-      currency: {
-        type: String,
-        default: "LKR"
-      }
+      type: String,
+      required: true
     },
 
     image: {

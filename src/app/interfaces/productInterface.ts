@@ -1,5 +1,7 @@
+import { Schema } from "mongoose";
+
 export interface Product {
-  _id: string;
+  _id: Schema.Types.ObjectId | string;
   name: string;
   sinhalaName: string;
   category: string;

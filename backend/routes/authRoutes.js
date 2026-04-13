@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post('/login', authMiddleware.verifyNotLoggin, authController.login);
 router.post('/logout',authMiddleware.verifyLoggin, authController.logout);
+router.get('/status', authController.status);
 
 
 export default router;

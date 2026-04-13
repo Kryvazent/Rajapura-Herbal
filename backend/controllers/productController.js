@@ -35,3 +35,41 @@ export const getProductsByPage = async (req, res) => {
         res.status(500).json({ message: 'Error fetching products', error });
     }
 };
+
+export const addProduct = async (req, res) => {
+
+    const { _id, ...productData } = req.body.product;
+    try {
+
+        const product = await productService.addProduct(productData);
+        res.status(201).json(product);
+    } catch (error) {
+        res.status(500).json({ message: 'Error adding product', error });
+    }
+};
+
+export const deleteProduct = async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        await productService.deleteProduct(id);
+        res.status(200).json({ message: 'Product deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting product', error });
+    }
+};
+
+export const updateProduct = async (req, res) => {
+
+    const { _id, ...productData } = req.body.product;
+    try {
+
+        await productService.deleteProduct(_id);
+        const product = await productService.addProduct(productData);
+        res.status(200).json(product);
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Error updating product', error });
+    }
+
+};

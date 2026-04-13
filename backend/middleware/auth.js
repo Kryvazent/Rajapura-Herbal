@@ -1,6 +1,6 @@
 export const verifyUserRole = (req, res, next) => {
 
-    if (req.session && req.session.role === 'admin') {
+    if (req.session && req.session.role === 'ADMIN') {
         next();
     } else {
 
