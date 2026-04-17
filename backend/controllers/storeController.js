@@ -2,7 +2,6 @@ import * as storeService from '../services/storeServices.js';
 
 export const getAllStores = async (req,res) => {
 
-    console.log("Came here");
     try {
         const stores = await storeService.getAllStores();
         res.status(200).json(stores);
@@ -35,6 +34,8 @@ export const deleteStore = async (req, res) => {
 };
 
 export const updateStore = async (req, res) => {
+
+    console.log("Arrived controller")
 
     const { _id, ...storeData } = req.body.store;
     try {
