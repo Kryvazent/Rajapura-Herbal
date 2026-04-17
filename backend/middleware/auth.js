@@ -1,6 +1,7 @@
 export const verifyUserRole = (req, res, next) => {
 
     if (req.session && req.session.role === 'ADMIN') {
+        console.log("Verified as Admin Auth.js")
         next();
     } else {
 
@@ -19,7 +20,11 @@ export const verifyNotLoggin = (req, res, next) => {
 
 export const verifyLoggin = (req, res, next) => {
 
+    console.log("Arrived Auth.js")
+
     if (req.session && req.session.userId) {
+        console.log("Checked logged Auth.js")
+
         next();
     } else {
         res.status(401).json({ message: 'Not logged in' });
