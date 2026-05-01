@@ -487,8 +487,8 @@ export default function AdminStores() {
         await axios.post(
           `${API_URL}/admin/add-town`,
           {
-            provinceIndex: modal.provinceIndex,
-            districtIndex: modal.districtIndex,
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
             name: townForm.name.trim()
           },
           { withCredentials: true }
@@ -497,9 +497,9 @@ export default function AdminStores() {
         await axios.put(
           `${API_URL}/admin/update-town`,
           {
-            provinceIndex: modal.provinceIndex,
-            districtIndex: modal.districtIndex,
-            townIndex: modal.townIndex,
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
             name: townForm.name.trim()
           },
           { withCredentials: true }
@@ -521,7 +521,11 @@ export default function AdminStores() {
         try {
           setLoading(true);
           await axios.delete(`${API_URL}/admin/delete-town`, {
-            data: { provinceIndex: pi, districtIndex: di, townIndex: ti },
+            data: {
+              province_id: provinces[pi]._id,
+              district_id: provinces[pi].districts[di]._id,
+              town_id: provinces[pi].districts[di].towns[ti]._id
+            },
             withCredentials: true
           });
           await fetchProvinces();

@@ -73,35 +73,49 @@ export const deleteDistrict = async (province_id, district_id) => {
 };
 
 // Town CRUD
-export const addTown = async (provinceIndex, districtIndex, townData) => {
-    const shopDoc = await getShopDocument();
-    if (!shopDoc.provinces[provinceIndex]?.districts[districtIndex]) {
+export const addTown = async (province_id, district_id, townData) => {
+    const province = await Shop.findById(province_id);
+    if (!province) {
+        throw new Error('Province not found');
+    }
+    const district = province.districts.id(district_id);
+    if (!district) {
         throw new Error('District not found');
     }
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns.push(townData);
-    await shopDoc.save();
-    return shopDoc.provinces[provinceIndex].districts[districtIndex].towns[
-        shopDoc.provinces[provinceIndex].districts[districtIndex].towns.length - 1
-    ];
+    district.towns.push(townData)
+    return await province.save()
 };
 
-export const updateTown = async (provinceIndex, districtIndex, townIndex, updateData) => {
-    const shopDoc = await getShopDocument();
-    if (!shopDoc.provinces[provinceIndex]?.districts[districtIndex]?.towns[townIndex]) {
+export const updateTown = async (province_id, district_id, town_id, updateData) => {
+    const province = await Shop.findById(province_id);
+    if (!province) {
+        throw new Error('Province not found');
+    }
+    const district = province.districts.id(district_id);
+    if (!district) {
+        throw new Error('District not found');
+    }
+    const town = district.towns.id(town_id);
+    if (!town) {
         throw new Error('Town not found');
     }
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex].name = updateData.name;
-    await shopDoc.save();
-    return shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex];
+    town.name = updateData.name;
+    return await province.save();
 };
 
-export const deleteTown = async (provinceIndex, districtIndex, townIndex) => {
-    const shopDoc = await getShopDocument();
-    if (!shopDoc.provinces[provinceIndex]?.districts[districtIndex]?.towns[townIndex]) {
-        throw new Error('Town not found');
+export const deleteTown = async (province_id, district_id, town_id) => {
+    const result = await Shop.updateOne(
+        { _id: province_id, "districts._id": district_id },
+        {
+            $pull: {
+                "districts.$.towns": { _id: town_id }
+            }
+        }
+    );
+    if (result.modifiedCount === 0) {
+        throw new Error("Province, District or Town not found");
     }
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns.splice(townIndex, 1);
-    await shopDoc.save();
+    return { message: "Town deleted successfully" };
 };
 
 // Shop CRUD
