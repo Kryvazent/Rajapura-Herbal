@@ -408,7 +408,6 @@ export default function AdminStores() {
   };
 
   const openEditDistrict = (pi: number, di: number) => {
-    console.log("411 : ", provinces[pi])
     setDistForm({ _id: provinces[pi]._id, name: provinces[pi].districts[di].name });
     setModal({ kind: "editDistrict", provinceIndex: pi, districtIndex: di });
   };
@@ -419,11 +418,10 @@ export default function AdminStores() {
     try {
       setLoading(true);
       if (modal?.kind === "addDistrict") {
-        console.log("422 : ",distForm)
         await axios.post(
           `${API_URL}/admin/add-district`,
           {
-            provinceIndex: modal.provinceIndex,
+            _id: provinces[modal.provinceIndex]._id,
             name: distForm.name.trim()
           },
           { withCredentials: true }
@@ -432,8 +430,8 @@ export default function AdminStores() {
         await axios.put(
           `${API_URL}/admin/update-district`,
           {
-            provinceIndex: modal.provinceIndex,
-            districtIndex: modal.districtIndex,
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
             name: distForm.name.trim()
           },
           { withCredentials: true }
@@ -455,7 +453,7 @@ export default function AdminStores() {
         try {
           setLoading(true);
           await axios.delete(`${API_URL}/admin/delete-district`, {
-            data: { provinceIndex: pi, districtIndex: di },
+            data: { province_id: provinces[pi]._id, district_id: provinces[pi].districts[di]._id },
             withCredentials: true
           });
           await fetchProvinces();

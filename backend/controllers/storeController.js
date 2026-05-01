@@ -36,10 +36,9 @@ export const deleteProvince = async (req, res) => {
 
 // District CRUD
 export const addDistrict = async (req, res) => {
-    console.log("Store controller 39 : ",req.body)
     try {
-        const { provinceIndex, name } = req.body;
-        const district = await shopService.addDistrict(provinceIndex, { name, towns: [] });
+        const { _id, name } = req.body;
+        const district = await shopService.addDistrict(_id, { name, towns: [] });
         res.status(201).json(district);
     } catch (error) {
         console.error('Error adding district:', error);
@@ -49,8 +48,8 @@ export const addDistrict = async (req, res) => {
 
 export const updateDistrict = async (req, res) => {
     try {
-        const { provinceIndex, districtIndex, name } = req.body;
-        const updatedDistrict = await shopService.updateDistrict(provinceIndex, districtIndex, { name });
+        const { province_id, district_id, name } = req.body;
+        const updatedDistrict = await shopService.updateDistrict(province_id, district_id, { name });
         res.status(200).json(updatedDistrict);
     } catch (error) {
         console.error('Error updating district:', error);
@@ -60,8 +59,8 @@ export const updateDistrict = async (req, res) => {
 
 export const deleteDistrict = async (req, res) => {
     try {
-        const { provinceIndex, districtIndex } = req.body;
-        await shopService.deleteDistrict(provinceIndex, districtIndex);
+        const { province_id, district_id } = req.body;
+        await shopService.deleteDistrict(province_id, district_id);
         res.status(200).json({ message: 'District deleted successfully' });
     } catch (error) {
         console.error('Error deleting district:', error);
