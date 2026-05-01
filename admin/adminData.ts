@@ -3,9 +3,9 @@
  * changes made in the admin panel persist across page refreshes.
  * Falls back to the default seed data on first load.
  */
-import { products as defaultProducts, type Product } from "../data/products";
-import { provinces as defaultProvinces, type Province } from "../data/stores";
-import { serviceLocations as defaultServiceLocations, type ServiceLocation, type ServiceItem } from "../data/services";
+import { products as defaultProducts, type Product } from "../admin/data/products";
+import { provinces as defaultProvinces, type Province } from "../admin/data/stores";
+import { serviceLocations as defaultServiceLocations, type ServiceLocation, type ServiceItem } from "../admin/data/services";
 
 export type { ServiceLocation, ServiceItem };
 
