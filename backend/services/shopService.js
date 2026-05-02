@@ -172,7 +172,9 @@ export const getAllProvinces = async () => {
 };
 
 export const getAllShops = async () => {
-    const shopDoc = await getShopDocument();
+    // const shopDoc = await getShopDocument();
+    const shopDoc = await Shop.find();
+    console.log(shopDoc)
     return shopDoc;
 };
 
