@@ -1,6 +1,7 @@
 import express from 'express';
-import * as productController from '../controllers/productController.js'; 
-import * as storeController from '../controllers/storeController.js'; 
+import * as productController from '../controllers/productController.js';
+import * as storeController from '../controllers/storeController.js';
+import * as serviceController from '../controllers/serviceController.js'
 
 const router = express.Router();
 
@@ -34,5 +35,15 @@ router.get('/provinces', storeController.getAllProvinces);
 
 // Wizard route
 router.post('/add-shop-wizard', storeController.addShopWizard);
+
+// Service centre routes
+router.post('/services', serviceController.addService);
+router.put('/services', serviceController.updateService);
+router.delete('/services', serviceController.deleteService);
+
+// Service item routes
+router.post('/services/item', serviceController.addServiceItem);
+router.put('/services/item', serviceController.updateServiceItem);
+router.delete('/services/item', serviceController.deleteServiceItem);
 
 export default router;

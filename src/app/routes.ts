@@ -14,7 +14,7 @@ import AdminProducts from "./admin/AdminProducts";
 // import AdminDashboard from "./admin/AdminDashboard";
 // import AdminProducts from "./admin/AdminProducts";
 import AdminStores from "./admin/AdminStores";
-// import AdminServices from "./admin/AdminServices";
+import AdminServices from "./admin/AdminServices";
 
 export const router = createBrowserRouter([
   {
@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
       { path: "dashboard", Component: AdminDashboard },
       { path: "products", Component: AdminProducts },
       { path: "stores", Component: AdminStores },
-      // { path: "services", Component: AdminServices },
+      { path: "services", Component: AdminServices },
     ],
   },
 ]);
