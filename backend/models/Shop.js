@@ -22,7 +22,7 @@ const districtSchema = new mongoose.Schema({
   towns: [townSchema]
 });
 
-const provinceSchema = new mongoose.Schema(
+const ShopSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -33,10 +33,6 @@ const provinceSchema = new mongoose.Schema(
     districts: [districtSchema]
   },
   { timestamps: true }
-);
-
-const ShopSchema = new mongoose.Schema({
-  provinces: [provinceSchema]
-})
+)
 
 export default mongoose.model("Shop", ShopSchema);

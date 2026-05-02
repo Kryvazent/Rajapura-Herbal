@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Pencil,
@@ -18,11 +18,13 @@ import {
   ArrowRight,
   Check,
 } from "lucide-react";
-import { getProvinces, saveProvinces } from "./adminData";
 import type { Province, District, Town, Shop } from "../data/stores";
+import axios from "axios";
 
 type ShopType = Shop["type"];
 const SHOP_TYPES: ShopType[] = ["Ayurvedic Store", "Pharmacy", "Health Center", "Supermarket"];
+
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 // ─── InputRow ─────────────────────────────────────────────────────────────────
 function InputRow({
@@ -268,24 +270,25 @@ const wizInputStyle: React.CSSProperties = {
 interface WizardState {
   step: 1 | 2 | 3 | 4;
   provMode: "existing" | "new";
-  selectedProvName: string;
+  selectedProvId: string;
   newProvName: string;
   newProvIcon: string;
   distMode: "existing" | "new";
-  selectedDistName: string;
+  selectedDistId: string;
   newDistName: string;
   townMode: "existing" | "new";
-  selectedTownName: string;
+  selectedTownId: string;
   newTownName: string;
   shopForm: Omit<Shop, "id">;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function AdminStores() {
-  const [provinces, setProvincesState] = useState<Province[]>(getProvinces);
+  const [provinces, setProvincesState] = useState<Province[]>([]);
   const [openProvinces, setOpenProvinces] = useState<Set<string>>(new Set());
   const [openDistricts, setOpenDistricts] = useState<Set<string>>(new Set());
   const [openTowns, setOpenTowns] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
 
   type ModalType =
     | { kind: "addProvince" }
@@ -301,16 +304,30 @@ export default function AdminStores() {
   const [deleteTarget, setDeleteTarget] = useState<{ name: string; action: () => void } | null>(null);
   const [wizard, setWizard] = useState<WizardState | null>(null);
 
-  const [provForm, setProvForm] = useState({ name: "", icon: "🌿" });
-  const [distForm, setDistForm] = useState({ name: "" });
+  const [provForm, setProvForm] = useState({ _id: "", name: "", icon: "🌿" });
+  const [distForm, setDistForm] = useState({ _id: "", name: "" });
   const [townForm, setTownForm] = useState({ name: "" });
   const [shopForm, setShopForm] = useState<Omit<Shop, "id">>({
     name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store",
   });
 
-  const persist = (updated: Province[]) => {
-    setProvincesState(updated);
-    saveProvinces(updated);
+  // Fetch provinces on mount
+  useEffect(() => {
+    fetchProvinces();
+  }, []);
+
+  const fetchProvinces = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_URL}/admin/provinces`, {
+        withCredentials: true
+      });
+      setProvincesState(res.data || []);
+    } catch (error) {
+      console.error("Error fetching provinces:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleProvince = (name: string) =>
@@ -321,70 +338,280 @@ export default function AdminStores() {
     setOpenTowns((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
   // ── Province CRUD ──────────────────────────────────────────────────────────
-  const openAddProvince = () => { setProvForm({ name: "", icon: "🌿" }); setModal({ kind: "addProvince" }); };
-  const openEditProvince = (i: number) => { setProvForm({ name: provinces[i].name, icon: provinces[i].icon }); setModal({ kind: "editProvince", index: i }); };
-  const saveProvince = () => {
-    if (!provForm.name.trim()) return;
-    if (modal?.kind === "addProvince") {
-      persist([...provinces, { name: provForm.name.trim(), icon: provForm.icon, districts: [] }]);
-    } else if (modal?.kind === "editProvince") {
-      persist(provinces.map((p, i) => i === modal.index ? { ...p, name: provForm.name.trim(), icon: provForm.icon } : p));
-    }
-    setModal(null);
+  const openAddProvince = () => {
+    setProvForm({ _id: "", name: "", icon: "🌿" });
+    setModal({ kind: "addProvince" });
   };
+
+  const openEditProvince = (i: number) => {
+    setProvForm({ _id: provinces[i]._id, name: provinces[i].name, icon: provinces[i].icon });
+    setModal({ kind: "editProvince", index: i });
+  };
+
+  const saveProvince = async () => {
+    if (!provForm.name.trim()) return;
+
+    try {
+      setLoading(true);
+      if (modal?.kind === "addProvince") {
+        await axios.post(
+          `${API_URL}/admin/add-province`,
+          { province: { name: provForm.name.trim(), icon: provForm.icon } },
+          { withCredentials: true }
+        );
+      } else if (modal?.kind === "editProvince") {
+        await axios.put(
+          `${API_URL}/admin/update-province`,
+          {
+            _id: provForm._id,
+            name: provForm.name.trim(),
+            icon: provForm.icon
+          },
+          { withCredentials: true }
+        );
+      }
+      await fetchProvinces();
+      setModal(null);
+    } catch (error) {
+      console.error("Error saving province:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteProvince = (i: number) => {
-    setDeleteTarget({ name: provinces[i].name, action: () => { persist(provinces.filter((_, idx) => idx !== i)); setDeleteTarget(null); } });
+    setDeleteTarget({
+      name: provinces[i].name,
+      action: async () => {
+        try {
+          setLoading(true);
+          await axios.delete(`${API_URL}/admin/delete-province`, {
+            data: { _id: provinces[i]._id },
+            withCredentials: true
+          });
+          await fetchProvinces();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error("Error deleting province:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // ── District CRUD ──────────────────────────────────────────────────────────
-  const openAddDistrict = (pi: number) => { setDistForm({ name: "" }); setModal({ kind: "addDistrict", provinceIndex: pi }); };
-  const openEditDistrict = (pi: number, di: number) => { setDistForm({ name: provinces[pi].districts[di].name }); setModal({ kind: "editDistrict", provinceIndex: pi, districtIndex: di }); };
-  const saveDistrict = () => {
-    if (!distForm.name.trim()) return;
-    if (modal?.kind === "addDistrict") {
-      persist(provinces.map((p, i) => i === modal.provinceIndex ? { ...p, districts: [...p.districts, { name: distForm.name.trim(), towns: [] }] } : p));
-    } else if (modal?.kind === "editDistrict") {
-      persist(provinces.map((p, pi) => pi === modal.provinceIndex ? { ...p, districts: p.districts.map((d, di) => di === modal.districtIndex ? { ...d, name: distForm.name.trim() } : d) } : p));
-    }
-    setModal(null);
+  const openAddDistrict = (pi: number) => {
+    setDistForm({ _id: "", name: "" });
+    setModal({ kind: "addDistrict", provinceIndex: pi });
   };
+
+  const openEditDistrict = (pi: number, di: number) => {
+    setDistForm({ _id: provinces[pi].districts[di]._id, name: provinces[pi].districts[di].name });
+    setModal({ kind: "editDistrict", provinceIndex: pi, districtIndex: di });
+  };
+
+  const saveDistrict = async () => {
+    if (!distForm.name.trim()) return;
+
+    try {
+      setLoading(true);
+      if (modal?.kind === "addDistrict") {
+        await axios.post(
+          `${API_URL}/admin/add-district`,
+          {
+            _id: provinces[modal.provinceIndex]._id,
+            name: distForm.name.trim()
+          },
+          { withCredentials: true }
+        );
+      } else if (modal?.kind === "editDistrict") {
+        await axios.put(
+          `${API_URL}/admin/update-district`,
+          {
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            name: distForm.name.trim()
+          },
+          { withCredentials: true }
+        );
+      }
+      await fetchProvinces();
+      setModal(null);
+    } catch (error) {
+      console.error("Error saving district:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteDistrict = (pi: number, di: number) => {
-    setDeleteTarget({ name: provinces[pi].districts[di].name, action: () => { persist(provinces.map((p, i) => i === pi ? { ...p, districts: p.districts.filter((_, idx) => idx !== di) } : p)); setDeleteTarget(null); } });
+    setDeleteTarget({
+      name: provinces[pi].districts[di].name,
+      action: async () => {
+        try {
+          setLoading(true);
+          await axios.delete(`${API_URL}/admin/delete-district`, {
+            data: { province_id: provinces[pi]._id, district_id: provinces[pi].districts[di]._id },
+            withCredentials: true
+          });
+          await fetchProvinces();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error("Error deleting district:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // ── Town CRUD ──────────────────────────────────────────────────────────────
-  const openAddTown = (pi: number, di: number) => { setTownForm({ name: "" }); setModal({ kind: "addTown", provinceIndex: pi, districtIndex: di }); };
-  const openEditTown = (pi: number, di: number, ti: number) => { setTownForm({ name: provinces[pi].districts[di].towns[ti].name }); setModal({ kind: "editTown", provinceIndex: pi, districtIndex: di, townIndex: ti }); };
-  const saveTown = () => {
-    if (!townForm.name.trim()) return;
-    if (modal?.kind === "addTown") {
-      persist(provinces.map((p, pi) => pi === modal.provinceIndex ? { ...p, districts: p.districts.map((d, di) => di === modal.districtIndex ? { ...d, towns: [...d.towns, { name: townForm.name.trim(), shops: [] }] } : d) } : p));
-    } else if (modal?.kind === "editTown") {
-      persist(provinces.map((p, pi) => pi === modal.provinceIndex ? { ...p, districts: p.districts.map((d, di) => di === modal.districtIndex ? { ...d, towns: d.towns.map((t, ti) => ti === modal.townIndex ? { ...t, name: townForm.name.trim() } : t) } : d) } : p));
-    }
-    setModal(null);
+  const openAddTown = (pi: number, di: number) => {
+    setTownForm({ name: "" });
+    setModal({ kind: "addTown", provinceIndex: pi, districtIndex: di });
   };
+
+  const openEditTown = (pi: number, di: number, ti: number) => {
+    setTownForm({ name: provinces[pi].districts[di].towns[ti].name });
+    setModal({ kind: "editTown", provinceIndex: pi, districtIndex: di, townIndex: ti });
+  };
+
+  const saveTown = async () => {
+    if (!townForm.name.trim()) return;
+
+    try {
+      setLoading(true);
+      if (modal?.kind === "addTown") {
+        await axios.post(
+          `${API_URL}/admin/add-town`,
+          {
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            name: townForm.name.trim()
+          },
+          { withCredentials: true }
+        );
+      } else if (modal?.kind === "editTown") {
+        await axios.put(
+          `${API_URL}/admin/update-town`,
+          {
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
+            name: townForm.name.trim()
+          },
+          { withCredentials: true }
+        );
+      }
+      await fetchProvinces();
+      setModal(null);
+    } catch (error) {
+      console.error("Error saving town:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteTown = (pi: number, di: number, ti: number) => {
-    setDeleteTarget({ name: provinces[pi].districts[di].towns[ti].name, action: () => { persist(provinces.map((p, i) => i === pi ? { ...p, districts: p.districts.map((d, j) => j === di ? { ...d, towns: d.towns.filter((_, k) => k !== ti) } : d) } : p)); setDeleteTarget(null); } });
+    setDeleteTarget({
+      name: provinces[pi].districts[di].towns[ti].name,
+      action: async () => {
+        try {
+          setLoading(true);
+          await axios.delete(`${API_URL}/admin/delete-town`, {
+            data: {
+              province_id: provinces[pi]._id,
+              district_id: provinces[pi].districts[di]._id,
+              town_id: provinces[pi].districts[di].towns[ti]._id
+            },
+            withCredentials: true
+          });
+          await fetchProvinces();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error("Error deleting town:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // ── Shop CRUD ──────────────────────────────────────────────────────────────
-  const openAddShop = (pi: number, di: number, ti: number) => { setShopForm({ name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" }); setModal({ kind: "addShop", provinceIndex: pi, districtIndex: di, townIndex: ti }); };
-  const openEditShop = (pi: number, di: number, ti: number, si: number) => { const { id, ...rest } = provinces[pi].districts[di].towns[ti].shops[si]; setShopForm({ ...rest }); setModal({ kind: "editShop", provinceIndex: pi, districtIndex: di, townIndex: ti, shopIndex: si }); };
-  const saveShop = () => {
-    if (!shopForm.name.trim() || !shopForm.address.trim()) return;
-    if (modal?.kind === "addShop") {
-      const { provinceIndex: pi, districtIndex: di, townIndex: ti } = modal;
-      const newId = provinces.flatMap((p) => p.districts.flatMap((d) => d.towns.flatMap((t) => t.shops))).reduce((m, s) => Math.max(m, s.id), 0) + 1;
-      persist(provinces.map((p, i) => i === pi ? { ...p, districts: p.districts.map((d, j) => j === di ? { ...d, towns: d.towns.map((t, k) => k === ti ? { ...t, shops: [...t.shops, { id: newId, ...shopForm }] } : t) } : d) } : p));
-    } else if (modal?.kind === "editShop") {
-      const { provinceIndex: pi, districtIndex: di, townIndex: ti, shopIndex: si } = modal;
-      persist(provinces.map((p, i) => i === pi ? { ...p, districts: p.districts.map((d, j) => j === di ? { ...d, towns: d.towns.map((t, k) => k === ti ? { ...t, shops: t.shops.map((s, l) => l === si ? { ...s, ...shopForm } : s) } : t) } : d) } : p));
-    }
-    setModal(null);
+  const openAddShop = (pi: number, di: number, ti: number) => {
+    setShopForm({ name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" });
+    setModal({ kind: "addShop", provinceIndex: pi, districtIndex: di, townIndex: ti });
   };
+
+  const openEditShop = (pi: number, di: number, ti: number, si: number) => {
+    const { id, ...rest } = provinces[pi].districts[di].towns[ti].shops[si];
+    setShopForm({ ...rest });
+    setModal({ kind: "editShop", provinceIndex: pi, districtIndex: di, townIndex: ti, shopIndex: si });
+  };
+
+  const saveShop = async () => {
+    if (!shopForm.name.trim() || !shopForm.address.trim()) return;
+
+    try {
+      setLoading(true);
+      if (modal?.kind === "addShop") {
+        await axios.post(
+          `${API_URL}/admin/add-shop`,
+          {
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
+            shopData: shopForm
+          },
+          { withCredentials: true }
+        );
+      } else if (modal?.kind === "editShop") {
+        await axios.put(
+          `${API_URL}/admin/update-shop`,
+          {
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
+            shop_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex].shops[modal.shopIndex]._id,
+            shopData: shopForm
+          },
+          { withCredentials: true }
+        );
+      }
+      await fetchProvinces();
+      setModal(null);
+    } catch (error) {
+      console.error("Error saving shop:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteShop = (pi: number, di: number, ti: number, si: number) => {
-    setDeleteTarget({ name: provinces[pi].districts[di].towns[ti].shops[si].name, action: () => { persist(provinces.map((p, i) => i === pi ? { ...p, districts: p.districts.map((d, j) => j === di ? { ...d, towns: d.towns.map((t, k) => k === ti ? { ...t, shops: t.shops.filter((_, l) => l !== si) } : t) } : d) } : p)); setDeleteTarget(null); } });
+    setDeleteTarget({
+      name: provinces[pi].districts[di].towns[ti].shops[si].name,
+      action: async () => {
+        try {
+          setLoading(true);
+          await axios.delete(`${API_URL}/admin/delete-shop`, {
+            data: {
+              province_id: provinces[pi]._id,
+              district_id: provinces[pi].districts[di]._id,
+              town_id: provinces[pi].districts[di].towns[ti]._id,
+              shop_id: provinces[pi].districts[di].towns[ti].shops[si]._id,
+            },
+            withCredentials: true
+          });
+          await fetchProvinces();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error("Error deleting shop:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   // ── Wizard ─────────────────────────────────────────────────────────────────
@@ -392,81 +619,82 @@ export default function AdminStores() {
     setWizard({
       step: 1,
       provMode: provinces.length > 0 ? "existing" : "new",
-      selectedProvName: provinces[0]?.name ?? "",
+      selectedProvId: provinces[0]?._id ?? "",
       newProvName: "",
       newProvIcon: "🌿",
       distMode: "existing",
-      selectedDistName: "",
+      selectedDistId: "",
       newDistName: "",
       townMode: "existing",
-      selectedTownName: "",
+      selectedTownId: "",
       newTownName: "",
       shopForm: { name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" },
     });
   };
 
   const wizardProvince = wizard?.provMode === "existing"
-    ? provinces.find((p) => p.name === wizard.selectedProvName) ?? null
+    ? provinces.find((p) => p._id === wizard.selectedProvId) ?? null
     : null;
 
   const wizardDistrict = wizardProvince && wizard?.distMode === "existing"
-    ? wizardProvince.districts.find((d) => d.name === wizard.selectedDistName) ?? null
+    ? wizardProvince.districts.find((d) => d._id === wizard.selectedDistId) ?? null
     : null;
 
   const canAdvance = (): boolean => {
     if (!wizard) return false;
     switch (wizard.step) {
-      case 1: return wizard.provMode === "existing" ? !!wizard.selectedProvName : !!wizard.newProvName.trim();
-      case 2: return wizard.distMode === "existing" ? !!wizard.selectedDistName : !!wizard.newDistName.trim();
-      case 3: return wizard.townMode === "existing" ? !!wizard.selectedTownName : !!wizard.newTownName.trim();
+      case 1: return wizard.provMode === "existing" ? !!wizard.selectedProvId : !!wizard.newProvName.trim();
+      case 2: return wizard.distMode === "existing" ? !!wizard.selectedDistId : !!wizard.newDistName.trim();
+      case 3: return wizard.townMode === "existing" ? !!wizard.selectedTownId : !!wizard.newTownName.trim();
       case 4: return !!wizard.shopForm.name.trim() && !!wizard.shopForm.address.trim();
     }
   };
 
-  const advanceWizard = () => {
+  const advanceWizard = async () => {
     if (!wizard || !canAdvance()) return;
+
     if (wizard.step === 4) {
-      // Deep-clone and mutate
-      const updated: Province[] = JSON.parse(JSON.stringify(provinces));
-      let prov: Province;
-      if (wizard.provMode === "existing") {
-        prov = updated.find((p) => p.name === wizard.selectedProvName)!;
-      } else {
-        const np: Province = { name: wizard.newProvName.trim(), icon: wizard.newProvIcon, districts: [] };
-        updated.push(np); prov = np;
+      try {
+        setLoading(true);
+        await axios.post(
+          `${API_URL}/admin/add-shop-wizard`,
+          {
+            wizardData: {
+              provMode: wizard.provMode,
+              selectedProvId: wizard.selectedProvId,
+              newProvName: wizard.newProvName,
+              newProvIcon: wizard.newProvIcon,
+              distMode: wizard.distMode,
+              selectedDistId: wizard.selectedDistId,
+              newDistName: wizard.newDistName,
+              townMode: wizard.townMode,
+              selectedTownId: wizard.selectedTownId,
+              newTownName: wizard.newTownName,
+              shopForm: wizard.shopForm
+            }
+          },
+          { withCredentials: true }
+        );
+        await fetchProvinces();
+        setWizard(null);
+      } catch (error) {
+        console.error("Error in wizard:", error);
+      } finally {
+        setLoading(false);
       }
-      let dist: District;
-      if (wizard.distMode === "existing") {
-        dist = prov.districts.find((d) => d.name === wizard.selectedDistName)!;
-      } else {
-        const nd: District = { name: wizard.newDistName.trim(), towns: [] };
-        prov.districts.push(nd); dist = nd;
-      }
-      let town: Town;
-      if (wizard.townMode === "existing") {
-        town = dist.towns.find((t) => t.name === wizard.selectedTownName)!;
-      } else {
-        const nt: Town = { name: wizard.newTownName.trim(), shops: [] };
-        dist.towns.push(nt); town = nt;
-      }
-      const allShops = updated.flatMap((p) => p.districts.flatMap((d) => d.towns.flatMap((t) => t.shops)));
-      const newId = allShops.reduce((m, s) => Math.max(m, s.id), 0) + 1;
-      town.shops.push({ id: newId, ...wizard.shopForm });
-      persist(updated);
-      setWizard(null);
     } else {
       const next = { ...wizard, step: (wizard.step + 1) as WizardState["step"] };
       if (wizard.step === 1) {
-        const prov = wizard.provMode === "existing" ? provinces.find((p) => p.name === wizard.selectedProvName) : null;
+        const prov = wizard.provMode === "existing" ? provinces.find((p) => p._id === wizard.selectedProvId) : null;
         next.distMode = prov && prov.districts.length > 0 ? "existing" : "new";
-        next.selectedDistName = prov?.districts[0]?.name ?? "";
+        next.selectedDistId = prov?.districts[0]?._id ?? "";
         next.newDistName = "";
       }
       if (wizard.step === 2) {
         const prov = wizardProvince;
-        const dist = prov?.districts.find((d) => d.name === wizard.selectedDistName);
+        const dist = prov?.districts.find((d) => d._id === wizard.selectedDistId);
         next.townMode = dist && dist.towns.length > 0 ? "existing" : "new";
-        next.selectedTownName = dist?.towns[0]?.name ?? "";
+        next.selectedTownId = dist?.towns[0]?._id ?? "";
         next.newTownName = "";
       }
       setWizard(next);
@@ -481,7 +709,10 @@ export default function AdminStores() {
     Supermarket: { bg: "rgba(212,160,23,0.12)", text: "#7A5C00" },
   };
 
-  const totalShops = provinces.reduce((a, p) => a + p.districts.reduce((b, d) => b + d.towns.reduce((c, t) => c + t.shops.length, 0), 0), 0);
+  const totalShops = (provinces || [])
+    .flatMap(p => p.districts || [])
+    .flatMap(d => d.towns || [])
+    .reduce((total, town) => total + (town.shops?.length || 0), 0);
 
   const getModalTitle = () => {
     if (!modal) return "";
@@ -547,6 +778,14 @@ export default function AdminStores() {
     marginBottom: "10px",
   });
 
+  if (loading && provinces.length === 0) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+        <p style={{ color: "#2D5016", fontSize: "1rem" }}>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
@@ -562,22 +801,28 @@ export default function AdminStores() {
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <button
             onClick={openWizard}
+            disabled={loading}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
-              backgroundColor: "#D4A017", color: "#1A3009",
+              backgroundColor: loading ? "#ccc" : "#D4A017",
+              color: "#1A3009",
               border: "none", padding: "10px 20px", borderRadius: "50px",
-              cursor: "pointer", fontSize: "0.88rem", fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+              fontSize: "0.88rem", fontWeight: 600,
             }}
           >
             <Wand2 size={15} /> Add Shop (Step-by-Step)
           </button>
           <button
             onClick={openAddProvince}
+            disabled={loading}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
-              backgroundColor: "#2D5016", color: "#FAF6EE",
+              backgroundColor: loading ? "#ccc" : "#2D5016",
+              color: "#FAF6EE",
               border: "none", padding: "10px 20px", borderRadius: "50px",
-              cursor: "pointer", fontSize: "0.88rem",
+              cursor: loading ? "not-allowed" : "pointer",
+              fontSize: "0.88rem",
             }}
           >
             <Plus size={16} /> Add Province
@@ -603,13 +848,13 @@ export default function AdminStores() {
                   <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.75rem" }}>{province.districts.length} districts · {provShops} stores</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={() => openAddDistrict(pi)} style={{ display: "flex", alignItems: "center", gap: "5px", color: "#4A7C23", border: "1px solid rgba(74,124,35,0.3)", backgroundColor: "rgba(74,124,35,0.07)", padding: "5px 12px", borderRadius: "50px", cursor: "pointer", fontSize: "0.75rem" }}>
+                  <button onClick={() => openAddDistrict(pi)} disabled={loading} style={{ display: "flex", alignItems: "center", gap: "5px", color: "#4A7C23", border: "1px solid rgba(74,124,35,0.3)", backgroundColor: "rgba(74,124,35,0.07)", padding: "5px 12px", borderRadius: "50px", cursor: loading ? "not-allowed" : "pointer", fontSize: "0.75rem" }}>
                     <Plus size={12} /> District
                   </button>
-                  <button onClick={() => openEditProvince(pi)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => openEditProvince(pi)} disabled={loading} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Pencil size={13} />
                   </button>
-                  <button onClick={() => deleteProvince(pi)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => deleteProvince(pi)} disabled={loading} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -636,13 +881,13 @@ export default function AdminStores() {
                             <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.72rem" }}>{district.towns.length} town{district.towns.length !== 1 ? "s" : ""} · {distShops} store{distShops !== 1 ? "s" : ""}</p>
                           </div>
                           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => openAddTown(pi, di)} style={{ display: "flex", alignItems: "center", gap: "4px", color: "#8B5E3C", border: "1px solid rgba(139,94,60,0.3)", backgroundColor: "rgba(139,94,60,0.07)", padding: "4px 10px", borderRadius: "50px", cursor: "pointer", fontSize: "0.72rem" }}>
+                            <button onClick={() => openAddTown(pi, di)} disabled={loading} style={{ display: "flex", alignItems: "center", gap: "4px", color: "#8B5E3C", border: "1px solid rgba(139,94,60,0.3)", backgroundColor: "rgba(139,94,60,0.07)", padding: "4px 10px", borderRadius: "50px", cursor: loading ? "not-allowed" : "pointer", fontSize: "0.72rem" }}>
                               <Plus size={11} /> Town
                             </button>
-                            <button onClick={() => openEditDistrict(pi, di)} style={{ width: "28px", height: "28px", borderRadius: "7px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <button onClick={() => openEditDistrict(pi, di)} disabled={loading} style={{ width: "28px", height: "28px", borderRadius: "7px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <Pencil size={12} />
                             </button>
-                            <button onClick={() => deleteDistrict(pi, di)} style={{ width: "28px", height: "28px", borderRadius: "7px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <button onClick={() => deleteDistrict(pi, di)} disabled={loading} style={{ width: "28px", height: "28px", borderRadius: "7px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <Trash2 size={12} />
                             </button>
                           </div>
@@ -668,13 +913,13 @@ export default function AdminStores() {
                                       <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.7rem" }}>{town.shops.length} shop{town.shops.length !== 1 ? "s" : ""}</p>
                                     </div>
                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                      <button onClick={() => openAddShop(pi, di, ti)} style={{ display: "flex", alignItems: "center", gap: "4px", color: "#D4A017", border: "1px solid rgba(212,160,23,0.3)", backgroundColor: "rgba(212,160,23,0.08)", padding: "3px 9px", borderRadius: "50px", cursor: "pointer", fontSize: "0.7rem" }}>
+                                      <button onClick={() => openAddShop(pi, di, ti)} disabled={loading} style={{ display: "flex", alignItems: "center", gap: "4px", color: "#D4A017", border: "1px solid rgba(212,160,23,0.3)", backgroundColor: "rgba(212,160,23,0.08)", padding: "3px 9px", borderRadius: "50px", cursor: loading ? "not-allowed" : "pointer", fontSize: "0.7rem" }}>
                                         <Plus size={10} /> Shop
                                       </button>
-                                      <button onClick={() => openEditTown(pi, di, ti)} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                      <button onClick={() => openEditTown(pi, di, ti)} disabled={loading} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                         <Pencil size={11} />
                                       </button>
-                                      <button onClick={() => deleteTown(pi, di, ti)} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                      <button onClick={() => deleteTown(pi, di, ti)} disabled={loading} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                         <Trash2 size={11} />
                                       </button>
                                     </div>
@@ -706,10 +951,10 @@ export default function AdminStores() {
                                               </div>
                                             </div>
                                             <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
-                                              <button onClick={() => openEditShop(pi, di, ti, si)} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                              <button onClick={() => openEditShop(pi, di, ti, si)} disabled={loading} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "rgba(45,80,22,0.06)", color: "#2D5016", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                                 <Pencil size={11} />
                                               </button>
-                                              <button onClick={() => deleteShop(pi, di, ti, si)} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                              <button onClick={() => deleteShop(pi, di, ti, si)} disabled={loading} style={{ width: "26px", height: "26px", borderRadius: "6px", border: "1px solid rgba(212,24,61,0.2)", backgroundColor: "rgba(212,24,61,0.06)", color: "#D4183D", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                                 <Trash2 size={11} />
                                               </button>
                                             </div>
@@ -783,14 +1028,14 @@ export default function AdminStores() {
                   {provinces.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {provinces.map((p) => (
-                        <button key={p.name} type="button" onClick={() => setWizard({ ...wizard, provMode: "existing", selectedProvName: p.name })} style={pillBtn(wizard.provMode === "existing" && wizard.selectedProvName === p.name)}>
+                        <button key={p.name} type="button" onClick={() => setWizard({ ...wizard, provMode: "existing", selectedProvId: p._id })} style={pillBtn(wizard.provMode === "existing" && wizard.selectedProvId === p._id)}>
                           {p.icon} {p.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, provMode: "new" })} style={newPillBtn(wizard.provMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, provMode: "new", selectedProvId: "" })} style={newPillBtn(wizard.provMode === "new")}>
                       <Plus size={13} /> Create New Province
                     </button>
                     {wizard.provMode === "new" && (
@@ -811,19 +1056,21 @@ export default function AdminStores() {
               {wizard.step === 2 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
-                    Select a district in <strong>{wizard.provMode === "existing" ? wizard.selectedProvName : wizard.newProvName}</strong>, or create a new one.
+                    Select a district in <strong>{wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)?.name ?? wizard.selectedProvId
+                      : wizard.newProvName}</strong>, or create a new one.
                   </p>
                   {wizardProvince && wizardProvince.districts.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {wizardProvince.districts.map((d) => (
-                        <button key={d.name} type="button" onClick={() => setWizard({ ...wizard, distMode: "existing", selectedDistName: d.name })} style={pillBtn(wizard.distMode === "existing" && wizard.selectedDistName === d.name)}>
+                        <button key={d.name} type="button" onClick={() => setWizard({ ...wizard, distMode: "existing", selectedDistId: d._id })} style={pillBtn(wizard.distMode === "existing" && wizard.selectedDistId === d._id)}>
                           {d.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, distMode: "new", selectedDistName: "" })} style={newPillBtn(wizard.distMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, distMode: "new", selectedDistId: "" })} style={newPillBtn(wizard.distMode === "new")}>
                       <Plus size={13} /> Create New District
                     </button>
                     {wizard.distMode === "new" && (
@@ -837,19 +1084,21 @@ export default function AdminStores() {
               {wizard.step === 3 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
-                    Select a town in <strong>{wizard.distMode === "existing" ? wizard.selectedDistName : wizard.newDistName}</strong>, or create a new one.
+                    Select a town in <strong>{wizard.distMode === "existing"
+                      ? wizardProvince?.districts.find(d => d._id === wizard.selectedDistId)?.name ?? wizard.selectedDistId
+                      : wizard.newDistName}</strong>, or create a new one.
                   </p>
                   {wizardDistrict && wizardDistrict.towns.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {wizardDistrict.towns.map((t) => (
-                        <button key={t.name} type="button" onClick={() => setWizard({ ...wizard, townMode: "existing", selectedTownName: t.name })} style={pillBtn(wizard.townMode === "existing" && wizard.selectedTownName === t.name)}>
+                        <button key={t.name} type="button" onClick={() => setWizard({ ...wizard, townMode: "existing", selectedTownId: t._id })} style={pillBtn(wizard.townMode === "existing" && wizard.selectedTownId === t._id)}>
                           {t.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, townMode: "new", selectedTownName: "" })} style={newPillBtn(wizard.townMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, townMode: "new", selectedTownId: "" })} style={newPillBtn(wizard.townMode === "new")}>
                       <Plus size={13} /> Create New Town
                     </button>
                     {wizard.townMode === "new" && (
@@ -865,11 +1114,17 @@ export default function AdminStores() {
                   {/* Path summary */}
                   <div style={{ backgroundColor: "rgba(45,80,22,0.06)", border: "1px solid rgba(45,80,22,0.15)", borderRadius: "10px", padding: "8px 14px", fontSize: "0.78rem", color: "#4A7C23", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                     <MapPin size={12} />
-                    {wizard.provMode === "existing" ? wizard.selectedProvName : `✦ ${wizard.newProvName}`}
+                    {wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)?.name ?? wizard.selectedProvId
+                      : `✦ ${wizard.newProvName}`}
                     {" → "}
-                    {wizard.distMode === "existing" ? wizard.selectedDistName : `✦ ${wizard.newDistName}`}
+                    {wizard.distMode === "existing"
+                      ? wizardProvince?.districts.find(d => d._id === wizard.selectedDistId)?.name ?? wizard.selectedDistId
+                      : `✦ ${wizard.newDistName}`}
                     {" → "}
-                    {wizard.townMode === "existing" ? wizard.selectedTownName : `✦ ${wizard.newTownName}`}
+                    {wizard.townMode === "existing"
+                      ? wizardDistrict?.towns.find(t => t._id === wizard.selectedTownId)?.name ?? wizard.selectedTownId
+                      : `✦ ${wizard.newTownName}`}
                   </div>
                   <InputRow label="Shop Name" value={wizard.shopForm.name} onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, name: v } })} placeholder="e.g. Rajapura Herbal Centre – Colombo" required />
                   <InputRow label="Address" value={wizard.shopForm.address} onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, address: v } })} placeholder="Full street address" required />
@@ -892,16 +1147,35 @@ export default function AdminStores() {
             {/* Wizard footer */}
             <div style={{ padding: "14px 28px", borderTop: "1px solid rgba(45,80,22,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(45,80,22,0.02)" }}>
               <button
-                onClick={() => wizard.step === 1 ? setWizard(null) : setWizard({ ...wizard, step: (wizard.step - 1) as WizardState["step"] })}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "50px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "transparent", color: "#6B4423", cursor: "pointer", fontSize: "0.85rem" }}
+                onClick={() => {
+                  if (wizard.step === 1) {
+                    setWizard(null);
+                  } else if (wizard.step === 2) {
+                    setWizard({ ...wizard, step: 1 });
+                  } else if (wizard.step === 3) {
+                    const prov = wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)
+                      : null;
+                    setWizard({
+                      ...wizard,
+                      step: 2,
+                      distMode: prov && prov.districts.length > 0 ? "existing" : "new",
+                      selectedDistId: wizard.selectedDistId || prov?.districts[0]?._id || "",
+                    });
+                  } else {
+                    setWizard({ ...wizard, step: (wizard.step - 1) as WizardState["step"] });
+                  }
+                }}
+                disabled={loading}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "50px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "transparent", color: "#6B4423", cursor: loading ? "not-allowed" : "pointer", fontSize: "0.85rem" }}
               >
                 <ArrowLeft size={14} /> {wizard.step === 1 ? "Cancel" : "Back"}
               </button>
               <span style={{ color: "#A8C580", fontSize: "0.75rem" }}>Step {wizard.step} of 4</span>
               <button
                 onClick={advanceWizard}
-                disabled={!canAdvance()}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 20px", borderRadius: "50px", border: "none", backgroundColor: canAdvance() ? (wizard.step === 4 ? "#2D5016" : "#D4A017") : "rgba(45,80,22,0.15)", color: canAdvance() ? (wizard.step === 4 ? "#FAF6EE" : "#1A3009") : "#A8C580", cursor: canAdvance() ? "pointer" : "not-allowed", fontSize: "0.85rem", fontWeight: 600 }}
+                disabled={!canAdvance() || loading}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 20px", borderRadius: "50px", border: "none", backgroundColor: (canAdvance() && !loading) ? (wizard.step === 4 ? "#2D5016" : "#D4A017") : "rgba(45,80,22,0.15)", color: (canAdvance() && !loading) ? (wizard.step === 4 ? "#FAF6EE" : "#1A3009") : "#A8C580", cursor: (canAdvance() && !loading) ? "pointer" : "not-allowed", fontSize: "0.85rem", fontWeight: 600 }}
               >
                 {wizard.step === 4 ? <><Save size={14} /> Save Shop</> : <>Next <ArrowRight size={14} /></>}
               </button>
@@ -923,7 +1197,7 @@ export default function AdminStores() {
             </>
           )}
           {(modal.kind === "addDistrict" || modal.kind === "editDistrict") && (
-            <InputRow label="District Name" value={distForm.name} onChange={(v) => setDistForm({ name: v })} placeholder="e.g. Colombo" required />
+            <InputRow label="District Name" value={distForm.name} onChange={(v) => setDistForm((prev) => ({ ...prev, name: v }))} placeholder="e.g. Colombo" required />
           )}
           {(modal.kind === "addTown" || modal.kind === "editTown") && (
             <InputRow label="Town Name" value={townForm.name} onChange={(v) => setTownForm({ name: v })} placeholder="e.g. Nugegoda" required />

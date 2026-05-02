@@ -9,35 +9,34 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [provinces, setProvinces] = useState([]);
 
-    useEffect(() => {
-  
-      loadData()
-      loadData2()
-  
-    }, []);
-  
-    async function loadData() {
-      await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
-        .then(res => {
-          setProducts(res.data);
-        })
-        .catch(err => {
-          console.error("Error fetching featured products:", err);
-        })
-    }
+  useEffect(() => {
+    loadData()
+    loadData2()
+  }, []);
 
-    const loadData2 = async () => {
-    
-        await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
-          .then(res => {
-            setProvinces(res.data);
-          })
-          .catch(err => {
-            console.error("Error fetching featured products:", err);
-          })
-      }
+  async function loadData() {
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
+      .then(res => {
+        setProducts(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
+
+  const loadData2 = async () => {
+
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
+      .then(res => {
+        setProvinces(res.data ?? []);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
 
   const totalDistricts = provinces.reduce((acc, p) => acc + (p.districts?.length ?? 0), 0);
+
   const totalTowns = provinces.reduce(
     (acc, p) => acc + (p.districts ?? []).reduce((da, d) => da + (d.towns?.length ?? 0), 0),
     0

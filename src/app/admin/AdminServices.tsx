@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -17,7 +17,10 @@ import {
   saveServiceLocations,
   type ServiceLocation,
   type ServiceItem,
-} from "./adminData";
+} from "../../../admin/adminData";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const COLOR_PRESETS = [
@@ -300,7 +303,7 @@ const blankService = (): Omit<ServiceItem, "id"> => ({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminServices() {
-  const [locations, setLocations] = useState<ServiceLocation[]>(getServiceLocations);
+  const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   // Location modal
@@ -309,9 +312,9 @@ export default function AdminServices() {
   // Service modal
   const [svcModal, setSvcModal] = useState<null | {
     mode: "add" | "edit";
-    locationId: number;
+    location_id: String;
     data: Omit<ServiceItem, "id">;
-    serviceId?: number;
+    service_id?: number;
   }>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<{ name: string; action: () => void } | null>(null);
@@ -329,6 +332,19 @@ export default function AdminServices() {
     });
   };
 
+  const fetchServiceLocations = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/user/services`);
+      setLocations(response.data)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+  useEffect(() => {
+    fetchServiceLocations();
+  }, [])
+
   // ── Location CRUD ──────────────────────────────────────────────────────────
   const openAddLocation = () => setLocModal({ mode: "add", data: blankLocation() });
   const openEditLocation = (loc: ServiceLocation) => {
@@ -336,67 +352,98 @@ export default function AdminServices() {
     setLocModal({ mode: "edit", data: { ...rest, services: rest.services }, id });
   };
 
-  const saveLocation = () => {
+  const saveLocation = async () => {
     if (!locModal || !locModal.data.name.trim() || !locModal.data.mobile.trim()) return;
-    if (locModal.mode === "add") {
-      const newId = locations.length > 0 ? Math.max(...locations.map((l) => l.id)) + 1 : 1;
-      persist([...locations, { id: newId, ...locModal.data }]);
-    } else {
-      persist(locations.map((l) => (l.id === locModal.id ? { id: locModal.id!, ...locModal.data } : l)));
+
+    try {
+      if (locModal.mode === "add") {
+        const response = await axios.post(`${API_URL}/admin/services`, locModal.data, {
+          withCredentials: true
+        });
+        fetchServiceLocations();
+      } else {
+        const response = await axios.put(`${API_URL}/admin/services`, {
+          id: locModal.id,
+          ...locModal.data
+        }, {
+          withCredentials: true
+        });
+        fetchServiceLocations();
+      }
+      setLocModal(null);
+    } catch (error) {
+      console.error('Error saving location:', error);
     }
-    setLocModal(null);
   };
 
   const deleteLocation = (loc: ServiceLocation) => {
     setDeleteTarget({
       name: loc.name,
-      action: () => {
-        persist(locations.filter((l) => l.id !== loc.id));
-        setDeleteTarget(null);
+      action: async () => {
+        try {
+          await axios.delete(`${API_URL}/admin/services`, {
+            data: { _id: loc._id },
+            withCredentials: true
+          });
+          fetchServiceLocations();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error('Error deleting location:', error);
+        }
       },
     });
   };
 
   // ── Service CRUD ───────────────────────────────────────────────────────────
-  const openAddService = (locationId: number) =>
-    setSvcModal({ mode: "add", locationId, data: blankService() });
+  const openAddService = (location_id: String) =>
+    setSvcModal({ mode: "add", location_id, data: blankService() });
 
-  const openEditService = (locationId: number, svc: ServiceItem) => {
+  const openEditService = (location_id: String, svc: ServiceItem) => {
     const { id, ...rest } = svc;
-    setSvcModal({ mode: "edit", locationId, data: rest, serviceId: id });
+    setSvcModal({ mode: "edit", location_id, data: rest, service_id: svc._id });
   };
 
-  const saveService = () => {
+  const saveService = async () => {
     if (!svcModal || !svcModal.data.name.trim()) return;
-    persist(
-      locations.map((l) => {
-        if (l.id !== svcModal.locationId) return l;
-        if (svcModal.mode === "add") {
-          const newId = l.services.length > 0 ? Math.max(...l.services.map((s) => s.id)) + 1 : 1;
-          return { ...l, services: [...l.services, { id: newId, ...svcModal.data }] };
-        } else {
-          return {
-            ...l,
-            services: l.services.map((s) =>
-              s.id === svcModal.serviceId ? { id: s.id, ...svcModal.data } : s
-            ),
-          };
-        }
-      })
-    );
-    setSvcModal(null);
+
+    try {
+      if (svcModal.mode === "add") {
+        await axios.post(`${API_URL}/admin/services/item`, {
+          location_id: svcModal.location_id,
+          serviceItem: svcModal.data
+        }, {
+          withCredentials: true
+        });
+      } else {
+        await axios.put(`${API_URL}/admin/services/item`, {
+          location_id: svcModal.location_id,
+          service_id: svcModal.service_id,
+          serviceItem: svcModal.data
+        }, {
+          withCredentials: true
+        });
+      }
+      fetchServiceLocations();
+      setSvcModal(null);
+    } catch (error) {
+      console.error('Error saving service:', error);
+    }
   };
 
-  const deleteService = (locationId: number, svc: ServiceItem) => {
+  const deleteService = (location_id: String, svc: ServiceItem) => {
     setDeleteTarget({
       name: svc.name,
-      action: () => {
-        persist(
-          locations.map((l) =>
-            l.id === locationId ? { ...l, services: l.services.filter((s) => s.id !== svc.id) } : l
-          )
-        );
-        setDeleteTarget(null);
+      action: async () => {
+        try {
+          await axios.delete(`${API_URL}/admin/services/item`, {
+            data: { location_id, service_id: svc._id },
+            withCredentials: true
+          });
+          fetchServiceLocations();
+          setDeleteTarget(null);
+        } catch (error) {
+          console.error('Error deleting service:', error);
+        }
       },
     });
   };
@@ -464,7 +511,7 @@ export default function AdminServices() {
           const isOpen = expandedIds.has(loc.id);
           return (
             <div
-              key={loc.id}
+              key={loc._id}
               style={{
                 backgroundColor: "#FAF6EE",
                 border: `1px solid ${loc.borderColor}`,
@@ -535,7 +582,7 @@ export default function AdminServices() {
                 {/* Actions */}
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => openAddService(loc.id)}
+                    onClick={() => openAddService(loc._id)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -622,7 +669,7 @@ export default function AdminServices() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {loc.services.map((svc) => (
                       <div
-                        key={svc.id}
+                        key={svc._id}
                         style={{
                           backgroundColor: "white",
                           border: `1px solid ${loc.borderColor}`,
@@ -679,7 +726,9 @@ export default function AdminServices() {
                         {/* Actions */}
                         <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
                           <button
-                            onClick={() => openEditService(loc.id, svc)}
+                            onClick={() => {
+                              openEditService(loc._id, svc)
+                            }}
                             style={{
                               width: "28px",
                               height: "28px",
@@ -696,7 +745,7 @@ export default function AdminServices() {
                             <Pencil size={12} />
                           </button>
                           <button
-                            onClick={() => deleteService(loc.id, svc)}
+                            onClick={() => deleteService(loc._id, svc)}
                             style={{
                               width: "28px",
                               height: "28px",
