@@ -119,51 +119,72 @@ export const deleteTown = async (province_id, district_id, town_id) => {
 };
 
 // Shop CRUD
-export const addShop = async (provinceIndex, districtIndex, townIndex, shopData) => {
-    const shopDoc = await getShopDocument();
-    if (!shopDoc.provinces[provinceIndex]?.districts[districtIndex]?.towns[townIndex]) {
+export const addShop = async (province_id, district_id, town_id, shopData) => {
+    const province = await Shop.findById(province_id);
+    if (!province) {
+        throw new Error('Province not found');
+    }
+    const district = province.districts.id(district_id);
+    if (!district) {
+        throw new Error('District not found');
+    }
+    const town = district.towns.id(town_id);
+    console.log(town)
+    if (!town) {
         throw new Error('Town not found');
     }
-
-    // Generate new shop ID
-    const allShops = shopDoc.provinces
-        .flatMap(p => p.districts)
-        .flatMap(d => d.towns)
-        .flatMap(t => t.shops);
-    const newId = allShops.reduce((max, shop) => Math.max(max, shop.id || 0), 0) + 1;
-
-    const newShop = { id: newId, ...shopData };
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex].shops.push(newShop);
-    await shopDoc.save();
-    return newShop;
+    town.shops.push(shopData)
+    return await province.save();
 };
 
-export const updateShop = async (provinceIndex, districtIndex, townIndex, shopIndex, shopData) => {
-    const shopDoc = await getShopDocument();
-    const shop = shopDoc.provinces[provinceIndex]?.districts[districtIndex]?.towns[townIndex]?.shops[shopIndex];
-
+export const updateShop = async (province_id, district_id, town_id, shop_id, shopData) => {
+    const province = await Shop.findById(province_id);
+    if (!province) {
+        throw new Error('Province not found');
+    }
+    const district = province.districts.id(district_id);
+    if (!district) {
+        throw new Error('District not found');
+    }
+    const town = district.towns.id(town_id);
+    if (!town) {
+        throw new Error('Town not found');
+    }
+    const shop = town.shops.id(shop_id);
     if (!shop) {
         throw new Error('Shop not found');
     }
-
-    // Keep the existing ID
-    const shopId = shop.id;
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex].shops[shopIndex] = {
-        id: shopId,
-        ...shopData
-    };
-
-    await shopDoc.save();
-    return shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex].shops[shopIndex];
+    shop.name = shopData.name;
+    shop.address = shopData.address;
+    shop.phone = shopData.phone;
+    shop.hours = shopData.hours;
+    shop.type = shopData.type;
+    return await province.save();
 };
 
-export const deleteShop = async (provinceIndex, districtIndex, townIndex, shopIndex) => {
-    const shopDoc = await getShopDocument();
-    if (!shopDoc.provinces[provinceIndex]?.districts[districtIndex]?.towns[townIndex]?.shops[shopIndex]) {
-        throw new Error('Shop not found');
+export const deleteShop = async (province_id, district_id, town_id, shop_id) => {
+    const result = await Shop.updateOne(
+        {
+            _id: province_id,
+            "districts._id": district_id,
+            "districts.towns._id": town_id
+        },
+        {
+            $pull: {
+                "districts.$[d].towns.$[t].shops": { _id: shop_id }
+            }
+        },
+        {
+            arrayFilters: [
+                { "d._id": district_id },
+                { "t._id": town_id }
+            ]
+        }
+    );
+    if (result.modifiedCount === 0) {
+        throw new Error("Province, District, Town or Shop not found");
     }
-    shopDoc.provinces[provinceIndex].districts[districtIndex].towns[townIndex].shops.splice(shopIndex, 1);
-    await shopDoc.save();
+    return { message: "Shop deleted successfully" };
 };
 
 // Get all provinces
@@ -174,7 +195,6 @@ export const getAllProvinces = async () => {
 export const getAllShops = async () => {
     // const shopDoc = await getShopDocument();
     const shopDoc = await Shop.find();
-    console.log(shopDoc)
     return shopDoc;
 };
 

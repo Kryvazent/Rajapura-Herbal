@@ -557,12 +557,14 @@ export default function AdminStores() {
     try {
       setLoading(true);
       if (modal?.kind === "addShop") {
+        console.log("Provinces : ", provinces);
+        console.log("561 ShopForm : ", shopForm);
         await axios.post(
           `${API_URL}/admin/add-shop`,
           {
-            provinceIndex: modal.provinceIndex,
-            districtIndex: modal.districtIndex,
-            townIndex: modal.townIndex,
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
             shopData: shopForm
           },
           { withCredentials: true }
@@ -571,10 +573,10 @@ export default function AdminStores() {
         await axios.put(
           `${API_URL}/admin/update-shop`,
           {
-            provinceIndex: modal.provinceIndex,
-            districtIndex: modal.districtIndex,
-            townIndex: modal.townIndex,
-            shopIndex: modal.shopIndex,
+            province_id: provinces[modal.provinceIndex]._id,
+            district_id: provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
+            town_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex]._id,
+            shop_id: provinces[modal.provinceIndex].districts[modal.districtIndex].towns[modal.townIndex].shops[modal.shopIndex]._id,
             shopData: shopForm
           },
           { withCredentials: true }
@@ -597,10 +599,15 @@ export default function AdminStores() {
           setLoading(true);
           await axios.delete(`${API_URL}/admin/delete-shop`, {
             data: {
-              provinceIndex: pi,
-              districtIndex: di,
-              townIndex: ti,
-              shopIndex: si
+              // provinceIndex: pi,
+              // districtIndex: di,
+              // townIndex: ti,
+              // shopIndex: si
+
+              province_id: provinces[pi]._id,
+              district_id: provinces[pi].districts[di]._id,
+              town_id: provinces[pi].districts[di].towns[ti]._id,
+              shop_id: provinces[pi].districts[di].towns[ti].shops[si]._id,
             },
             withCredentials: true
           });

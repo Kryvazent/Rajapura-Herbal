@@ -93,7 +93,6 @@ export const updateTown = async (req, res) => {
 };
 
 export const deleteTown = async (req, res) => {
-    console.log(req.body)
     try {
         const { province_id, district_id, town_id } = req.body;
         await shopService.deleteTown(province_id, district_id, town_id);
@@ -107,8 +106,8 @@ export const deleteTown = async (req, res) => {
 // Shop CRUD
 export const addShop = async (req, res) => {
     try {
-        const { provinceIndex, districtIndex, townIndex, shopData } = req.body;
-        const shop = await shopService.addShop(provinceIndex, districtIndex, townIndex, shopData);
+        const { province_id, district_id, town_id, shopData } = req.body;
+        const shop = await shopService.addShop(province_id, district_id, town_id, shopData);
         res.status(201).json(shop);
     } catch (error) {
         console.error('Error adding shop:', error);
@@ -118,8 +117,8 @@ export const addShop = async (req, res) => {
 
 export const updateShop = async (req, res) => {
     try {
-        const { provinceIndex, districtIndex, townIndex, shopIndex, shopData } = req.body;
-        const updatedShop = await shopService.updateShop(provinceIndex, districtIndex, townIndex, shopIndex, shopData);
+        const { province_id, district_id, town_id, shop_id, shopData } = req.body;
+        const updatedShop = await shopService.updateShop(province_id, district_id, town_id, shop_id, shopData);
         res.status(200).json(updatedShop);
     } catch (error) {
         console.error('Error updating shop:', error);
@@ -128,9 +127,10 @@ export const updateShop = async (req, res) => {
 };
 
 export const deleteShop = async (req, res) => {
+    console.log(req.body)
     try {
-        const { provinceIndex, districtIndex, townIndex, shopIndex } = req.body;
-        await shopService.deleteShop(provinceIndex, districtIndex, townIndex, shopIndex);
+        const { province_id, district_id, town_id, shop_id } = req.body;
+        await shopService.deleteShop(province_id, district_id, town_id, shop_id);
         res.status(200).json({ message: 'Shop deleted successfully' });
     } catch (error) {
         console.error('Error deleting shop:', error);
