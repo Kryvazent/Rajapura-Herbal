@@ -1,6 +1,5 @@
 import Shop from "../models/Shop.js";
 
-// Helper function to get the shop document
 const getShopDocument = async () => {
     let shopDoc = await Shop.findOne({});
     if (!shopDoc) {
@@ -187,31 +186,26 @@ export const deleteShop = async (province_id, district_id, town_id, shop_id) => 
     return { message: "Shop deleted successfully" };
 };
 
-// Get all provinces
 export const getAllProvinces = async () => {
     return await Shop.find();
 };
 
 export const getAllShops = async () => {
-    // const shopDoc = await getShopDocument();
     const shopDoc = await Shop.find();
     return shopDoc;
 };
 
-// Wizard - Create shop with nested structures
 export const addShopWizard = async (wizardData) => {
     const shopDoc = await getShopDocument();
 
     let province;
     let provinceIndex;
 
-    // Handle Province
     if (wizardData.provMode === 'existing') {
         provinceIndex = shopDoc.provinces.findIndex(p => p.name === wizardData.selectedProvName);
         if (provinceIndex === -1) throw new Error('Province not found');
         province = shopDoc.provinces[provinceIndex];
     } else {
-        // Create new province
         const newProvince = {
             name: wizardData.newProvName,
             icon: wizardData.newProvIcon,
@@ -225,13 +219,11 @@ export const addShopWizard = async (wizardData) => {
     let district;
     let districtIndex;
 
-    // Handle District
     if (wizardData.distMode === 'existing') {
         districtIndex = province.districts.findIndex(d => d.name === wizardData.selectedDistName);
         if (districtIndex === -1) throw new Error('District not found');
         district = province.districts[districtIndex];
     } else {
-        // Create new district
         const newDistrict = {
             name: wizardData.newDistName,
             towns: []
@@ -244,13 +236,11 @@ export const addShopWizard = async (wizardData) => {
     let town;
     let townIndex;
 
-    // Handle Town
     if (wizardData.townMode === 'existing') {
         townIndex = district.towns.findIndex(t => t.name === wizardData.selectedTownName);
         if (townIndex === -1) throw new Error('Town not found');
         town = district.towns[townIndex];
     } else {
-        // Create new town
         const newTown = {
             name: wizardData.newTownName,
             shops: []
@@ -260,14 +250,12 @@ export const addShopWizard = async (wizardData) => {
         town = district.towns[townIndex];
     }
 
-    // Generate new shop ID
     const allShops = shopDoc.provinces
         .flatMap(p => p.districts)
         .flatMap(d => d.towns)
         .flatMap(t => t.shops);
     const newId = allShops.reduce((max, shop) => Math.max(max, shop.id || 0), 0) + 1;
 
-    // Add shop
     const newShop = {
         id: newId,
         ...wizardData.shopForm

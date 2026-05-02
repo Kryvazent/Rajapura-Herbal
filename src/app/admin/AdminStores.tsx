@@ -557,8 +557,6 @@ export default function AdminStores() {
     try {
       setLoading(true);
       if (modal?.kind === "addShop") {
-        console.log("Provinces : ", provinces);
-        console.log("561 ShopForm : ", shopForm);
         await axios.post(
           `${API_URL}/admin/add-shop`,
           {
@@ -599,11 +597,6 @@ export default function AdminStores() {
           setLoading(true);
           await axios.delete(`${API_URL}/admin/delete-shop`, {
             data: {
-              // provinceIndex: pi,
-              // districtIndex: di,
-              // townIndex: ti,
-              // shopIndex: si
-
               province_id: provinces[pi]._id,
               district_id: provinces[pi].districts[di]._id,
               town_id: provinces[pi].districts[di].towns[ti]._id,
