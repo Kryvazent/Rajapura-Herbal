@@ -312,9 +312,9 @@ export default function AdminServices() {
   // Service modal
   const [svcModal, setSvcModal] = useState<null | {
     mode: "add" | "edit";
-    _id: String;
+    location_id: String;
     data: Omit<ServiceItem, "id">;
-    serviceId?: number;
+    service_id?: number;
   }>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<{ name: string; action: () => void } | null>(null);
@@ -395,12 +395,13 @@ export default function AdminServices() {
   };
 
   // ── Service CRUD ───────────────────────────────────────────────────────────
-  const openAddService = (_id: String) =>
-    setSvcModal({ mode: "add", _id, data: blankService() });
+  const openAddService = (location_id: String) =>
+    setSvcModal({ mode: "add", location_id, data: blankService() });
 
-  const openEditService = (_id: String, svc: ServiceItem) => {
+  const openEditService = (location_id: String, svc: ServiceItem) => {
     const { id, ...rest } = svc;
-    setSvcModal({ mode: "edit", _id, data: rest, serviceId: id });
+    console.log("403 : ", svc)
+    setSvcModal({ mode: "edit", location_id, data: rest, service_id: svc._id });
   };
 
   const saveService = async () => {
@@ -408,7 +409,7 @@ export default function AdminServices() {
 
     try {
       if (svcModal.mode === "add") {
-        console.log(svcModal)
+        console.log("411 : ", svcModal)
         await axios.post(`${API_URL}/admin/services/item`, {
           _id: svcModal._id,
           serviceItem: svcModal.data
@@ -416,9 +417,10 @@ export default function AdminServices() {
           withCredentials: true
         });
       } else {
+        console.log("419 : ", svcModal)
         await axios.put(`${API_URL}/admin/services/item`, {
-          locationId: svcModal._id,
-          serviceId: svcModal.serviceId,
+          location_id: svcModal.location_id,
+          service_id: svcModal.service_id,
           serviceItem: svcModal.data
         }, {
           withCredentials: true
@@ -431,13 +433,13 @@ export default function AdminServices() {
     }
   };
 
-  const deleteService = (locationId: number, svc: ServiceItem) => {
+  const deleteService = (location_id: String, svc: ServiceItem) => {
     setDeleteTarget({
       name: svc.name,
       action: async () => {
         try {
           await axios.delete(`${API_URL}/admin/services/item`, {
-            data: { locationId, serviceId: svc.id },
+            data: { location_id, service_id: svc._id },
             withCredentials: true
           });
           fetchServiceLocations();
@@ -727,7 +729,10 @@ export default function AdminServices() {
                         {/* Actions */}
                         <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
                           <button
-                            onClick={() => openEditService(loc.id, svc)}
+                            onClick={() => {
+                              openEditService(loc._id, svc),
+                                console.log("734 : ", svc)
+                            }}
                             style={{
                               width: "28px",
                               height: "28px",
@@ -744,7 +749,7 @@ export default function AdminServices() {
                             <Pencil size={12} />
                           </button>
                           <button
-                            onClick={() => deleteService(loc.id, svc)}
+                            onClick={() => deleteService(loc._id, svc)}
                             style={{
                               width: "28px",
                               height: "28px",

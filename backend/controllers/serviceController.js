@@ -52,8 +52,8 @@ export const addServiceItem = async (req, res) => {
 
 export const updateServiceItem = async (req, res) => {
     try {
-        const { locationId, serviceId, serviceItem } = req.body;
-        const updatedService = await serviceService.updateServiceItem(locationId, serviceId, serviceItem);
+        const { location_id, service_id, serviceItem } = req.body;
+        const updatedService = await serviceService.updateServiceItem(location_id, service_id, serviceItem);
         res.status(200).json(updatedService);
     } catch (error) {
         res.status(500).json({ message: 'Error updating service item', error: error.message });
@@ -61,9 +61,10 @@ export const updateServiceItem = async (req, res) => {
 };
 
 export const deleteServiceItem = async (req, res) => {
+    console.log(req.body)
     try {
-        const { locationId, serviceId } = req.body;
-        const updatedService = await serviceService.deleteServiceItem(locationId, serviceId);
+        const { location_id, service_id } = req.body;
+        const updatedService = await serviceService.deleteServiceItem(location_id, service_id);
         res.status(200).json(updatedService);
     } catch (error) {
         res.status(500).json({ message: 'Error deleting service item', error: error.message });

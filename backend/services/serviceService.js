@@ -53,37 +53,35 @@ export const addServiceItem = async (_id, serviceItem) => {
     return await location.save();
 };
 
-export const updateServiceItem = async (locationId, serviceId, serviceItem) => {
-    const location = await service.findById(locationId);
-
+export const updateServiceItem = async (location_id, service_id, serviceItem) => {
+    const location = await service.findById(location_id);
     if (!location) {
         throw new Error('Service location not found');
     }
-
-    const serviceIndex = location.services.findIndex(s => s.id === serviceId);
-
-    if (serviceIndex === -1) {
-        throw new Error('Service item not found');
+    const serviceDoc = location.services.id(service_id);
+    if (!serviceDoc) {
+        throw new Error('Service not found');
     }
-
-    location.services[serviceIndex] = {
-        id: serviceId,
-        name: serviceItem.name,
-        description: serviceItem.description || '',
-        duration: serviceItem.duration || '',
-        icon: serviceItem.icon || '🌿'
-    };
-
-    return await location.save();
+    Object.assign(serviceDoc, serviceItem);
+    await location.save();
+    return serviceDoc;
 };
 
-export const deleteServiceItem = async (locationId, serviceId) => {
-    const location = await service.findById(locationId);
+export const deleteServiceItem = async (location_id, service_id) => {
+    const result = await service.updateOne(
+        {
+            _id: location_id,
+            "services._id": service_id
+        },
+        {
+            $pull: {
+                services: { _id: service_id }
+            }
+        }
+    );
 
-    if (!location) {
-        throw new Error('Service location not found');
+    if (result.modifiedCount === 0) {
+        throw new Error("Location or service not found");
     }
-
-    location.services = location.services.filter(s => s.id !== serviceId);
-    return await location.save();
+    return { message: "Service deleted successfully" };
 };
