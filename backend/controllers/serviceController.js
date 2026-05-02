@@ -61,7 +61,6 @@ export const updateServiceItem = async (req, res) => {
 };
 
 export const deleteServiceItem = async (req, res) => {
-    console.log(req.body)
     try {
         const { location_id, service_id } = req.body;
         const updatedService = await serviceService.deleteServiceItem(location_id, service_id);

@@ -128,7 +128,6 @@ export const addShop = async (province_id, district_id, town_id, shopData) => {
         throw new Error('District not found');
     }
     const town = district.towns.id(town_id);
-    console.log(town)
     if (!town) {
         throw new Error('Town not found');
     }
@@ -196,76 +195,58 @@ export const getAllShops = async () => {
 };
 
 export const addShopWizard = async (wizardData) => {
-    const shopDoc = await getShopDocument();
+    // console.log("199 : ", wizardData);
+    const {
+        provMode,
+        selectedProvId,
+        newProvName,
+        newProvIcon,
+        distMode,
+        selectedDistId,
+        newDistName,
+        townMode,
+        selectedTownId,
+        newTownName,
+        shopForm
+    } = wizardData;
 
     let province;
-    let provinceIndex;
-
-    if (wizardData.provMode === 'existing') {
-        provinceIndex = shopDoc.provinces.findIndex(p => p.name === wizardData.selectedProvName);
-        if (provinceIndex === -1) throw new Error('Province not found');
-        province = shopDoc.provinces[provinceIndex];
+    if (provMode === 'existing') {
+        province = await Shop.findById(selectedProvId);
+        if (!province) throw new Error('Province not found');
     } else {
-        const newProvince = {
-            name: wizardData.newProvName,
-            icon: wizardData.newProvIcon,
+        province = new Shop({
+            name: newProvName,
+            icon: newProvIcon,
             districts: []
-        };
-        shopDoc.provinces.push(newProvince);
-        provinceIndex = shopDoc.provinces.length - 1;
-        province = shopDoc.provinces[provinceIndex];
+        });
     }
-
     let district;
-    let districtIndex;
-
-    if (wizardData.distMode === 'existing') {
-        districtIndex = province.districts.findIndex(d => d.name === wizardData.selectedDistName);
-        if (districtIndex === -1) throw new Error('District not found');
-        district = province.districts[districtIndex];
+    if (distMode === 'existing') {
+        district = province.districts.id(selectedDistId);
+        if (!district) throw new Error('District not found');
     } else {
-        const newDistrict = {
-            name: wizardData.newDistName,
+        province.districts.push({
+            name: newDistName,
             towns: []
-        };
-        province.districts.push(newDistrict);
-        districtIndex = province.districts.length - 1;
-        district = province.districts[districtIndex];
+        });
+        district = province.districts[province.districts.length - 1];
     }
-
     let town;
-    let townIndex;
-
-    if (wizardData.townMode === 'existing') {
-        townIndex = district.towns.findIndex(t => t.name === wizardData.selectedTownName);
-        if (townIndex === -1) throw new Error('Town not found');
-        town = district.towns[townIndex];
+    if (townMode === 'existing') {
+        town = district.towns.id(selectedTownId);
+        if (!town) throw new Error('Town not found');
     } else {
-        const newTown = {
-            name: wizardData.newTownName,
+        district.towns.push({
+            name: newTownName,
             shops: []
-        };
-        district.towns.push(newTown);
-        townIndex = district.towns.length - 1;
-        town = district.towns[townIndex];
+        });
+        town = district.towns[district.towns.length - 1];
     }
-
-    const allShops = shopDoc.provinces
-        .flatMap(p => p.districts)
-        .flatMap(d => d.towns)
-        .flatMap(t => t.shops);
-    const newId = allShops.reduce((max, shop) => Math.max(max, shop.id || 0), 0) + 1;
-
-    const newShop = {
-        id: newId,
-        ...wizardData.shopForm
-    };
-    town.shops.push(newShop);
-
-    await shopDoc.save();
-
+    town.shops.push(shopForm);
+    await province.save();
     return {
-        shop: newShop,
-        provinces: shopDoc.provinces
+        shop: town.shops[town.shops.length - 1],
+        province
     };
 };

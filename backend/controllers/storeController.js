@@ -151,6 +151,7 @@ export const getAllProvinces = async (req, res) => {
 
 // Wizard - Add shop with nested creation
 export const addShopWizard = async (req, res) => {
+    // console.log(req.body)
     try {
         const { wizardData } = req.body;
         const result = await shopService.addShopWizard(wizardData);

@@ -270,14 +270,14 @@ const wizInputStyle: React.CSSProperties = {
 interface WizardState {
   step: 1 | 2 | 3 | 4;
   provMode: "existing" | "new";
-  selectedProvName: string;
+  selectedProvId: string;
   newProvName: string;
   newProvIcon: string;
   distMode: "existing" | "new";
-  selectedDistName: string;
+  selectedDistId: string;
   newDistName: string;
   townMode: "existing" | "new";
-  selectedTownName: string;
+  selectedTownId: string;
   newTownName: string;
   shopForm: Omit<Shop, "id">;
 }
@@ -408,7 +408,7 @@ export default function AdminStores() {
   };
 
   const openEditDistrict = (pi: number, di: number) => {
-    setDistForm({ _id: provinces[pi]._id, name: provinces[pi].districts[di].name });
+    setDistForm({ _id: provinces[pi].districts[di]._id, name: provinces[pi].districts[di].name });
     setModal({ kind: "editDistrict", provinceIndex: pi, districtIndex: di });
   };
 
@@ -620,33 +620,33 @@ export default function AdminStores() {
     setWizard({
       step: 1,
       provMode: provinces.length > 0 ? "existing" : "new",
-      selectedProvName: provinces[0]?.name ?? "",
+      selectedProvId: provinces[0]?._id ?? "",
       newProvName: "",
       newProvIcon: "🌿",
       distMode: "existing",
-      selectedDistName: "",
+      selectedDistId: "",
       newDistName: "",
       townMode: "existing",
-      selectedTownName: "",
+      selectedTownId: "",
       newTownName: "",
       shopForm: { name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" },
     });
   };
 
   const wizardProvince = wizard?.provMode === "existing"
-    ? provinces.find((p) => p.name === wizard.selectedProvName) ?? null
+    ? provinces.find((p) => p._id === wizard.selectedProvId) ?? null
     : null;
 
   const wizardDistrict = wizardProvince && wizard?.distMode === "existing"
-    ? wizardProvince.districts.find((d) => d.name === wizard.selectedDistName) ?? null
+    ? wizardProvince.districts.find((d) => d._id === wizard.selectedDistId) ?? null
     : null;
 
   const canAdvance = (): boolean => {
     if (!wizard) return false;
     switch (wizard.step) {
-      case 1: return wizard.provMode === "existing" ? !!wizard.selectedProvName : !!wizard.newProvName.trim();
-      case 2: return wizard.distMode === "existing" ? !!wizard.selectedDistName : !!wizard.newDistName.trim();
-      case 3: return wizard.townMode === "existing" ? !!wizard.selectedTownName : !!wizard.newTownName.trim();
+      case 1: return wizard.provMode === "existing" ? !!wizard.selectedProvId : !!wizard.newProvName.trim();
+      case 2: return wizard.distMode === "existing" ? !!wizard.selectedDistId : !!wizard.newDistName.trim();
+      case 3: return wizard.townMode === "existing" ? !!wizard.selectedTownId : !!wizard.newTownName.trim();
       case 4: return !!wizard.shopForm.name.trim() && !!wizard.shopForm.address.trim();
     }
   };
@@ -657,19 +657,20 @@ export default function AdminStores() {
     if (wizard.step === 4) {
       try {
         setLoading(true);
+        console.log("660 : ", wizard)
         await axios.post(
           `${API_URL}/admin/add-shop-wizard`,
           {
             wizardData: {
               provMode: wizard.provMode,
-              selectedProvName: wizard.selectedProvName,
+              selectedProvId: wizard.selectedProvId,
               newProvName: wizard.newProvName,
               newProvIcon: wizard.newProvIcon,
               distMode: wizard.distMode,
-              selectedDistName: wizard.selectedDistName,
+              selectedDistId: wizard.selectedDistId,
               newDistName: wizard.newDistName,
               townMode: wizard.townMode,
-              selectedTownName: wizard.selectedTownName,
+              selectedTownId: wizard.selectedTownId,
               newTownName: wizard.newTownName,
               shopForm: wizard.shopForm
             }
@@ -686,16 +687,16 @@ export default function AdminStores() {
     } else {
       const next = { ...wizard, step: (wizard.step + 1) as WizardState["step"] };
       if (wizard.step === 1) {
-        const prov = wizard.provMode === "existing" ? provinces.find((p) => p.name === wizard.selectedProvName) : null;
+        const prov = wizard.provMode === "existing" ? provinces.find((p) => p._id === wizard.selectedProvId) : null;
         next.distMode = prov && prov.districts.length > 0 ? "existing" : "new";
-        next.selectedDistName = prov?.districts[0]?.name ?? "";
+        next.selectedDistId = prov?.districts[0]?._id ?? "";
         next.newDistName = "";
       }
       if (wizard.step === 2) {
         const prov = wizardProvince;
-        const dist = prov?.districts.find((d) => d.name === wizard.selectedDistName);
+        const dist = prov?.districts.find((d) => d._id === wizard.selectedDistId);
         next.townMode = dist && dist.towns.length > 0 ? "existing" : "new";
-        next.selectedTownName = dist?.towns[0]?.name ?? "";
+        next.selectedTownId = dist?.towns[0]?._id ?? "";
         next.newTownName = "";
       }
       setWizard(next);
@@ -1029,14 +1030,14 @@ export default function AdminStores() {
                   {provinces.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {provinces.map((p) => (
-                        <button key={p.name} type="button" onClick={() => setWizard({ ...wizard, provMode: "existing", selectedProvName: p.name })} style={pillBtn(wizard.provMode === "existing" && wizard.selectedProvName === p.name)}>
+                        <button key={p.name} type="button" onClick={() => setWizard({ ...wizard, provMode: "existing", selectedProvId: p._id })} style={pillBtn(wizard.provMode === "existing" && wizard.selectedProvId === p._id)}>
                           {p.icon} {p.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, provMode: "new" })} style={newPillBtn(wizard.provMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, provMode: "new", selectedProvId: "" })} style={newPillBtn(wizard.provMode === "new")}>
                       <Plus size={13} /> Create New Province
                     </button>
                     {wizard.provMode === "new" && (
@@ -1057,19 +1058,22 @@ export default function AdminStores() {
               {wizard.step === 2 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
-                    Select a district in <strong>{wizard.provMode === "existing" ? wizard.selectedProvName : wizard.newProvName}</strong>, or create a new one.
+                    Select a district in <strong>{wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)?.name ?? wizard.selectedProvId
+                      : wizard.newProvName}</strong>, or create a new one.
                   </p>
+                  {console.log("1065 : ", provinces)}
                   {wizardProvince && wizardProvince.districts.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {wizardProvince.districts.map((d) => (
-                        <button key={d.name} type="button" onClick={() => setWizard({ ...wizard, distMode: "existing", selectedDistName: d.name })} style={pillBtn(wizard.distMode === "existing" && wizard.selectedDistName === d.name)}>
+                        <button key={d.name} type="button" onClick={() => setWizard({ ...wizard, distMode: "existing", selectedDistId: d._id })} style={pillBtn(wizard.distMode === "existing" && wizard.selectedDistId === d._id)}>
                           {d.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, distMode: "new", selectedDistName: "" })} style={newPillBtn(wizard.distMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, distMode: "new", selectedDistId: "" })} style={newPillBtn(wizard.distMode === "new")}>
                       <Plus size={13} /> Create New District
                     </button>
                     {wizard.distMode === "new" && (
@@ -1083,19 +1087,21 @@ export default function AdminStores() {
               {wizard.step === 3 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
-                    Select a town in <strong>{wizard.distMode === "existing" ? wizard.selectedDistName : wizard.newDistName}</strong>, or create a new one.
+                    Select a town in <strong>{wizard.distMode === "existing"
+                      ? wizardProvince?.districts.find(d => d._id === wizard.selectedDistId)?.name ?? wizard.selectedDistId
+                      : wizard.newDistName}</strong>, or create a new one.
                   </p>
                   {wizardDistrict && wizardDistrict.towns.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {wizardDistrict.towns.map((t) => (
-                        <button key={t.name} type="button" onClick={() => setWizard({ ...wizard, townMode: "existing", selectedTownName: t.name })} style={pillBtn(wizard.townMode === "existing" && wizard.selectedTownName === t.name)}>
+                        <button key={t.name} type="button" onClick={() => setWizard({ ...wizard, townMode: "existing", selectedTownId: t._id })} style={pillBtn(wizard.townMode === "existing" && wizard.selectedTownId === t._id)}>
                           {t.name}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ borderTop: "1px dashed rgba(45,80,22,0.2)", paddingTop: "14px" }}>
-                    <button type="button" onClick={() => setWizard({ ...wizard, townMode: "new", selectedTownName: "" })} style={newPillBtn(wizard.townMode === "new")}>
+                    <button type="button" onClick={() => setWizard({ ...wizard, townMode: "new", selectedTownId: "" })} style={newPillBtn(wizard.townMode === "new")}>
                       <Plus size={13} /> Create New Town
                     </button>
                     {wizard.townMode === "new" && (
@@ -1111,11 +1117,17 @@ export default function AdminStores() {
                   {/* Path summary */}
                   <div style={{ backgroundColor: "rgba(45,80,22,0.06)", border: "1px solid rgba(45,80,22,0.15)", borderRadius: "10px", padding: "8px 14px", fontSize: "0.78rem", color: "#4A7C23", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                     <MapPin size={12} />
-                    {wizard.provMode === "existing" ? wizard.selectedProvName : `✦ ${wizard.newProvName}`}
+                    {wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)?.name ?? wizard.selectedProvId
+                      : `✦ ${wizard.newProvName}`}
                     {" → "}
-                    {wizard.distMode === "existing" ? wizard.selectedDistName : `✦ ${wizard.newDistName}`}
+                    {wizard.distMode === "existing"
+                      ? wizardProvince?.districts.find(d => d._id === wizard.selectedDistId)?.name ?? wizard.selectedDistId
+                      : `✦ ${wizard.newDistName}`}
                     {" → "}
-                    {wizard.townMode === "existing" ? wizard.selectedTownName : `✦ ${wizard.newTownName}`}
+                    {wizard.townMode === "existing"
+                      ? wizardDistrict?.towns.find(t => t._id === wizard.selectedTownId)?.name ?? wizard.selectedTownId
+                      : `✦ ${wizard.newTownName}`}
                   </div>
                   <InputRow label="Shop Name" value={wizard.shopForm.name} onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, name: v } })} placeholder="e.g. Rajapura Herbal Centre – Colombo" required />
                   <InputRow label="Address" value={wizard.shopForm.address} onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, address: v } })} placeholder="Full street address" required />
@@ -1138,7 +1150,25 @@ export default function AdminStores() {
             {/* Wizard footer */}
             <div style={{ padding: "14px 28px", borderTop: "1px solid rgba(45,80,22,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(45,80,22,0.02)" }}>
               <button
-                onClick={() => wizard.step === 1 ? setWizard(null) : setWizard({ ...wizard, step: (wizard.step - 1) as WizardState["step"] })}
+                onClick={() => {
+                  if (wizard.step === 1) {
+                    setWizard(null);
+                  } else if (wizard.step === 2) {
+                    setWizard({ ...wizard, step: 1 });
+                  } else if (wizard.step === 3) {
+                    const prov = wizard.provMode === "existing"
+                      ? provinces.find(p => p._id === wizard.selectedProvId)
+                      : null;
+                    setWizard({
+                      ...wizard,
+                      step: 2,
+                      distMode: prov && prov.districts.length > 0 ? "existing" : "new",
+                      selectedDistId: wizard.selectedDistId || prov?.districts[0]?._id || "",
+                    });
+                  } else {
+                    setWizard({ ...wizard, step: (wizard.step - 1) as WizardState["step"] });
+                  }
+                }}
                 disabled={loading}
                 style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "50px", border: "1px solid rgba(45,80,22,0.2)", backgroundColor: "transparent", color: "#6B4423", cursor: loading ? "not-allowed" : "pointer", fontSize: "0.85rem" }}
               >
@@ -1170,7 +1200,7 @@ export default function AdminStores() {
             </>
           )}
           {(modal.kind === "addDistrict" || modal.kind === "editDistrict") && (
-            <InputRow label="District Name" value={distForm.name} onChange={(v) => setDistForm({ name: v })} placeholder="e.g. Colombo" required />
+            <InputRow label="District Name" value={distForm.name} onChange={(v) => setDistForm((prev) => ({ ...prev, name: v }))} placeholder="e.g. Colombo" required />
           )}
           {(modal.kind === "addTown" || modal.kind === "editTown") && (
             <InputRow label="Town Name" value={townForm.name} onChange={(v) => setTownForm({ name: v })} placeholder="e.g. Nugegoda" required />
