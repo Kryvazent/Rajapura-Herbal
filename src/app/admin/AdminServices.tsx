@@ -400,7 +400,6 @@ export default function AdminServices() {
 
   const openEditService = (location_id: String, svc: ServiceItem) => {
     const { id, ...rest } = svc;
-    console.log("403 : ", svc)
     setSvcModal({ mode: "edit", location_id, data: rest, service_id: svc._id });
   };
 
@@ -409,7 +408,6 @@ export default function AdminServices() {
 
     try {
       if (svcModal.mode === "add") {
-        console.log("411 : ", svcModal)
         await axios.post(`${API_URL}/admin/services/item`, {
           location_id: svcModal.location_id,
           serviceItem: svcModal.data
@@ -417,7 +415,6 @@ export default function AdminServices() {
           withCredentials: true
         });
       } else {
-        console.log("419 : ", svcModal)
         await axios.put(`${API_URL}/admin/services/item`, {
           location_id: svcModal.location_id,
           service_id: svcModal.service_id,
@@ -730,8 +727,7 @@ export default function AdminServices() {
                         <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
                           <button
                             onClick={() => {
-                              openEditService(loc._id, svc),
-                                console.log("734 : ", svc)
+                              openEditService(loc._id, svc)
                             }}
                             style={{
                               width: "28px",

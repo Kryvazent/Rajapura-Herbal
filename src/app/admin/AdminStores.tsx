@@ -322,7 +322,6 @@ export default function AdminStores() {
       const res = await axios.get(`${API_URL}/admin/provinces`, {
         withCredentials: true
       });
-      // console.log("325 : ",res.data)
       setProvincesState(res.data || []);
     } catch (error) {
       console.error("Error fetching provinces:", error);
@@ -657,7 +656,6 @@ export default function AdminStores() {
     if (wizard.step === 4) {
       try {
         setLoading(true);
-        console.log("660 : ", wizard)
         await axios.post(
           `${API_URL}/admin/add-shop-wizard`,
           {
@@ -1062,7 +1060,6 @@ export default function AdminStores() {
                       ? provinces.find(p => p._id === wizard.selectedProvId)?.name ?? wizard.selectedProvId
                       : wizard.newProvName}</strong>, or create a new one.
                   </p>
-                  {console.log("1065 : ", provinces)}
                   {wizardProvince && wizardProvince.districts.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                       {wizardProvince.districts.map((d) => (
