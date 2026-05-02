@@ -411,7 +411,7 @@ export default function AdminServices() {
       if (svcModal.mode === "add") {
         console.log("411 : ", svcModal)
         await axios.post(`${API_URL}/admin/services/item`, {
-          _id: svcModal._id,
+          location_id: svcModal.location_id,
           serviceItem: svcModal.data
         }, {
           withCredentials: true

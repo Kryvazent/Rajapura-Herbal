@@ -41,9 +41,10 @@ export const deleteService = async (req, res) => {
 };
 
 export const addServiceItem = async (req, res) => {
+    console.log(req.body)
     try {
-        const { _id, serviceItem } = req.body;
-        const updatedService = await serviceService.addServiceItem(_id, serviceItem);
+        const { location_id, serviceItem } = req.body;
+        const updatedService = await serviceService.addServiceItem(location_id, serviceItem);
         res.status(200).json(updatedService);
     } catch (error) {
         res.status(500).json({ message: 'Error adding service item', error: error.message });

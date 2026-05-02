@@ -44,8 +44,8 @@ export const deleteService = async (_id) => {
     return deletedService;
 };
 
-export const addServiceItem = async (_id, serviceItem) => {
-    const location = await service.findById(_id);
+export const addServiceItem = async (location_id, serviceItem) => {
+    const location = await service.findOne({ _id: location_id });
     if (!location) {
         throw new Error('Service location not found');
     }
