@@ -169,7 +169,7 @@ function Modal({
 }
 
 // ─── DeleteConfirm ────────────────────────────────────────────────────────────
-function DeleteConfirm({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
+function DeleteConfirm({ name, onConfirm, onCancel, getComplete }: { name: string; onConfirm: () => void; onCancel: () => void; getComplete: boolean }) {
   return (
     <div
       style={{
@@ -216,37 +216,45 @@ function DeleteConfirm({ name, onConfirm, onCancel }: { name: string; onConfirm:
           Delete <strong>"{name}"</strong>? This action cannot be undone.
         </p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "9px 20px",
-              borderRadius: "50px",
-              border: "1px solid rgba(45,80,22,0.2)",
-              backgroundColor: "transparent",
-              color: "#6B4423",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: "9px 20px",
-              borderRadius: "50px",
-              border: "none",
-              backgroundColor: "#D4183D",
-              color: "#FAF6EE",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <Trash2 size={13} /> Delete
-          </button>
+          {getComplete == true ?
+            <div className="flex gap-4">
+              <button
+                onClick={onCancel}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: "50px",
+                  border: "1px solid rgba(45,80,22,0.2)",
+                  backgroundColor: "transparent",
+                  color: "#6B4423",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: "50px",
+                  border: "none",
+                  backgroundColor: "#D4183D",
+                  color: "#FAF6EE",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+            </div>
+            :
+            <div>
+              Deleting...
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -289,6 +297,8 @@ export default function AdminStores() {
   const [openDistricts, setOpenDistricts] = useState<Set<string>>(new Set());
   const [openTowns, setOpenTowns] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [completing, setcompleting] = useState(false);
+
 
   type ModalType =
     | { kind: "addProvince" }
@@ -385,6 +395,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
+          setcompleting(false)
           await axios.delete(`${API_URL}/admin/delete-province`, {
             data: { _id: provinces[i]._id },
             withCredentials: true
@@ -395,6 +406,7 @@ export default function AdminStores() {
           console.error("Error deleting province:", error);
         } finally {
           setLoading(false);
+          setcompleting(true)
         }
       }
     });
@@ -451,6 +463,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
+          setcompleting(false);
           await axios.delete(`${API_URL}/admin/delete-district`, {
             data: { province_id: provinces[pi]._id, district_id: provinces[pi].districts[di]._id },
             withCredentials: true
@@ -461,6 +474,7 @@ export default function AdminStores() {
           console.error("Error deleting district:", error);
         } finally {
           setLoading(false);
+          setcompleting(true);
         }
       }
     });
@@ -519,6 +533,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
+          setcompleting(false);
           await axios.delete(`${API_URL}/admin/delete-town`, {
             data: {
               province_id: provinces[pi]._id,
@@ -533,6 +548,7 @@ export default function AdminStores() {
           console.error("Error deleting town:", error);
         } finally {
           setLoading(false);
+          setcompleting(true);
         }
       }
     });
@@ -594,6 +610,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
+          setcompleting(false);
           await axios.delete(`${API_URL}/admin/delete-shop`, {
             data: {
               province_id: provinces[pi]._id,
@@ -609,6 +626,7 @@ export default function AdminStores() {
           console.error("Error deleting shop:", error);
         } finally {
           setLoading(false);
+          setcompleting(true);
         }
       }
     });
@@ -781,6 +799,63 @@ export default function AdminStores() {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
         <p style={{ color: "#2D5016", fontSize: "1rem" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backdropFilter: "blur(4px)",
+        zIndex: 9999
+      }}>
+        <div style={{
+          backgroundColor: "#fff",
+          borderRadius: "16px",
+          padding: "40px 60px",
+          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "20px"
+        }}>
+          {/* Spinner */}
+          <div style={{
+            width: "50px",
+            height: "50px",
+            border: "4px solid #E8F5E1",
+            borderTop: "4px solid #2D5016",
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite"
+          }}></div>
+
+          {/* Text */}
+          <p style={{
+            color: "#2D5016",
+            fontSize: "1.1rem",
+            fontWeight: "500",
+            margin: 0
+          }}>
+            Loading...
+          </p>
+        </div>
+
+        {/* Add keyframe animation */}
+        <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
       </div>
     );
   }
@@ -1220,7 +1295,7 @@ export default function AdminStores() {
 
       {/* Delete Confirm */}
       {deleteTarget && (
-        <DeleteConfirm name={deleteTarget.name} onConfirm={deleteTarget.action} onCancel={() => setDeleteTarget(null)} />
+        <DeleteConfirm name={deleteTarget.name} onConfirm={deleteTarget.action} onCancel={() => setDeleteTarget(null)} getComplete={completing} />
       )}
     </div>
   );
