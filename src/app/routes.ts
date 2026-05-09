@@ -13,8 +13,10 @@ import AdminProducts from "./admin/AdminProducts";
 // import AdminLayout from "./admin/AdminLayout";
 // import AdminDashboard from "./admin/AdminDashboard";
 // import AdminProducts from "./admin/AdminProducts";
-// import AdminStores from "./admin/AdminStores";
-// import AdminServices from "./admin/AdminServices";
+import AdminStores from "./admin/AdminStores";
+import AdminServices from "./admin/AdminServices";
+import AdminUsers from "./admin/AdminUsers";
+import AdminProfile from "./admin/AdminProfile";
 
 export const router = createBrowserRouter([
   {
@@ -35,8 +37,10 @@ export const router = createBrowserRouter([
     children: [
       { path: "dashboard", Component: AdminDashboard },
       { path: "products", Component: AdminProducts },
-      // { path: "stores", Component: AdminStores },
-      // { path: "services", Component: AdminServices },
+      { path: "stores", Component: AdminStores },
+      { path: "services", Component: AdminServices },
+      { path: "users", Component: AdminUsers },
+      { path: "profile", Component: AdminProfile },
     ],
   },
 ]);
