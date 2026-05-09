@@ -1,11 +1,12 @@
 import Shop from "../models/Shop.js";
 
 const getShopDocument = async () => {
-    let shopDoc = await Shop.findOne({});
+    let shopDoc = await Shop.findAll({});
     if (!shopDoc) {
         shopDoc = new Shop({ provinces: [] });
         await shopDoc.save();
     }
+    console.log("Shop Document: ", shopDoc);
     return shopDoc;
 };
 

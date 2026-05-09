@@ -15,6 +15,8 @@ import AdminProducts from "./admin/AdminProducts";
 // import AdminProducts from "./admin/AdminProducts";
 import AdminStores from "./admin/AdminStores";
 import AdminServices from "./admin/AdminServices";
+import AdminUsers from "./admin/AdminUsers";
+import AdminProfile from "./admin/AdminProfile";
 
 export const router = createBrowserRouter([
   {
@@ -37,6 +39,8 @@ export const router = createBrowserRouter([
       { path: "products", Component: AdminProducts },
       { path: "stores", Component: AdminStores },
       { path: "services", Component: AdminServices },
+      { path: "users", Component: AdminUsers },
+      { path: "profile", Component: AdminProfile },
     ],
   },
 ]);
