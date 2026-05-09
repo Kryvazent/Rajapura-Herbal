@@ -814,48 +814,50 @@ export default function AdminServices() {
             </div>
           )}
 
-        {locations.map((loc) => {
-          const isOpen = expandedIds.has(loc.id);
-          return (
-            <div
-              key={loc._id}
-              style={{
-                backgroundColor: "#FAF6EE",
-                border: `1px solid ${loc.borderColor}`,
-                borderRadius: "18px",
-                overflow: "hidden",
-                boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
-              }}
-            >
-              {/* Location header row */}
+          {locations.map((loc) => {
+            const locId = loc._id?.toString() ?? loc.id?.toString() ?? "";
+            const isOpen = expandedIds.has(locId);
+
+            return (
               <div
+                key={locId}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "14px",
-                  padding: "16px 20px",
-                  cursor: "pointer",
-                  background: isOpen ? loc.lightColor : "transparent",
-                  transition: "background 0.2s",
+                  backgroundColor: "#FAF6EE",
+                  border: `1px solid ${loc.borderColor ?? "rgba(45,80,22,0.2)"}`,
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
                 }}
-                onClick={() => toggleExpand(loc.id)}
               >
-                {/* Icon */}
+                {/* Location header row */}
                 <div
                   style={{
-                    width: "46px",
-                    height: "46px",
-                    borderRadius: "14px",
-                    backgroundColor: loc.color,
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.4rem",
-                    flexShrink: 0,
+                    gap: "14px",
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    background: isOpen ? loc.lightColor : "transparent",
+                    transition: "background 0.2s",
                   }}
+                  onClick={() => toggleExpand(locId)}
                 >
-                  {loc.icon}
-                </div>
+                  {/* Icon */}
+                  <div
+                    style={{
+                      width: "46px",
+                      height: "46px",
+                      borderRadius: "14px",
+                      backgroundColor: loc.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.4rem",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {loc.icon}
+                  </div>
 
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1148,8 +1150,8 @@ export default function AdminServices() {
           wide
           loading={saveLoading}
         >
-          {/* Row: Icon + Name */}
-          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "12px" }}>
+          {/* Icon + Name */}
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "12px", alignItems: "start" }}>
             <div>
               <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "5px" }}>
                 Icon
