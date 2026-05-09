@@ -1,5 +1,5 @@
 // backend/controllers/userController.js
-// import * as userService from "../services/userService.js";
+import * as userService from "../services/userService.js";
 
 const DEFAULT_TEMP_PASSWORD = "Welcome@123";
 
