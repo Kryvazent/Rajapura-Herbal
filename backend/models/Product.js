@@ -4,57 +4,60 @@ const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Product name is required"],
-      trim: true,
-      minlength: [2, "Name too short"],
-      maxlength: [100, "Name too long"],
+      required: true,
+      trim: true
     },
+
     sinhalaName: {
       type: String,
-      required: [true, "Sinhala name is required"],
-      trim: true,
-      minlength: [2, "Sinhala name too short"],
-      maxlength: [100, "Sinhala name too long"],
+      required: true
     },
+
     category: {
       type: String,
-      required: [true, "Category is required"],
-      trim: true,
-      maxlength: [50],
+      required: true,
+      index: true
     },
+
     description: {
       type: String,
-      required: [true, "Description is required"],
-      trim: true,
-      maxlength: [1000],
+      required: true
     },
-    benefits: [{ type: String, maxlength: 200 }],
-    ingredients: [{ type: String, maxlength: 200 }],
-    howToUse: [{ type: String, maxlength: 500 }],
+
+    benefits: {
+      type: [String],
+      default: []
+    },
+
+    ingredients: {
+      type: [String],
+      default: []
+    },
+
+    howToUse: {
+      type: [String],
+      default: []
+    },
+
     price: {
-      type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Price cannot be negative"],
+      type: String,
+      required: true
     },
+
     image: {
       type: String,
-      required: [true, "Image is required"],
-      match: [
-        /(http[s]?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i,
-        "Please provide a valid image URL",
-      ],
+      required: true
     },
+
     badge: {
       type: String,
-      enum: {
-        values: ["Bestseller", "Premium", "New", "Organic"],
-        message: "Invalid badge type",
-      },
-    },
+      enum: ["Bestseller", "Premium", "New", "Organic", null],
+      default: null
+    }
   },
   { timestamps: true }
 );
 
-productSchema.index({ name: "text", description: "text", category: "text" });
+productSchema.index({ name: "text", description: "text" });
 
 export default mongoose.model("Product", productSchema);

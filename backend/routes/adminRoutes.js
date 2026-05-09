@@ -1,75 +1,49 @@
-import express from "express";
-import * as productController from "../controllers/productController.js";
-import * as storeController from "../controllers/storeController.js";
-import * as serviceController from "../controllers/serviceController.js";
-import * as userController from "../controllers/userController.js"; // ← ADD THIS
-import {
-  handleValidationErrors,
-  productValidators,
-  provinceValidators,
-  updateProvinceValidators,
-  deleteProvinceValidators,
-  addDistrictValidators,
-  updateDistrictValidators,
-  deleteDistrictValidators,
-  addTownValidators,
-  updateTownValidators,
-  deleteTownValidators,
-  addShopValidators,
-  updateShopValidators,
-  deleteShopValidators,
-  serviceValidators,
-  updateServiceValidators,
-  deleteServiceValidators,
-  addServiceItemValidators,
-  updateServiceItemValidators,
-  deleteServiceItemValidators,
-} from "../middleware/validators/index.js";
+import express from 'express';
+import * as productController from '../controllers/productController.js';
+import * as storeController from '../controllers/storeController.js';
+import * as serviceController from '../controllers/serviceController.js'
 
 const router = express.Router();
 
-// ─── Product routes ───────────────────────────────────────────────────────────
-router.post("/add-product", productValidators, handleValidationErrors, productController.addProduct);
-router.delete("/delete-product", handleValidationErrors, productController.deleteProduct);
-router.put("/update-product", productValidators, handleValidationErrors, productController.updateProduct);
+// Product routes
+router.post('/add-product', productController.addProduct);
+router.delete('/delete-product', productController.deleteProduct);
+router.put('/update-product', productController.updateProduct);
 
-// ─── Province routes ──────────────────────────────────────────────────────────
-router.post("/add-province", provinceValidators, handleValidationErrors, storeController.addProvince);
-router.put("/update-province", updateProvinceValidators, handleValidationErrors, storeController.updateProvince);
-router.delete("/delete-province", deleteProvinceValidators, handleValidationErrors, storeController.deleteProvince);
+// Province routes
+router.post('/add-province', storeController.addProvince);
+router.put('/update-province', storeController.updateProvince);
+router.delete('/delete-province', storeController.deleteProvince);
 
-// ─── District routes ──────────────────────────────────────────────────────────
-router.post("/add-district", addDistrictValidators, handleValidationErrors, storeController.addDistrict);
-router.put("/update-district", updateDistrictValidators, handleValidationErrors, storeController.updateDistrict);
-router.delete("/delete-district", deleteDistrictValidators, handleValidationErrors, storeController.deleteDistrict);
+// District routes
+router.post('/add-district', storeController.addDistrict);
+router.put('/update-district', storeController.updateDistrict);
+router.delete('/delete-district', storeController.deleteDistrict);
 
-// ─── Town routes ──────────────────────────────────────────────────────────────
-router.post("/add-town", addTownValidators, handleValidationErrors, storeController.addTown);
-router.put("/update-town", updateTownValidators, handleValidationErrors, storeController.updateTown);
-router.delete("/delete-town", deleteTownValidators, handleValidationErrors, storeController.deleteTown);
+// Town routes
+router.post('/add-town', storeController.addTown);
+router.put('/update-town', storeController.updateTown);
+router.delete('/delete-town', storeController.deleteTown);
 
-// ─── Shop routes ──────────────────────────────────────────────────────────────
-router.post("/add-shop", addShopValidators, handleValidationErrors, storeController.addShop);
-router.put("/update-shop", updateShopValidators, handleValidationErrors, storeController.updateShop);
-router.delete("/delete-shop", deleteShopValidators, handleValidationErrors, storeController.deleteShop);
-router.get("/provinces", storeController.getAllProvinces);
-router.post("/add-shop-wizard", storeController.addShopWizard);
+// Shop routes
+router.post('/add-shop', storeController.addShop);
+router.put('/update-shop', storeController.updateShop);
+router.delete('/delete-shop', storeController.deleteShop);
 
-// ─── Service routes ───────────────────────────────────────────────────────────
-router.post("/services", serviceValidators, handleValidationErrors, serviceController.addService);
-router.put("/services", updateServiceValidators, handleValidationErrors, serviceController.updateService);
-router.delete("/services", deleteServiceValidators, handleValidationErrors, serviceController.deleteService);
-router.post("/services/item", addServiceItemValidators, handleValidationErrors, serviceController.addServiceItem);
-router.put("/services/item", updateServiceItemValidators, handleValidationErrors, serviceController.updateServiceItem);
-router.delete("/services/item", deleteServiceItemValidators, handleValidationErrors, serviceController.deleteServiceItem);
+// Get all provinces
+router.get('/provinces', storeController.getAllProvinces);
 
-// ─── User management routes ───────────────────────────────────────────────────
-router.get("/users", userController.getAllStaff);
-router.get("/users/search", userController.searchUsers);
-router.get("/users/:id", userController.getUserById);
-router.post("/users", userController.createUser);
-router.put("/users/:id", userController.updateUser);
-router.delete("/users/:id", userController.deleteUser);
-router.patch("/users/:id/toggle-status", userController.toggleUserStatus);
+// Wizard route
+router.post('/add-shop-wizard', storeController.addShopWizard);
+
+// Service centre routes
+router.post('/services', serviceController.addService);
+router.put('/services', serviceController.updateService);
+router.delete('/services', serviceController.deleteService);
+
+// Service item routes
+router.post('/services/item', serviceController.addServiceItem);
+router.put('/services/item', serviceController.updateServiceItem);
+router.delete('/services/item', serviceController.deleteServiceItem);
 
 export default router;
