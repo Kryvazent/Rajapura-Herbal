@@ -12,12 +12,6 @@ import {
   ChevronRight,
   Clock,
 } from "lucide-react";
-import {
-  getServiceLocations,
-  saveServiceLocations,
-  type ServiceLocation,
-  type ServiceItem,
-} from "../../../admin/adminData";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
@@ -524,7 +518,6 @@ export default function AdminServices() {
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
                   gap: "14px",
                   padding: "16px 20px",
                   cursor: "pointer",
@@ -532,6 +525,7 @@ export default function AdminServices() {
                   transition: "background 0.2s",
                 }}
                 onClick={() => toggleExpand(loc.id)}
+                className="flex flex-col sm:flex-row items-start"
               >
                 {/* Icon */}
                 <div
@@ -781,7 +775,7 @@ export default function AdminServices() {
           wide
         >
           {/* Row: Icon + Name */}
-          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
             <div>
               <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "5px" }}>Icon</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>

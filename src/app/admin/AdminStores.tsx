@@ -652,7 +652,6 @@ export default function AdminStores() {
 
   const advanceWizard = async () => {
     if (!wizard || !canAdvance()) return;
-
     if (wizard.step === 4) {
       try {
         setLoading(true);

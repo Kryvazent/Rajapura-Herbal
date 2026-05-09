@@ -170,7 +170,7 @@ export default function AdminLayout() {
               ADMIN PANEL
             </p>
           </div>
-          <button
+          {/* <button
             onClick={() => setSidebarOpen(false)}
             style={{
               marginLeft: "auto",
@@ -183,7 +183,7 @@ export default function AdminLayout() {
             className="lg:hidden"
           >
             <X size={18} />
-          </button>
+          </button> */}
         </div>
 
         {/* Nav */}
