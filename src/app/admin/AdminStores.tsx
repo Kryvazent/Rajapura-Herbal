@@ -617,7 +617,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
-          setcompleting(false)
+          setcompleting(true)
           await axios.delete(`${API_URL}/admin/delete-province`, {
             data: { _id: provinces[i]._id },
             withCredentials: true,
@@ -630,7 +630,7 @@ export default function AdminStores() {
           showToast(msg, "error");
         } finally {
           setLoading(false);
-          setcompleting(true)
+          setcompleting(false)
         }
       },
     });
@@ -701,7 +701,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
-          setcompleting(false);
+          setcompleting(true);
           await axios.delete(`${API_URL}/admin/delete-district`, {
             data: {
               province_id: provinces[pi]._id,
@@ -717,7 +717,7 @@ export default function AdminStores() {
           showToast(msg, "error");
         } finally {
           setLoading(false);
-          setcompleting(true);
+          setcompleting(false);
         }
       },
     });
@@ -790,7 +790,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
-          setcompleting(false);
+          setcompleting(true);
           await axios.delete(`${API_URL}/admin/delete-town`, {
             data: {
               province_id: provinces[pi]._id,
@@ -807,7 +807,7 @@ export default function AdminStores() {
           showToast(msg, "error");
         } finally {
           setLoading(false);
-          setcompleting(true);
+          setcompleting(false);
         }
       },
     });
@@ -899,7 +899,7 @@ export default function AdminStores() {
       action: async () => {
         try {
           setLoading(true);
-          setcompleting(false);
+          setcompleting(true);
           await axios.delete(`${API_URL}/admin/delete-shop`, {
             data: {
               province_id: provinces[pi]._id,
@@ -917,7 +917,7 @@ export default function AdminStores() {
           showToast(msg, "error");
         } finally {
           setLoading(false);
-          setcompleting(true);
+          setcompleting(false);
         }
       },
     });
