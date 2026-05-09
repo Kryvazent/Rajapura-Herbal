@@ -90,11 +90,6 @@ export const addProduct = async (req, res) => {
 
   const { _id, ...productData } = req.body.product;
 
-  // Convert price to number if sent as string
-  if (productData.price !== undefined) {
-    productData.price = parseFloat(productData.price);
-  }
-
   try {
     const product = await productService.addProduct(productData);
     res.status(201).json({ success: true, data: product });
@@ -149,11 +144,6 @@ export const updateProduct = async (req, res) => {
     return res
       .status(422)
       .json({ success: false, message: "Product ID is required for update" });
-  }
-
-  // Convert price to number if sent as string
-  if (productData.price !== undefined) {
-    productData.price = parseFloat(productData.price);
   }
 
   try {

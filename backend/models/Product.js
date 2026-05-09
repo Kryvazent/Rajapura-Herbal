@@ -32,9 +32,8 @@ const productSchema = new mongoose.Schema(
     ingredients: [{ type: String, maxlength: 200 }],
     howToUse: [{ type: String, maxlength: 500 }],
     price: {
-      type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Price cannot be negative"],
+      type: String,
+      required: [true, "Price is required"]
     },
     image: {
       type: String,

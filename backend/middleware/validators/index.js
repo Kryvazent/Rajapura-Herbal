@@ -71,7 +71,6 @@ export const productValidators = [
   body("product.price")
     .notEmpty()
     .withMessage("Price is required")
-    .matches(/^\d+(\.\d{1,2})?$/)
     .withMessage("Price must be a valid positive number"),
 
   body("product.image")
