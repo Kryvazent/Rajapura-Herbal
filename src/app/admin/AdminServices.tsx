@@ -828,12 +828,11 @@ export default function AdminServices() {
                   overflow: "hidden",
                   boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
                 }}
+                
               >
                 {/* Location header row */}
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
                     gap: "14px",
                     padding: "16px 20px",
                     cursor: "pointer",
@@ -841,6 +840,7 @@ export default function AdminServices() {
                     transition: "background 0.2s",
                   }}
                   onClick={() => toggleExpand(locId)}
+                  className="flex flex-col sm:flex-row items-start"
                 >
                   {/* Icon */}
                   <div
