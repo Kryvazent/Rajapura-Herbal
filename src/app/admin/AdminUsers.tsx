@@ -70,19 +70,22 @@ const validateForm = (form: UserForm, isEdit: boolean): FormErrors => {
   const errors: FormErrors = {};
 
   if (!form.firstName.trim()) errors.firstName = "First name is required.";
-  else if (form.firstName.trim().length < 2) errors.firstName = "Must be at least 2 characters.";
-  else if (form.firstName.trim().length > 50) errors.firstName = "Cannot exceed 50 characters.";
+  else if (form.firstName.trim().length < 2)
+    errors.firstName = "Must be at least 2 characters.";
+  else if (form.firstName.trim().length > 50)
+    errors.firstName = "Cannot exceed 50 characters.";
 
   if (!form.lastName.trim()) errors.lastName = "Last name is required.";
-  else if (form.lastName.trim().length < 2) errors.lastName = "Must be at least 2 characters.";
-  else if (form.lastName.trim().length > 50) errors.lastName = "Cannot exceed 50 characters.";
+  else if (form.lastName.trim().length < 2)
+    errors.lastName = "Must be at least 2 characters.";
+  else if (form.lastName.trim().length > 50)
+    errors.lastName = "Cannot exceed 50 characters.";
 
   if (!form.email.trim()) errors.email = "Email is required.";
-  else if (!EMAIL_REGEX.test(form.email.trim())) errors.email = "Please enter a valid email address.";
+  else if (!EMAIL_REGEX.test(form.email.trim()))
+    errors.email = "Please enter a valid email address.";
 
-  if (!isEdit && !form.password) {
-    errors.password = "Password is required.";
-  } else if (form.password && form.password.length < 6) {
+  if (form.password && form.password.length < 6) {
     errors.password = "Password must be at least 6 characters.";
   } else if (form.password && form.password.length > 128) {
     errors.password = "Password cannot exceed 128 characters.";
@@ -100,14 +103,20 @@ const validateForm = (form: UserForm, isEdit: boolean): FormErrors => {
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({
+  message,
+  type,
+}: {
+  message: string;
+  type: "success" | "error";
+}) {
   return (
     <div
       style={{
         position: "fixed",
         bottom: "24px",
         right: "24px",
-        zIndex: 999,
+        zIndex: 9999,
         backgroundColor: type === "error" ? "#D4183D" : "#2D5016",
         color: "#FAF6EE",
         padding: "12px 20px",
@@ -130,7 +139,9 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
+    <div
+      style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px" }}
+    >
       <AlertCircle size={12} style={{ color: "#D4183D", flexShrink: 0 }} />
       <p style={{ color: "#D4183D", fontSize: "0.73rem", margin: 0 }}>{message}</p>
     </div>
@@ -182,6 +193,7 @@ function InputField({
               transform: "translateY(-50%)",
               color: error ? "#D4183D" : "#8B5E3C",
               display: "flex",
+              pointerEvents: "none",
             }}
           >
             {icon}
@@ -194,7 +206,9 @@ function InputField({
           placeholder={placeholder}
           style={{
             width: "100%",
-            padding: `9px ${rightElement ? "40px" : "12px"} 9px ${icon ? "38px" : "12px"}`,
+            padding: `9px ${rightElement ? "40px" : "12px"} 9px ${
+              icon ? "38px" : "12px"
+            }`,
             borderRadius: "10px",
             border: `1.5px solid ${error ? "#D4183D" : "rgba(45,80,22,0.2)"}`,
             backgroundColor: error ? "rgba(212,24,61,0.04)" : "#FAF6EE",
@@ -253,6 +267,7 @@ function DeleteConfirm({
         justifyContent: "center",
         padding: "24px",
       }}
+      // ✅ Do NOT close on backdrop click for destructive actions
     >
       <div
         style={{
@@ -290,11 +305,20 @@ function DeleteConfirm({
         >
           Confirm Delete
         </h3>
-        <p style={{ color: "#5C4033", fontSize: "0.85rem", marginBottom: "22px", lineHeight: 1.6 }}>
-          Delete <strong>"{name}"</strong>? This action cannot be undone and will
-          permanently remove their account.
+        <p
+          style={{
+            color: "#5C4033",
+            fontSize: "0.85rem",
+            marginBottom: "22px",
+            lineHeight: 1.6,
+          }}
+        >
+          Delete <strong>"{name}"</strong>? This action cannot be undone and
+          will permanently remove their account.
         </p>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+        <div
+          style={{ display: "flex", gap: "10px", justifyContent: "center" }}
+        >
           <button
             onClick={onCancel}
             disabled={loading}
@@ -347,9 +371,13 @@ function RoleBadge({ role }: { role: "ADMIN" | "STAFF" }) {
         borderRadius: "50px",
         fontSize: "0.7rem",
         fontWeight: 600,
-        backgroundColor: isAdmin ? "rgba(45,80,22,0.12)" : "rgba(139,94,60,0.12)",
+        backgroundColor: isAdmin
+          ? "rgba(45,80,22,0.12)"
+          : "rgba(139,94,60,0.12)",
         color: isAdmin ? "#2D5016" : "#6B4423",
-        border: `1px solid ${isAdmin ? "rgba(45,80,22,0.2)" : "rgba(139,94,60,0.2)"}`,
+        border: `1px solid ${
+          isAdmin ? "rgba(45,80,22,0.2)" : "rgba(139,94,60,0.2)"
+        }`,
       }}
     >
       {isAdmin ? <ShieldAlert size={11} /> : <Shield size={11} />}
@@ -371,9 +399,13 @@ function StatusBadge({ status }: { status: "ACTIVE" | "DISABLED" }) {
         borderRadius: "50px",
         fontSize: "0.7rem",
         fontWeight: 600,
-        backgroundColor: isActive ? "rgba(74,124,35,0.12)" : "rgba(212,24,61,0.1)",
+        backgroundColor: isActive
+          ? "rgba(74,124,35,0.12)"
+          : "rgba(212,24,61,0.1)",
         color: isActive ? "#4A7C23" : "#D4183D",
-        border: `1px solid ${isActive ? "rgba(74,124,35,0.25)" : "rgba(212,24,61,0.2)"}`,
+        border: `1px solid ${
+          isActive ? "rgba(74,124,35,0.25)" : "rgba(212,24,61,0.2)"
+        }`,
       }}
     >
       <div
@@ -391,10 +423,12 @@ function StatusBadge({ status }: { status: "ACTIVE" | "DISABLED" }) {
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ user, size = 40 }: { user: StaffUser; size?: number }) {
-  const initials = `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
+  const initials =
+    `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
   const colors = ["#2D5016", "#4A7C23", "#6B4423", "#8B5E3C", "#1A3009"];
   const colorIndex =
-    (user.firstName.charCodeAt(0) + user.lastName.charCodeAt(0)) % colors.length;
+    (user.firstName.charCodeAt(0) + user.lastName.charCodeAt(0)) %
+    colors.length;
   return (
     <div
       style={{
@@ -508,21 +542,13 @@ function DetailModal({
         <div style={{ padding: "24px 28px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {[
-              {
-                icon: <Mail size={14} />,
-                label: "Email",
-                value: user.email,
-              },
+              { icon: <Mail size={14} />, label: "Email", value: user.email },
               {
                 icon: <Phone size={14} />,
                 label: "Phone",
                 value: user.phone || "—",
               },
-              {
-                icon: <Shield size={14} />,
-                label: "Role",
-                value: user.role,
-              },
+              { icon: <Shield size={14} />, label: "Role", value: user.role },
               {
                 icon: <User size={14} />,
                 label: "Member since",
@@ -554,12 +580,27 @@ function DetailModal({
                   border: "1px solid rgba(45,80,22,0.08)",
                 }}
               >
-                <div style={{ color: "#4A7C23", flexShrink: 0 }}>{row.icon}</div>
+                <div style={{ color: "#4A7C23", flexShrink: 0 }}>
+                  {row.icon}
+                </div>
                 <div>
-                  <p style={{ color: "#8B5E3C", fontSize: "0.7rem", margin: "0 0 1px" }}>
+                  <p
+                    style={{
+                      color: "#8B5E3C",
+                      fontSize: "0.7rem",
+                      margin: "0 0 1px",
+                    }}
+                  >
                     {row.label}
                   </p>
-                  <p style={{ color: "#2D5016", fontSize: "0.85rem", margin: 0, fontWeight: 500 }}>
+                  <p
+                    style={{
+                      color: "#2D5016",
+                      fontSize: "0.85rem",
+                      margin: 0,
+                      fontWeight: 500,
+                    }}
+                  >
                     {row.value}
                   </p>
                 </div>
@@ -608,7 +649,11 @@ function DetailModal({
                 flex: 1,
                 padding: "9px 16px",
                 borderRadius: "10px",
-                border: `1px solid ${user.status === "ACTIVE" ? "rgba(212,24,61,0.2)" : "rgba(74,124,35,0.2)"}`,
+                border: `1px solid ${
+                  user.status === "ACTIVE"
+                    ? "rgba(212,24,61,0.2)"
+                    : "rgba(74,124,35,0.2)"
+                }`,
                 backgroundColor:
                   user.status === "ACTIVE"
                     ? "rgba(212,24,61,0.06)"
@@ -624,9 +669,13 @@ function DetailModal({
               }}
             >
               {user.status === "ACTIVE" ? (
-                <><ToggleLeft size={14} /> Disable</>
+                <>
+                  <ToggleLeft size={14} /> Disable
+                </>
               ) : (
-                <><ToggleRight size={14} /> Enable</>
+                <>
+                  <ToggleRight size={14} /> Enable
+                </>
               )}
             </button>
           )}
@@ -702,7 +751,19 @@ function FormModal({
   const [showPassword, setShowPassword] = useState(false);
 
   const clearError = (field: string) => {
-    if (errors[field]) setErrors((e) => { const n = { ...e }; delete n[field]; return n; });
+    if (errors[field])
+      setErrors((e) => {
+        const n = { ...e };
+        delete n[field];
+        return n;
+      });
+  };
+
+  // ✅ KEY FIX: Stop backdrop click from closing modal when clicking inside
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   return (
@@ -716,340 +777,403 @@ function FormModal({
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
-        overflowY: "auto",
+        // ✅ FIXED: removed overflowY: "auto" from backdrop — it caused
+        // the backdrop div to be the scroll container and intercept clicks
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={handleBackdropClick}
     >
+      {/* ✅ Inner scrollable wrapper — separate from the backdrop */}
       <div
         style={{
-          backgroundColor: "#FAF6EE",
-          borderRadius: "22px",
           width: "100%",
           maxWidth: "540px",
+          maxHeight: "92vh",
+          overflowY: "auto",
+          borderRadius: "22px",
           boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
-          overflow: "hidden",
-          margin: "auto",
         }}
+        // ✅ CRITICAL FIX: stop ALL clicks inside modal from bubbling to backdrop
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div
           style={{
-            background: "linear-gradient(135deg, #2D5016, #4A7C23)",
-            padding: "20px 28px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            backgroundColor: "#FAF6EE",
+            borderRadius: "22px",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
-          <h3
+          {/* Header */}
+          <div
             style={{
-              fontFamily: "'Playfair Display', serif",
-              color: "#FAF6EE",
-              margin: 0,
-              fontSize: "1.05rem",
-            }}
-          >
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              color: "rgba(250,246,238,0.7)",
-              cursor: "pointer",
-              display: "flex",
-            }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div
-          style={{
-            padding: "24px 28px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          {/* Name row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <InputField
-              label="First Name"
-              value={form.firstName}
-              onChange={(v) => { setForm((f) => ({ ...f, firstName: v })); clearError("firstName"); }}
-              placeholder="John"
-              required
-              error={errors.firstName}
-              icon={<User size={14} />}
-            />
-            <InputField
-              label="Last Name"
-              value={form.lastName}
-              onChange={(v) => { setForm((f) => ({ ...f, lastName: v })); clearError("lastName"); }}
-              placeholder="Silva"
-              required
-              error={errors.lastName}
-              icon={<User size={14} />}
-            />
-          </div>
-
-          {/* Email */}
-          <InputField
-            label="Email Address"
-            value={form.email}
-            onChange={(v) => { setForm((f) => ({ ...f, email: v })); clearError("email"); }}
-            placeholder="john.silva@example.com"
-            type="email"
-            required
-            error={errors.email}
-            icon={<Mail size={14} />}
-          />
-
-          {/* Password */}
-          {!isEdit && (
-            <div
-              style={{
-                backgroundColor: "rgba(212,160,23,0.07)",
-                border: "1px solid rgba(212,160,23,0.2)",
-                borderRadius: "12px",
-                padding: "14px 16px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "10px",
-              }}
-            >
-              <AlertCircle
-                size={15}
-                style={{ color: "#D4A017", flexShrink: 0, marginTop: "2px" }}
-              />
-              <div>
-                <p
-                  style={{
-                    color: "#7A5C00",
-                    fontSize: "0.82rem",
-                    margin: "0 0 4px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Temporary password will be set automatically
-                </p>
-                <p style={{ color: "#8B6914", fontSize: "0.78rem", margin: 0, lineHeight: 1.5 }}>
-                  The user will be assigned the temporary password{" "}
-                  <code
-                    style={{
-                      backgroundColor: "rgba(212,160,23,0.15)",
-                      padding: "1px 6px",
-                      borderRadius: "4px",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    Welcome@123
-                  </code>{" "}
-                  and will be required to change it on first login.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {isEdit && (
-            <InputField
-              label="New Password (leave blank to keep current)"
-              value={form.password}
-              onChange={(v) => {
-                setForm((f) => ({ ...f, password: v }));
-                if (errors.password) setErrors((e) => ({ ...e, password: undefined }));
-              }}
-              placeholder="Enter new password to change..."
-              type={showPassword ? "text" : "password"}
-              error={errors.password}
-              icon={<Shield size={14} />}
-              rightElement={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#8B5E3C",
-                    display: "flex",
-                    padding: 0,
-                  }}
-                >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              }
-            />
-          )}
-
-          {/* Phone */}
-          <InputField
-            label="Phone Number"
-            value={form.phone}
-            onChange={(v) => { setForm((f) => ({ ...f, phone: v })); clearError("phone"); }}
-            placeholder="077 123 4567"
-            error={errors.phone}
-            icon={<Phone size={14} />}
-          />
-
-          {/* Role & Status row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            {/* Role */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  color: "#2D5016",
-                  fontSize: "0.8rem",
-                  marginBottom: "5px",
-                  fontWeight: 500,
-                }}
-              >
-                Role <span style={{ color: "#D4183D" }}>*</span>
-              </label>
-              <div style={{ position: "relative" }}>
-                <ShieldAlert
-                  size={14}
-                  style={{
-                    position: "absolute",
-                    left: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#8B5E3C",
-                    pointerEvents: "none",
-                  }}
-                />
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as "ADMIN" | "STAFF" }))}
-                  style={{
-                    width: "100%",
-                    padding: "9px 32px 9px 36px",
-                    borderRadius: "10px",
-                    border: "1.5px solid rgba(45,80,22,0.2)",
-                    backgroundColor: "#FAF6EE",
-                    color: "#2D5016",
-                    fontSize: "0.85rem",
-                    outline: "none",
-                    appearance: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="STAFF">Staff</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#8B5E3C",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  color: "#2D5016",
-                  fontSize: "0.8rem",
-                  marginBottom: "5px",
-                  fontWeight: 500,
-                }}
-              >
-                Status
-              </label>
-              <div style={{ position: "relative" }}>
-                <select
-                  value={form.status}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, status: e.target.value as "ACTIVE" | "DISABLED" }))
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "9px 32px 9px 12px",
-                    borderRadius: "10px",
-                    border: "1.5px solid rgba(45,80,22,0.2)",
-                    backgroundColor: "#FAF6EE",
-                    color: "#2D5016",
-                    fontSize: "0.85rem",
-                    outline: "none",
-                    appearance: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="DISABLED">Disabled</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#8B5E3C",
-                    pointerEvents: "none",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            padding: "14px 28px",
-            borderTop: "1px solid rgba(45,80,22,0.1)",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-            backgroundColor: "rgba(45,80,22,0.02)",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: "9px 20px",
-              borderRadius: "50px",
-              border: "1px solid rgba(45,80,22,0.2)",
-              backgroundColor: "transparent",
-              color: "#6B4423",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSave}
-            disabled={loading}
-            style={{
-              padding: "9px 24px",
-              borderRadius: "50px",
-              border: "none",
-              backgroundColor: loading ? "#A8C580" : "#2D5016",
-              color: "#FAF6EE",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontSize: "0.85rem",
+              background: "linear-gradient(135deg, #2D5016, #4A7C23)",
+              padding: "20px 28px",
               display: "flex",
               alignItems: "center",
-              gap: "7px",
-              fontWeight: 500,
+              justifyContent: "space-between",
             }}
           >
-            <Save size={14} /> {loading ? "Saving..." : isEdit ? "Update User" : "Create User"}
-          </button>
+            <h3
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: "#FAF6EE",
+                margin: 0,
+                fontSize: "1.05rem",
+              }}
+            >
+              {title}
+            </h3>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(250,246,238,0.7)",
+                cursor: "pointer",
+                display: "flex",
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div
+            style={{
+              padding: "24px 28px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+            }}
+          >
+            {/* Name row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              <InputField
+                label="First Name"
+                value={form.firstName}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, firstName: v }));
+                  clearError("firstName");
+                }}
+                placeholder="John"
+                required
+                error={errors.firstName}
+                icon={<User size={14} />}
+              />
+              <InputField
+                label="Last Name"
+                value={form.lastName}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, lastName: v }));
+                  clearError("lastName");
+                }}
+                placeholder="Silva"
+                required
+                error={errors.lastName}
+                icon={<User size={14} />}
+              />
+            </div>
+
+            {/* Email */}
+            <InputField
+              label="Email Address"
+              value={form.email}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, email: v }));
+                clearError("email");
+              }}
+              placeholder="john.silva@example.com"
+              type="email"
+              required
+              error={errors.email}
+              icon={<Mail size={14} />}
+            />
+
+            {/* Password notice (create mode) */}
+            {!isEdit && (
+              <div
+                style={{
+                  backgroundColor: "rgba(212,160,23,0.07)",
+                  border: "1px solid rgba(212,160,23,0.2)",
+                  borderRadius: "12px",
+                  padding: "14px 16px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                }}
+              >
+                <AlertCircle
+                  size={15}
+                  style={{
+                    color: "#D4A017",
+                    flexShrink: 0,
+                    marginTop: "2px",
+                  }}
+                />
+                <div>
+                  <p
+                    style={{
+                      color: "#7A5C00",
+                      fontSize: "0.82rem",
+                      margin: "0 0 4px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Temporary password will be set automatically
+                  </p>
+                  <p
+                    style={{
+                      color: "#8B6914",
+                      fontSize: "0.78rem",
+                      margin: 0,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    The user will be assigned the temporary password{" "}
+                    <code
+                      style={{
+                        backgroundColor: "rgba(212,160,23,0.15)",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      Welcome@123
+                    </code>{" "}
+                    and will be required to change it on first login.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Password field (edit mode) */}
+            {isEdit && (
+              <InputField
+                label="New Password (leave blank to keep current)"
+                value={form.password}
+                onChange={(v) => {
+                  setForm((f) => ({ ...f, password: v }));
+                  if (errors.password)
+                    setErrors((e) => ({ ...e, password: undefined as any }));
+                }}
+                placeholder="Enter new password to change..."
+                type={showPassword ? "text" : "password"}
+                error={errors.password}
+                icon={<Shield size={14} />}
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#8B5E3C",
+                      display: "flex",
+                      padding: 0,
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                }
+              />
+            )}
+
+            {/* Phone */}
+            <InputField
+              label="Phone Number"
+              value={form.phone}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, phone: v }));
+                clearError("phone");
+              }}
+              placeholder="077 123 4567"
+              error={errors.phone}
+              icon={<Phone size={14} />}
+            />
+
+            {/* Role & Status row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              {/* Role */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    color: "#2D5016",
+                    fontSize: "0.8rem",
+                    marginBottom: "5px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Role <span style={{ color: "#D4183D" }}>*</span>
+                </label>
+                <div style={{ position: "relative" }}>
+                  <ShieldAlert
+                    size={14}
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#8B5E3C",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <select
+                    value={form.role}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        role: e.target.value as "ADMIN" | "STAFF",
+                      }))
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "9px 32px 9px 36px",
+                      borderRadius: "10px",
+                      border: "1.5px solid rgba(45,80,22,0.2)",
+                      backgroundColor: "#FAF6EE",
+                      color: "#2D5016",
+                      fontSize: "0.85rem",
+                      outline: "none",
+                      appearance: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="STAFF">Staff</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#8B5E3C",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    color: "#2D5016",
+                    fontSize: "0.8rem",
+                    marginBottom: "5px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Status
+                </label>
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={form.status}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        status: e.target.value as "ACTIVE" | "DISABLED",
+                      }))
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "9px 32px 9px 12px",
+                      borderRadius: "10px",
+                      border: "1.5px solid rgba(45,80,22,0.2)",
+                      backgroundColor: "#FAF6EE",
+                      color: "#2D5016",
+                      fontSize: "0.85rem",
+                      outline: "none",
+                      appearance: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="DISABLED">Disabled</option>
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#8B5E3C",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              padding: "14px 28px",
+              borderTop: "1px solid rgba(45,80,22,0.1)",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+              backgroundColor: "rgba(45,80,22,0.02)",
+            }}
+          >
+            <button
+              onClick={onClose}
+              style={{
+                padding: "9px 20px",
+                borderRadius: "50px",
+                border: "1px solid rgba(45,80,22,0.2)",
+                backgroundColor: "transparent",
+                color: "#6B4423",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Cancel
+            </button>
+            {/* ✅ type="button" prevents any accidental form submission */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // extra safety
+                onSave();
+              }}
+              disabled={loading}
+              style={{
+                padding: "9px 24px",
+                borderRadius: "50px",
+                border: "none",
+                backgroundColor: loading ? "#A8C580" : "#2D5016",
+                color: "#FAF6EE",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: "0.85rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                fontWeight: 500,
+              }}
+            >
+              <Save size={14} />{" "}
+              {loading ? "Saving..." : isEdit ? "Update User" : "Create User"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1063,41 +1187,43 @@ export default function AdminUsers() {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
-  const [filterRole, setFilterRole] = useState<"ALL" | "ADMIN" | "STAFF">("ALL");
-  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "DISABLED">("ALL");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [filterRole, setFilterRole] = useState<"ALL" | "ADMIN" | "STAFF">(
+    "ALL"
+  );
+  const [filterStatus, setFilterStatus] = useState<
+    "ALL" | "ACTIVE" | "DISABLED"
+  >("ALL");
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   // Modal state
   const [detailUser, setDetailUser] = useState<StaffUser | null>(null);
-  const [formModal, setFormModal] = useState<{ mode: "add" | "edit"; user?: StaffUser } | null>(null);
+  const [formModal, setFormModal] = useState<{
+    mode: "add" | "edit";
+    user?: StaffUser;
+  } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StaffUser | null>(null);
 
   // Form state
   const [form, setForm] = useState<UserForm>(emptyForm());
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
-  // ── Toast helper ─────────────────────────────────────────────────────────
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
-
   const [createdInfo, setCreatedInfo] = useState<{
     name: string;
     email: string;
   } | null>(null);
 
-  // ── Fetch session info ────────────────────────────────────────────────────
-  useEffect(() => {
-    axios
-      .get(`${API_URL}/auth/status`, { withCredentials: true })
-      .then((res) => {
-        // We store userId in localStorage as "adminAuth" but don't have the ID
-        // So we'll get it from the users list by matching session later
-      })
-      .catch(() => { });
-  }, []);
+  // ── Toast helper ─────────────────────────────────────────────────────────
+  const showToast = useCallback(
+    (message: string, type: "success" | "error") => {
+      setToast({ message, type });
+      setTimeout(() => setToast(null), 3500);
+    },
+    []
+  );
 
   // ── Fetch users ───────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
@@ -1114,7 +1240,7 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchUsers();
@@ -1142,7 +1268,7 @@ export default function AdminUsers() {
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, fetchUsers, showToast]);
 
   // ── Filtered users ────────────────────────────────────────────────────────
   const filteredUsers = users.filter((u) => {
@@ -1175,44 +1301,60 @@ export default function AdminUsers() {
   };
 
   // ── Save (create or update) ───────────────────────────────────────────────
-  const handleSave = async () => {
+  // ✅ useCallback so the function reference is stable and not stale
+  const handleSave = useCallback(async () => {
+
+    console.log("form")
     const isEdit = formModal?.mode === "edit";
-    const errors = validateForm(form, isEdit);
+    const errors = validateForm(form, isEdit ?? false);
+
+    console.log("bbb")
+    console.log(errors)
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
+    console.log("ccc")
+
     try {
       setActionLoading(true);
 
       if (isEdit && formModal?.user) {
-        await axios.put(`${API_URL}/admin/users/${formModal.user._id}`, form, {
-          withCredentials: true,
-        });
+
+    console.log("ddd")
+
+        await axios.put(
+          `${API_URL}/admin/users/${formModal.user._id}`,
+          form,
+          { withCredentials: true }
+        );
         showToast("User updated successfully.", "success");
+        await fetchUsers();
+        setFormModal(null);
+        setFormErrors({});
       } else {
-        const res = await axios.post(`${API_URL}/admin/users`, form, {
+        console.log("Creating user with data:", form);
+        await axios.post(`${API_URL}/admin/users`, form, {
           withCredentials: true,
         });
-        // Show the credentials info modal
         setCreatedInfo({
           name: `${form.firstName} ${form.lastName}`,
           email: form.email,
         });
         showToast("User created successfully.", "success");
+        await fetchUsers();
+        setFormModal(null);
+        setFormErrors({});
       }
-
-      await fetchUsers();
-      setFormModal(null);
-      setFormErrors({});
     } catch (err: any) {
       const msg = err.response?.data?.message ?? "Failed to save user.";
       showToast(msg, "error");
     } finally {
       setActionLoading(false);
     }
-  };
+  }, [form, formModal, fetchUsers, showToast]);
 
   // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
@@ -1245,17 +1387,24 @@ export default function AdminUsers() {
       );
       const updated = res.data?.data;
       setUsers((prev) =>
-        prev.map((u) => (u._id === user._id ? { ...u, status: updated.status } : u))
+        prev.map((u) =>
+          u._id === user._id ? { ...u, status: updated.status } : u
+        )
       );
       if (detailUser?._id === user._id) {
-        setDetailUser((prev) => prev ? { ...prev, status: updated.status } : prev);
+        setDetailUser((prev) =>
+          prev ? { ...prev, status: updated.status } : prev
+        );
       }
       showToast(
-        `User ${updated.status === "ACTIVE" ? "enabled" : "disabled"} successfully.`,
+        `User ${
+          updated.status === "ACTIVE" ? "enabled" : "disabled"
+        } successfully.`,
         "success"
       );
     } catch (err: any) {
-      const msg = err.response?.data?.message ?? "Failed to update user status.";
+      const msg =
+        err.response?.data?.message ?? "Failed to update user status.";
       showToast(msg, "error");
     } finally {
       setActionLoading(false);
@@ -1286,11 +1435,15 @@ export default function AdminUsers() {
           >
             User Management
           </h2>
-          <p style={{ color: "#8B5E3C", margin: "2px 0 0", fontSize: "0.82rem" }}>
-            {users.length} total · {totalAdmins} admins · {totalStaff} staff · {totalActive} active · {totalDisabled} disabled
+          <p
+            style={{ color: "#8B5E3C", margin: "2px 0 0", fontSize: "0.82rem" }}
+          >
+            {users.length} total · {totalAdmins} admins · {totalStaff} staff ·{" "}
+            {totalActive} active · {totalDisabled} disabled
           </p>
         </div>
         <button
+          type="button"
           onClick={openAddModal}
           disabled={loading}
           style={{
@@ -1321,11 +1474,36 @@ export default function AdminUsers() {
         }}
       >
         {[
-          { label: "Total Users", value: users.length, color: "#2D5016", bg: "rgba(45,80,22,0.08)" },
-          { label: "Admins", value: totalAdmins, color: "#4A7C23", bg: "rgba(74,124,35,0.08)" },
-          { label: "Staff", value: totalStaff, color: "#6B4423", bg: "rgba(107,68,35,0.08)" },
-          { label: "Active", value: totalActive, color: "#4A7C23", bg: "rgba(74,124,35,0.08)" },
-          { label: "Disabled", value: totalDisabled, color: "#D4183D", bg: "rgba(212,24,61,0.06)" },
+          {
+            label: "Total Users",
+            value: users.length,
+            color: "#2D5016",
+            bg: "rgba(45,80,22,0.08)",
+          },
+          {
+            label: "Admins",
+            value: totalAdmins,
+            color: "#4A7C23",
+            bg: "rgba(74,124,35,0.08)",
+          },
+          {
+            label: "Staff",
+            value: totalStaff,
+            color: "#6B4423",
+            bg: "rgba(107,68,35,0.08)",
+          },
+          {
+            label: "Active",
+            value: totalActive,
+            color: "#4A7C23",
+            bg: "rgba(74,124,35,0.08)",
+          },
+          {
+            label: "Disabled",
+            value: totalDisabled,
+            color: "#D4183D",
+            bg: "rgba(212,24,61,0.06)",
+          },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -1348,7 +1526,14 @@ export default function AdminUsers() {
             >
               {stat.value}
             </p>
-            <p style={{ color: stat.color, fontSize: "0.72rem", margin: 0, opacity: 0.8 }}>
+            <p
+              style={{
+                color: stat.color,
+                fontSize: "0.72rem",
+                margin: 0,
+                opacity: 0.8,
+              }}
+            >
               {stat.label}
             </p>
           </div>
@@ -1419,7 +1604,9 @@ export default function AdminUsers() {
         <div style={{ position: "relative" }}>
           <select
             value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value as typeof filterRole)}
+            onChange={(e) =>
+              setFilterRole(e.target.value as typeof filterRole)
+            }
             style={{
               padding: "9px 32px 9px 12px",
               borderRadius: "10px",
@@ -1453,7 +1640,9 @@ export default function AdminUsers() {
         <div style={{ position: "relative" }}>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+            onChange={(e) =>
+              setFilterStatus(e.target.value as typeof filterStatus)
+            }
             style={{
               padding: "9px 32px 9px 12px",
               borderRadius: "10px",
@@ -1485,6 +1674,7 @@ export default function AdminUsers() {
 
         {/* Refresh */}
         <button
+          type="button"
           onClick={fetchUsers}
           disabled={loading}
           style={{
@@ -1500,7 +1690,12 @@ export default function AdminUsers() {
             fontSize: "0.83rem",
           }}
         >
-          <RefreshCw size={13} style={{ animation: loading ? "spin 0.8s linear infinite" : "none" }} />
+          <RefreshCw
+            size={13}
+            style={{
+              animation: loading ? "spin 0.8s linear infinite" : "none",
+            }}
+          />
           Refresh
         </button>
       </div>
@@ -1565,12 +1760,29 @@ export default function AdminUsers() {
         {/* Empty */}
         {!loading && filteredUsers.length === 0 && (
           <div style={{ padding: "40px", textAlign: "center" }}>
-            <User size={32} style={{ color: "#A8C580", margin: "0 auto 10px", display: "block" }} />
-            <p style={{ color: "#8B5E3C", fontSize: "0.9rem", margin: "0 0 4px" }}>
-              {searchQuery ? "No users found for your search." : "No users found."}
+            <User
+              size={32}
+              style={{
+                color: "#A8C580",
+                margin: "0 auto 10px",
+                display: "block",
+              }}
+            />
+            <p
+              style={{
+                color: "#8B5E3C",
+                fontSize: "0.9rem",
+                margin: "0 0 4px",
+              }}
+            >
+              {searchQuery
+                ? "No users found for your search."
+                : "No users found."}
             </p>
             <p style={{ color: "#A8C580", fontSize: "0.8rem", margin: 0 }}>
-              {searchQuery ? "Try a different search term." : "Click 'Add User' to create the first one."}
+              {searchQuery
+                ? "Try a different search term."
+                : "Click 'Add User' to create the first one."}
             </p>
           </div>
         )}
@@ -1593,7 +1805,8 @@ export default function AdminUsers() {
                 cursor: "pointer",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "rgba(45,80,22,0.02)")
+                (e.currentTarget.style.backgroundColor =
+                  "rgba(45,80,22,0.02)")
               }
               onMouseLeave={(e) =>
                 (e.currentTarget.style.backgroundColor = "transparent")
@@ -1601,7 +1814,9 @@ export default function AdminUsers() {
               onClick={() => setDetailUser(user)}
             >
               {/* User */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
                 <Avatar user={user} size={36} />
                 <div>
                   <p
@@ -1615,7 +1830,13 @@ export default function AdminUsers() {
                     {user.firstName} {user.lastName}
                   </p>
                   {user.phone && (
-                    <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.72rem" }}>
+                    <p
+                      style={{
+                        color: "#8B5E3C",
+                        margin: 0,
+                        fontSize: "0.72rem",
+                      }}
+                    >
                       {user.phone}
                     </p>
                   )}
@@ -1652,6 +1873,7 @@ export default function AdminUsers() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
+                  type="button"
                   onClick={() => openEditModal(user)}
                   disabled={actionLoading}
                   title="Edit user"
@@ -1672,19 +1894,27 @@ export default function AdminUsers() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleToggleStatus(user)}
                   disabled={actionLoading || user._id === currentUserId}
-                  title={user.status === "ACTIVE" ? "Disable user" : "Enable user"}
+                  title={
+                    user.status === "ACTIVE" ? "Disable user" : "Enable user"
+                  }
                   style={{
                     width: "30px",
                     height: "30px",
                     borderRadius: "8px",
-                    border: `1px solid ${user.status === "ACTIVE" ? "rgba(212,160,23,0.3)" : "rgba(74,124,35,0.3)"}`,
+                    border: `1px solid ${
+                      user.status === "ACTIVE"
+                        ? "rgba(212,160,23,0.3)"
+                        : "rgba(74,124,35,0.3)"
+                    }`,
                     backgroundColor:
                       user.status === "ACTIVE"
                         ? "rgba(212,160,23,0.08)"
                         : "rgba(74,124,35,0.08)",
-                    color: user.status === "ACTIVE" ? "#D4A017" : "#4A7C23",
+                    color:
+                      user.status === "ACTIVE" ? "#D4A017" : "#4A7C23",
                     cursor:
                       actionLoading || user._id === currentUserId
                         ? "not-allowed"
@@ -1703,6 +1933,7 @@ export default function AdminUsers() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setDeleteTarget(user)}
                   disabled={actionLoading || user._id === currentUserId}
                   title="Delete user"
@@ -1751,7 +1982,10 @@ export default function AdminUsers() {
           setForm={setForm}
           errors={formErrors}
           setErrors={setFormErrors}
-          onClose={() => { setFormModal(null); setFormErrors({}); }}
+          onClose={() => {
+            setFormModal(null);
+            setFormErrors({});
+          }}
           onSave={handleSave}
           loading={actionLoading}
           isEdit={formModal.mode === "edit"}
@@ -1768,6 +2002,7 @@ export default function AdminUsers() {
         />
       )}
 
+      {/* ── Created Info Modal ───────────────────────────────────────────────── */}
       {createdInfo && (
         <div
           style={{
@@ -1825,7 +2060,13 @@ export default function AdminUsers() {
                 >
                   User Created Successfully
                 </p>
-                <p style={{ color: "rgba(168,197,128,0.8)", fontSize: "0.76rem", margin: 0 }}>
+                <p
+                  style={{
+                    color: "rgba(168,197,128,0.8)",
+                    fontSize: "0.76rem",
+                    margin: 0,
+                  }}
+                >
                   Share these credentials with the user
                 </p>
               </div>
@@ -1833,9 +2074,16 @@ export default function AdminUsers() {
 
             {/* Body */}
             <div style={{ padding: "20px 24px 24px" }}>
-              <p style={{ color: "#5C4033", fontSize: "0.83rem", marginBottom: "14px", lineHeight: 1.5 }}>
-                <strong>{createdInfo.name}</strong> has been created. Please securely share the
-                following login credentials:
+              <p
+                style={{
+                  color: "#5C4033",
+                  fontSize: "0.83rem",
+                  marginBottom: "14px",
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>{createdInfo.name}</strong> has been created. Please
+                securely share the following login credentials:
               </p>
 
               {[
@@ -1855,7 +2103,13 @@ export default function AdminUsers() {
                     alignItems: "center",
                   }}
                 >
-                  <p style={{ color: "#8B5E3C", fontSize: "0.74rem", margin: 0 }}>
+                  <p
+                    style={{
+                      color: "#8B5E3C",
+                      fontSize: "0.74rem",
+                      margin: 0,
+                    }}
+                  >
                     {row.label}
                   </p>
                   <p
@@ -1863,7 +2117,10 @@ export default function AdminUsers() {
                       color: "#2D5016",
                       fontSize: "0.88rem",
                       margin: 0,
-                      fontFamily: row.label === "Temporary Password" ? "monospace" : "inherit",
+                      fontFamily:
+                        row.label === "Temporary Password"
+                          ? "monospace"
+                          : "inherit",
                       fontWeight: 600,
                     }}
                   >
@@ -1884,14 +2141,32 @@ export default function AdminUsers() {
                   gap: "8px",
                 }}
               >
-                <AlertCircle size={13} style={{ color: "#D4A017", flexShrink: 0, marginTop: "2px" }} />
-                <p style={{ color: "#7A5C00", fontSize: "0.76rem", margin: 0, lineHeight: 1.5 }}>
-                  The user will be prompted to change their password immediately on first login.
+                <AlertCircle
+                  size={13}
+                  style={{
+                    color: "#D4A017",
+                    flexShrink: 0,
+                    marginTop: "2px",
+                  }}
+                />
+                <p
+                  style={{
+                    color: "#7A5C00",
+                    fontSize: "0.76rem",
+                    margin: 0,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  The user will be prompted to change their password immediately
+                  on first login.
                 </p>
               </div>
 
               <button
-                onClick={() => { setCreatedInfo(null); fetchUsers(); setFormModal(null); }}
+                type="button"
+                onClick={() => {
+                  setCreatedInfo(null);
+                }}
                 style={{
                   width: "100%",
                   marginTop: "16px",

@@ -1,4 +1,3 @@
-// AdminLayout.tsx
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
@@ -42,6 +41,7 @@ export default function AdminLayout() {
     const localFlag = localStorage.getItem("mustChangePassword") === "true";
     if (localFlag) {
       setMustChangePassword(true);
+      setIsLoading(false); // ✅ FIX: Allow UI to render with modal
       return;
     }
 
@@ -52,9 +52,13 @@ export default function AdminLayout() {
           { withCredentials: true }
         );
 
+        console.log("Auth status response:", res.data);
+
         if (res.data?.mustChangePassword) {
           setMustChangePassword(true);
           localStorage.setItem("mustChangePassword", "true");
+          setIsLoading(false); // ✅ FIX: Allow UI to render with modal
+          navigate("/admin");
         } else if (res.data.authenticated) {
           setIsLoading(false);
           // Fetch current user profile
@@ -66,13 +70,17 @@ export default function AdminLayout() {
             if (profileRes.data?.data) {
               setCurrentUser(profileRes.data.data);
             }
-          } catch {
-            // fallback — profile fetch not critical
+          } catch (err) {
+            console.error("Failed to fetch user profile:", err);
           }
         } else {
+          setIsLoading(false); // ✅ FIX: Handle unauthenticated case
+          localStorage.removeItem("adminAuth");
           navigate("/admin");
         }
-      } catch {
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsLoading(false); // ✅ FIX: Always stop loading
         localStorage.removeItem("adminAuth");
         navigate("/admin");
       }
@@ -86,22 +94,69 @@ export default function AdminLayout() {
     localStorage.removeItem("mustChangePassword");
   };
 
-  if (isLoading) return null;
+  // ✅ PRIORITY 1: Show password modal FIRST (blocks everything else)
+  if (mustChangePassword) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F0EDE6",
+          fontFamily: "'Lato', sans-serif",
+        }}
+      >
+        <ChangePasswordModal onSuccess={handlePasswordChanged} />
+      </div>
+    );
+  }
+
+  // ✅ PRIORITY 2: Show loading spinner
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F0EDE6",
+          fontFamily: "'Lato', sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              border: "3px solid rgba(139,195,74,0.2)",
+              borderTop: "3px solid #8BC34A",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <p style={{ color: "#2D5016", margin: 0 }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
-    await axios
-      .post(
+    try {
+      await axios.post(
         import.meta.env.VITE_BACKEND_URL + "/auth/logout",
         {},
         { withCredentials: true }
-      )
-      .then((res) => {
-        if (res.status === 200) {
-          localStorage.removeItem("adminAuth");
-          navigate("/admin");
-        }
-      })
-      .catch((err) => console.error("Logout error:", err));
+      );
+      localStorage.removeItem("adminAuth");
+      navigate("/admin");
+    } catch (err) {
+      console.error("Logout error:", err);
+      localStorage.removeItem("adminAuth");
+      navigate("/admin");
+    }
   };
 
   const isActive = (to: string) => location.pathname === to;
@@ -211,20 +266,6 @@ export default function AdminLayout() {
               ADMIN PANEL
             </p>
           </div>
-          {/* <button
-            onClick={() => setSidebarOpen(false)}
-            style={{
-              marginLeft: "auto",
-              background: "none",
-              border: "none",
-              color: "#A8C580",
-              cursor: "pointer",
-              display: "flex",
-            }}
-            className="lg:hidden"
-          >
-            <X size={18} />
-          </button> */}
         </div>
 
         {/* Nav */}
@@ -294,7 +335,7 @@ export default function AdminLayout() {
             borderTop: "1px solid rgba(139,195,74,0.1)",
           }}
         >
-          {/* ── Clickable profile card ── */}
+          {/* Clickable profile card */}
           <button
             onClick={() => {
               navigate("/admin/profile");
@@ -487,12 +528,16 @@ export default function AdminLayout() {
             width: "100%",
           }}
         >
-          {mustChangePassword && (
-            <ChangePasswordModal onSuccess={handlePasswordChanged} />
-          )}
           <Outlet />
         </main>
       </div>
+
+      {/* <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style> */}
     </div>
   );
 }

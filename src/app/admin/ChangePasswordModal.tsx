@@ -1,6 +1,6 @@
-// src/app/admin/ChangePasswordModal.tsx
+// ChangePasswordModal.tsx
 import { useState } from "react";
-import { Lock, Eye, EyeOff, AlertCircle, Check, X, Shield } from "lucide-react";
+import { Lock, Eye, EyeOff, AlertCircle, Check, Shield } from "lucide-react";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
@@ -15,83 +15,27 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
-export default function ChangePasswordModal({ onSuccess }: Props) {
-  const [currentPassword, setCurrentPassword]     = useState("");
-  const [newPassword, setNewPassword]             = useState("");
-  const [confirmPassword, setConfirmPassword]     = useState("");
-  const [showCurrent, setShowCurrent]             = useState(false);
-  const [showNew, setShowNew]                     = useState(false);
-  const [showConfirm, setShowConfirm]             = useState(false);
-  const [errors, setErrors]                       = useState<FormErrors>({});
-  const [globalError, setGlobalError]             = useState("");
-  const [loading, setLoading]                     = useState(false);
-  const [success, setSuccess]                     = useState(false);
+// ✅ Moved OUTSIDE the parent component
+interface PasswordInputProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+  error?: string;
+  placeholder?: string;
+}
 
-  const validate = (): boolean => {
-    const e: FormErrors = {};
-
-    if (!currentPassword) {
-      e.currentPassword = "Current password is required.";
-    }
-
-    if (!newPassword) {
-      e.newPassword = "New password is required.";
-    } else if (newPassword.length < 6) {
-      e.newPassword = "Must be at least 6 characters.";
-    } else if (newPassword.length > 128) {
-      e.newPassword = "Cannot exceed 128 characters.";
-    } else if (newPassword === currentPassword) {
-      e.newPassword = "New password must be different from your current password.";
-    }
-
-    if (!confirmPassword) {
-      e.confirmPassword = "Please confirm your new password.";
-    } else if (confirmPassword !== newPassword) {
-      e.confirmPassword = "Passwords do not match.";
-    }
-
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    setGlobalError("");
-    if (!validate()) return;
-
-    try {
-      setLoading(true);
-      await axios.post(
-        `${API_URL}/auth/change-password`,
-        { currentPassword, newPassword },
-        { withCredentials: true }
-      );
-      setSuccess(true);
-      setTimeout(() => onSuccess(), 1800);
-    } catch (err: any) {
-      const msg = err.response?.data?.message ?? "Failed to change password. Please try again.";
-      setGlobalError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const PasswordInput = ({
-    label,
-    value,
-    onChange,
-    show,
-    onToggle,
-    error,
-    placeholder,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    show: boolean;
-    onToggle: () => void;
-    error?: string;
-    placeholder?: string;
-  }) => (
+function PasswordInput({
+  label,
+  value,
+  onChange,
+  show,
+  onToggle,
+  error,
+  placeholder,
+}: PasswordInputProps) {
+  return (
     <div>
       <label
         style={{
@@ -118,11 +62,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
         <input
           type={show ? "text" : "password"}
           value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            // Clear field error on change
-            setErrors((prev) => ({ ...prev, [label]: undefined }));
-          }}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           style={{
             width: "100%",
@@ -157,26 +97,98 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
         </button>
       </div>
       {error && (
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "5px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            marginTop: "5px",
+          }}
+        >
           <AlertCircle size={12} style={{ color: "#D4183D", flexShrink: 0 }} />
-          <p style={{ color: "#D4183D", fontSize: "0.73rem", margin: 0 }}>{error}</p>
+          <p style={{ color: "#D4183D", fontSize: "0.73rem", margin: 0 }}>
+            {error}
+          </p>
         </div>
       )}
     </div>
   );
+}
 
-  // Password strength indicator
-  const getStrength = (pwd: string): { label: string; color: string; width: string } => {
-    if (!pwd) return { label: "", color: "transparent", width: "0%" };
-    if (pwd.length < 6) return { label: "Too short", color: "#D4183D", width: "20%" };
-    if (pwd.length < 8) return { label: "Weak", color: "#D4A017", width: "40%" };
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasNum = /[0-9]/.test(pwd);
-    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
-    const score = [hasUpper, hasNum, hasSpecial].filter(Boolean).length;
-    if (score === 3) return { label: "Strong", color: "#4A7C23", width: "100%" };
-    if (score === 2) return { label: "Good", color: "#8BC34A", width: "70%" };
-    return { label: "Fair", color: "#D4A017", width: "50%" };
+// Password strength indicator — also moved outside
+function getStrength(pwd: string): {
+  label: string;
+  color: string;
+  width: string;
+} {
+  if (!pwd) return { label: "", color: "transparent", width: "0%" };
+  if (pwd.length < 6)
+    return { label: "Too short", color: "#D4183D", width: "20%" };
+  if (pwd.length < 8)
+    return { label: "Weak", color: "#D4A017", width: "40%" };
+  const hasUpper = /[A-Z]/.test(pwd);
+  const hasNum = /[0-9]/.test(pwd);
+  const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+  const score = [hasUpper, hasNum, hasSpecial].filter(Boolean).length;
+  if (score === 3) return { label: "Strong", color: "#4A7C23", width: "100%" };
+  if (score === 2) return { label: "Good", color: "#8BC34A", width: "70%" };
+  return { label: "Fair", color: "#D4A017", width: "50%" };
+}
+
+export default function ChangePasswordModal({ onSuccess }: Props) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [globalError, setGlobalError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const validate = (): boolean => {
+    const e: FormErrors = {};
+    if (!currentPassword) e.currentPassword = "Current password is required.";
+    if (!newPassword) {
+      e.newPassword = "New password is required.";
+    } else if (newPassword.length < 6) {
+      e.newPassword = "Must be at least 6 characters.";
+    } else if (newPassword.length > 128) {
+      e.newPassword = "Cannot exceed 128 characters.";
+    } else if (newPassword === currentPassword) {
+      e.newPassword =
+        "New password must be different from your current password.";
+    }
+    if (!confirmPassword) {
+      e.confirmPassword = "Please confirm your new password.";
+    } else if (confirmPassword !== newPassword) {
+      e.confirmPassword = "Passwords do not match.";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    setGlobalError("");
+    if (!validate()) return;
+    try {
+      setLoading(true);
+      await axios.post(
+        `${API_URL}/auth/change-password`,
+        { currentPassword, newPassword },
+        { withCredentials: true }
+      );
+      setSuccess(true);
+      setTimeout(() => onSuccess(), 1800);
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ??
+        "Failed to change password. Please try again.";
+      setGlobalError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const strength = getStrength(newPassword);
@@ -201,7 +213,8 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
           borderRadius: "24px",
           width: "100%",
           maxWidth: "460px",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,195,74,0.2)",
+          boxShadow:
+            "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,195,74,0.2)",
           overflow: "hidden",
         }}
       >
@@ -211,7 +224,6 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
             background: "linear-gradient(135deg, #2D5016, #4A7C23)",
             padding: "28px 32px 24px",
             textAlign: "center",
-            position: "relative",
           }}
         >
           <div
@@ -254,9 +266,14 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "16px" }}>
-
-          {/* Global error */}
+        <div
+          style={{
+            padding: "28px 32px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
           {globalError && (
             <div
               style={{
@@ -269,14 +286,16 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 gap: "10px",
               }}
             >
-              <AlertCircle size={15} style={{ color: "#D4183D", flexShrink: 0 }} />
+              <AlertCircle
+                size={15}
+                style={{ color: "#D4183D", flexShrink: 0 }}
+              />
               <p style={{ color: "#D4183D", fontSize: "0.83rem", margin: 0 }}>
                 {globalError}
               </p>
             </div>
           )}
 
-          {/* Success state */}
           {success && (
             <div
               style={{
@@ -303,7 +322,14 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
               >
                 <Check size={16} style={{ color: "#FAF6EE" }} />
               </div>
-              <p style={{ color: "#2D5016", fontSize: "0.88rem", margin: 0, fontWeight: 500 }}>
+              <p
+                style={{
+                  color: "#2D5016",
+                  fontSize: "0.88rem",
+                  margin: 0,
+                  fontWeight: 500,
+                }}
+              >
                 Password changed successfully! Redirecting...
               </p>
             </div>
@@ -323,13 +349,35 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                   gap: "10px",
                 }}
               >
-                <AlertCircle size={15} style={{ color: "#D4A017", flexShrink: 0, marginTop: "1px" }} />
+                <AlertCircle
+                  size={15}
+                  style={{
+                    color: "#D4A017",
+                    flexShrink: 0,
+                    marginTop: "1px",
+                  }}
+                />
                 <div>
-                  <p style={{ color: "#7A5C00", fontSize: "0.82rem", margin: "0 0 2px", fontWeight: 600 }}>
+                  <p
+                    style={{
+                      color: "#7A5C00",
+                      fontSize: "0.82rem",
+                      margin: "0 0 2px",
+                      fontWeight: 600,
+                    }}
+                  >
                     Temporary password in use
                   </p>
-                  <p style={{ color: "#8B6914", fontSize: "0.78rem", margin: 0, lineHeight: 1.5 }}>
-                    Your admin set a temporary password: <code
+                  <p
+                    style={{
+                      color: "#8B6914",
+                      fontSize: "0.78rem",
+                      margin: 0,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Your admin set a temporary password:{" "}
+                    <code
                       style={{
                         backgroundColor: "rgba(212,160,23,0.15)",
                         padding: "1px 6px",
@@ -346,29 +394,36 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 </div>
               </div>
 
-              {/* Current password */}
+              {/* ✅ Now uses the stable external PasswordInput component */}
               <PasswordInput
                 label="Current (Temporary) Password"
                 value={currentPassword}
-                onChange={setCurrentPassword}
+                onChange={(v) => {
+                  setCurrentPassword(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    currentPassword: undefined,
+                  }));
+                }}
                 show={showCurrent}
-                onToggle={() => setShowCurrent(!showCurrent)}
+                onToggle={() => setShowCurrent((s) => !s)}
                 error={errors.currentPassword}
                 placeholder="Enter the temporary password"
               />
 
-              {/* New password */}
               <div>
                 <PasswordInput
                   label="New Password"
                   value={newPassword}
-                  onChange={setNewPassword}
+                  onChange={(v) => {
+                    setNewPassword(v);
+                    setErrors((prev) => ({ ...prev, newPassword: undefined }));
+                  }}
                   show={showNew}
-                  onToggle={() => setShowNew(!showNew)}
+                  onToggle={() => setShowNew((s) => !s)}
                   error={errors.newPassword}
                   placeholder="Minimum 6 characters"
                 />
-                {/* Strength bar */}
                 {newPassword && (
                   <div style={{ marginTop: "8px" }}>
                     <div
@@ -403,13 +458,18 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 )}
               </div>
 
-              {/* Confirm password */}
               <PasswordInput
                 label="Confirm New Password"
                 value={confirmPassword}
-                onChange={setConfirmPassword}
+                onChange={(v) => {
+                  setConfirmPassword(v);
+                  setErrors((prev) => ({
+                    ...prev,
+                    confirmPassword: undefined,
+                  }));
+                }}
                 show={showConfirm}
-                onToggle={() => setShowConfirm(!showConfirm)}
+                onToggle={() => setShowConfirm((s) => !s)}
                 error={errors.confirmPassword}
                 placeholder="Re-enter your new password"
               />
@@ -422,7 +482,14 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                   padding: "10px 14px",
                 }}
               >
-                <p style={{ color: "#4A7C23", fontSize: "0.75rem", margin: "0 0 4px", fontWeight: 600 }}>
+                <p
+                  style={{
+                    color: "#4A7C23",
+                    fontSize: "0.75rem",
+                    margin: "0 0 4px",
+                    fontWeight: 600,
+                  }}
+                >
                   Password tips:
                 </p>
                 {[
@@ -447,7 +514,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 ))}
               </div>
 
-              {/* Submit button */}
+              {/* Submit */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}

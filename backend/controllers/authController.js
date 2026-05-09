@@ -73,6 +73,14 @@ export const logout = (req, res) => {
 
 export const status = (req, res) => {
   if (req.session && req.session.userId) {
+
+    console.log("Session data:", {
+      userId: req.session.userId,
+      role: req.session.role,
+      mustChangePassword: req.session.mustChangePassword,
+    });
+
+    console.log(req.session)
     return res.status(200).json({
       success: true,
       authenticated: true,
