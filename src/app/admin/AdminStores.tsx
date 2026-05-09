@@ -336,7 +336,7 @@ function DeleteConfirm({ name, onConfirm, onCancel, getComplete }: { name: strin
           Delete <strong>"{name}"</strong>? This action cannot be undone.
         </p>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-          {getComplete == true ?
+          {getComplete == false ?
             <div className="flex gap-4">
               <button
                 onClick={onCancel}
