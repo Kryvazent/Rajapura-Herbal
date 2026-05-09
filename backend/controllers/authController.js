@@ -25,12 +25,12 @@ export const login = async (req, res) => {
       });
     }
 
-    if (user.role !== "ADMIN") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin privileges required.",
-      });
-    }
+    // if (user.role !== "ADMIN") {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Access denied. Admin privileges required.",
+    //   });
+    // }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -159,6 +159,7 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+    req.session.role = user.role; // Ensure session role is up-to-date
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error("getMe error:", error);

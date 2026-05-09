@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { Leaf, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import Logo from "./Logo";
 
 export function Footer() {
   return (
@@ -19,7 +20,8 @@ export function Footer() {
                 style={{ backgroundColor: "#8BC34A" }}
                 className="w-10 h-10 rounded-full flex items-center justify-center"
               >
-                <Leaf className="text-white w-5 h-5" />
+                {/* <Leaf className="text-white w-5 h-5" /> */}
+                <Logo width={38} height={38} alt="Rajapura Logo" />
               </div>
               <div>
                 <p

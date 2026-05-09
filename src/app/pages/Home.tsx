@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import "../../styles/index.css";
 import { Product } from "../interfaces/productInterface";
+import Logo from "../components/Logo";
 
 const stats = [
   { value: "200+", label: "Years of Heritage" },
@@ -749,10 +750,17 @@ export default function Home() {
               "radial-gradient(circle at 30% 50%, rgba(212,160,23,0.07) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(139,195,74,0.07) 0%, transparent 60%)",
           }}
         />
-        <div style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
-          <Leaf
-            size={36}
-            style={{ color: "#D4A017", margin: "0 auto 16px", display: "block" }}
+        <div className="flex flex-col items-center" style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
+          
+
+          <img
+            src="/logo2.png"
+            style={{
+              objectFit: 'contain',
+              display: 'block',
+              width: '300px',
+              aspectRatio: '1 / 1',
+            }}
           />
           <h2
             style={{

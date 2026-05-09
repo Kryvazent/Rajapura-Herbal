@@ -37,7 +37,7 @@ app.use(session({
 }));
 
 app.use("/auth", authRoutes);
-app.use("/admin",authMiddleware.verifyLoggin, authMiddleware.verifyUserRole, adminRoutes);
+app.use("/admin",authMiddleware.verifyLoggin, authMiddleware.verifyUserRoleBoth, adminRoutes);
 app.use("/user", userRoutes);
 
 mongoose.connect(process.env.MONGO_URL)

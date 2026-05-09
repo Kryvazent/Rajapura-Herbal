@@ -1,4 +1,3 @@
-// backend/routes/authRoutes.js
 import express from "express";
 import * as authMiddleware from "../middleware/auth.js";
 import * as authController from "../controllers/authController.js";
@@ -27,10 +26,10 @@ router.post(
   authController.changePassword
 );
 
-// ── NEW: get current logged-in user's profile ─────────────────────────────────
+// ── Get current logged-in user's profile ──────────────────────────────────────
 router.get("/me", authMiddleware.verifyLoggin, authController.getMe);
 
-// ── NEW: update current logged-in user's profile ──────────────────────────────
+// ── Update current logged-in user's profile ───────────────────────────────────
 router.put("/me", authMiddleware.verifyLoggin, authController.updateMe);
 
 export default router;

@@ -1,6 +1,28 @@
-export const verifyUserRole = (req, res, next) => {
+export const verifyUserRoleAdmin = (req, res, next) => {
 
     if (req.session && req.session.role === 'ADMIN') {
+        next();
+    } else {
+
+        const status = !req.session?.role ? 401 : 403;
+        res.status(status).json({ message: 'Unauthorized' });
+    }
+};
+
+export const verifyUserRoleStaff = (req, res, next) => {
+
+    if (req.session && req.session.role === 'STAFF') {
+        next();
+    } else {
+
+        const status = !req.session?.role ? 401 : 403;
+        res.status(status).json({ message: 'Unauthorized' });
+    }
+};
+
+export const verifyUserRoleBoth = (req, res, next) => {
+
+    if (req.session && (req.session.role === 'ADMIN' || req.session.role === 'STAFF')) {
         next();
     } else {
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Menu, X, Leaf, ChevronRight } from "lucide-react";
+import Logo from "./Logo";
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,7 +42,7 @@ export function Navbar() {
               style={{ backgroundColor: "#2D5016" }}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0"
             >
-              <Leaf style={{ color: "#FAF6EE", width: "18px", height: "18px" }} />
+              <Logo width={50} height={50} alt="Rajapura Logo" />
             </div>
             <div>
               <p style={{ fontFamily: "'Cinzel', serif", color: "#2D5016", fontSize: "clamp(0.9rem, 2vw, 1.1rem)", margin: 0, lineHeight: 1.1 }}>

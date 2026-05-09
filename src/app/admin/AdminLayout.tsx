@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
-  Leaf,
   LayoutDashboard,
   Package,
   Store,
   Sparkles,
   LogOut,
   Menu,
-  X,
   ChevronRight,
-  Bell,
   User,
+  Leaf,
 } from "lucide-react";
 import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
+import Logo from "../components/Logo";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,24 +23,27 @@ const navItems = [
   { to: "/admin/users", label: "Users", icon: User },
 ];
 
+interface CurrentUser {
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  email?: string;
+}
+
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    email?: string;
-  }>({});
+  const [currentUser, setCurrentUser] = useState<CurrentUser>({});
+  const [role, setRole] = useState("");
 
   useEffect(() => {
     const localFlag = localStorage.getItem("mustChangePassword") === "true";
     if (localFlag) {
       setMustChangePassword(true);
-      setIsLoading(false); // ✅ FIX: Allow UI to render with modal
+      setIsLoading(false);
       return;
     }
 
@@ -52,16 +54,15 @@ export default function AdminLayout() {
           { withCredentials: true }
         );
 
-        console.log("Auth status response:", res.data);
-
         if (res.data?.mustChangePassword) {
           setMustChangePassword(true);
           localStorage.setItem("mustChangePassword", "true");
-          setIsLoading(false); // ✅ FIX: Allow UI to render with modal
+          setIsLoading(false);
           navigate("/admin");
         } else if (res.data.authenticated) {
+          setRole(res.data.role);
           setIsLoading(false);
-          // Fetch current user profile
+
           try {
             const profileRes = await axios.get(
               import.meta.env.VITE_BACKEND_URL + "/auth/me",
@@ -74,13 +75,13 @@ export default function AdminLayout() {
             console.error("Failed to fetch user profile:", err);
           }
         } else {
-          setIsLoading(false); // ✅ FIX: Handle unauthenticated case
+          setIsLoading(false);
           localStorage.removeItem("adminAuth");
           navigate("/admin");
         }
       } catch (error) {
         console.error("Auth check error:", error);
-        setIsLoading(false); // ✅ FIX: Always stop loading
+        setIsLoading(false);
         localStorage.removeItem("adminAuth");
         navigate("/admin");
       }
@@ -94,7 +95,23 @@ export default function AdminLayout() {
     localStorage.removeItem("mustChangePassword");
   };
 
-  // ✅ PRIORITY 1: Show password modal FIRST (blocks everything else)
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("adminAuth");
+      navigate("/admin");
+    }
+  };
+
+  // ── Early returns ───────────────────────────────────────────────────────────
+
   if (mustChangePassword) {
     return (
       <div
@@ -112,7 +129,6 @@ export default function AdminLayout() {
     );
   }
 
-  // ✅ PRIORITY 2: Show loading spinner
   if (isLoading) {
     return (
       <div
@@ -139,31 +155,24 @@ export default function AdminLayout() {
           />
           <p style={{ color: "#2D5016", margin: 0 }}>Loading...</p>
         </div>
+        <style>{`
+          @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
-  const handleLogout = async () => {
-    try {
-      await axios.post(
-        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
-        {},
-        { withCredentials: true }
-      );
-      localStorage.removeItem("adminAuth");
-      navigate("/admin");
-    } catch (err) {
-      console.error("Logout error:", err);
-      localStorage.removeItem("adminAuth");
-      navigate("/admin");
-    }
-  };
+  // ── Derived display values ──────────────────────────────────────────────────
 
   const isActive = (to: string) => location.pathname === to;
+
   const currentPage =
     location.pathname === "/admin/profile"
       ? "My Profile"
-      : navItems.find((n) => isActive(n.to))?.label ?? "Admin";
+      : (navItems.find((n) => isActive(n.to))?.label ?? "Admin");
 
   const displayInitial =
     currentUser.firstName?.[0]?.toUpperCase() ??
@@ -176,6 +185,14 @@ export default function AdminLayout() {
       : "Administrator";
 
   const displayRole = currentUser.role ?? "ADMIN";
+
+  // ✅ Filter nav items — hide "Users" from STAFF, show only to ADMIN
+  const visibleNavItems = navItems.filter(({ to }) => {
+    if (to === "/admin/users" && role === "STAFF") return false;
+    return true;
+  });
+
+  // ── Main layout ─────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -199,7 +216,7 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <aside
         style={{
           width: "260px",
@@ -240,7 +257,8 @@ export default function AdminLayout() {
               flexShrink: 0,
             }}
           >
-            <Leaf size={20} style={{ color: "#8BC34A" }} />
+            {/* ✅ Logo component — sidebar (dark bg) */}
+            <Logo size={20} color="#8BC34A" />
           </div>
           <div>
             <p
@@ -281,7 +299,8 @@ export default function AdminLayout() {
           >
             NAVIGATION
           </p>
-          {navItems.map(({ to, label, icon: Icon }) => {
+
+          {visibleNavItems.map(({ to, label, icon: Icon }) => {
             const active = isActive(to);
             return (
               <Link
@@ -427,7 +446,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* ── Main content ── */}
       <div
         style={{
           flex: 1,
@@ -468,35 +487,20 @@ export default function AdminLayout() {
             >
               <Menu size={22} />
             </button>
-            <div>
-              <h1
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  color: "#2D5016",
-                  margin: 0,
-                  fontSize: "1.2rem",
-                  lineHeight: 1,
-                }}
-              >
-                {currentPage}
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div
+            <h1
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(45,80,22,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
+                fontFamily: "'Playfair Display', serif",
+                color: "#2D5016",
+                margin: 0,
+                fontSize: "1.2rem",
+                lineHeight: 1,
               }}
             >
-              <Bell size={16} style={{ color: "#2D5016" }} />
-            </div>
+              {currentPage}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
             <a
               href="/"
               target="_blank"
@@ -513,7 +517,7 @@ export default function AdminLayout() {
                 gap: "6px",
               }}
             >
-              <Leaf size={12} />
+              <Leaf size={14} />
               View Site
             </a>
           </div>
@@ -532,12 +536,12 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      {/* <style>{`
+      <style>{`
         @keyframes spin {
-          0% { transform: rotate(0deg); }
+          0%   { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-      `}</style> */}
+      `}</style>
     </div>
   );
 }
