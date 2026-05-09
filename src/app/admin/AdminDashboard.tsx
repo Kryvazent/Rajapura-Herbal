@@ -5,49 +5,67 @@ import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 
 export default function AdminDashboard() {
-
   const [products, setProducts] = useState<Product[]>([]);
-  const [provinces, setProvinces] = useState([]);
+  const [provinces, setProvinces] = useState<any[]>([]);
 
   useEffect(() => {
-    loadData()
-    loadData2()
+    loadProducts();
+    loadProvinces();
   }, []);
 
-  async function loadData() {
-    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/products-all")
-      .then(res => {
-        setProducts(res.data);
-      })
-      .catch(err => {
-        console.error("Error fetching featured products:", err);
-      })
-  }
+  const loadProducts = async () => {
+    try {
+      const res = await axios.get(
+        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+      );
+      // Handle both plain array and { success, data: [] } response shapes
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setProducts(data);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setProducts([]);
+    }
+  };
 
-  const loadData2 = async () => {
+  const loadProvinces = async () => {
+    try {
+      const res = await axios.get(
+        import.meta.env.VITE_BACKEND_URL + "/user/shops"
+      );
+      // Handle both plain array and { success, data: [] } response shapes
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setProvinces(data);
+    } catch (err) {
+      console.error("Error fetching shops:", err);
+      setProvinces([]);
+    }
+  };
 
-    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
-      .then(res => {
-        setProvinces(res.data ?? []);
-      })
-      .catch(err => {
-        console.error("Error fetching featured products:", err);
-      })
-  }
-
-  const totalDistricts = provinces.reduce((acc, p) => acc + (p.districts?.length ?? 0), 0);
-
-  const totalTowns = provinces.reduce(
-    (acc, p) => acc + (p.districts ?? []).reduce((da, d) => da + (d.towns?.length ?? 0), 0),
+  const totalDistricts = provinces.reduce(
+    (acc, p) => acc + (p.districts?.length ?? 0),
     0
   );
+
+  const totalTowns = provinces.reduce(
+    (acc, p) =>
+      acc +
+      (p.districts ?? []).reduce(
+        (da: number, d: any) => da + (d.towns?.length ?? 0),
+        0
+      ),
+    0
+  );
+
   const totalShops = provinces.reduce(
     (acc, p) =>
       acc +
       (p.districts ?? []).reduce(
-        (da, d) =>
+        (da: number, d: any) =>
           da +
-          (d.towns ?? []).reduce((ta, t) => ta + (t.shops?.length ?? 0), 0),
+          (d.towns ?? []).reduce(
+            (ta: number, t: any) => ta + (t.shops?.length ?? 0),
+            0
+          ),
         0
       ),
     0
@@ -96,7 +114,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      {/* Welcome */}
+      {/* Welcome Banner */}
       <div
         style={{
           background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -125,7 +143,14 @@ export default function AdminDashboard() {
           }}
         />
         <div>
-          <p style={{ color: "rgba(168,197,128,0.8)", fontSize: "0.82rem", margin: "0 0 4px", letterSpacing: "0.1em" }}>
+          <p
+            style={{
+              color: "rgba(168,197,128,0.8)",
+              fontSize: "0.82rem",
+              margin: "0 0 4px",
+              letterSpacing: "0.1em",
+            }}
+          >
             WELCOME BACK
           </p>
           <h2
@@ -193,7 +218,9 @@ export default function AdminDashboard() {
             <p style={{ color: "#3B2314", fontSize: "0.85rem", margin: "0 0 2px" }}>
               {label}
             </p>
-            <p style={{ color: "#A8C580", fontSize: "0.75rem", margin: 0 }}>{sub}</p>
+            <p style={{ color: "#A8C580", fontSize: "0.75rem", margin: 0 }}>
+              {sub}
+            </p>
           </Link>
         ))}
       </div>
@@ -244,62 +271,76 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <div style={{ padding: "8px 12px" }}>
-            {products.slice(0, 5).map((p) => (
-              <div
-                key={p._id.toString()}
+            {products.length === 0 ? (
+              <p
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "10px 10px",
-                  borderRadius: "10px",
-                  marginBottom: "2px",
+                  color: "#A8C580",
+                  fontSize: "0.83rem",
+                  textAlign: "center",
+                  padding: "20px",
+                  margin: 0,
                 }}
               >
-                <img
-                  src={p.image}
-                  alt={p.name}
+                No products yet.
+              </p>
+            ) : (
+              products.slice(0, 5).map((p) => (
+                <div
+                  key={p._id.toString()}
                   style={{
-                    width: "40px",
-                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "10px 10px",
                     borderRadius: "10px",
-                    objectFit: "cover",
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p
-                    style={{
-                      color: "#2D5016",
-                      margin: 0,
-                      fontSize: "0.85rem",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {p.name}
-                  </p>
-                  <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.75rem" }}>
-                    {p.category}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    color: "#2D5016",
-                    fontSize: "0.85rem",
-                    fontFamily: "'Playfair Display', serif",
-                    flexShrink: 0,
+                    marginBottom: "2px",
                   }}
                 >
-                  {p.price}
-                </span>
-              </div>
-            ))}
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "10px",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        color: "#2D5016",
+                        margin: 0,
+                        fontSize: "0.85rem",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {p.name}
+                    </p>
+                    <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.75rem" }}>
+                      {p.category}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      color: "#2D5016",
+                      fontSize: "0.85rem",
+                      fontFamily: "'Playfair Display', serif",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {p.price}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Provinces overview */}
+        {/* Store Coverage */}
         <div
           style={{
             backgroundColor: "#FAF6EE",
@@ -343,59 +384,78 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <div style={{ padding: "8px 12px" }}>
-            {provinces.map((prov) => {
-              const shopCount = (prov.districts ?? []).reduce(
-                (a, d) => a + (d.towns ?? []).reduce((ta, t) => ta + (t.shops?.length ?? 0), 0),
-                0
-              );
-              return (
-                <div
-                  key={prov._id.toString()}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "9px 10px",
-                    borderRadius: "10px",
-                    marginBottom: "2px",
-                  }}
-                >
-                  <span style={{ fontSize: "1.2rem" }}>{prov.icon}</span>
-                  <p
+            {provinces.length === 0 ? (
+              <p
+                style={{
+                  color: "#A8C580",
+                  fontSize: "0.83rem",
+                  textAlign: "center",
+                  padding: "20px",
+                  margin: 0,
+                }}
+              >
+                No provinces yet.
+              </p>
+            ) : (
+              provinces.map((prov) => {
+                const shopCount = (prov.districts ?? []).reduce(
+                  (a: number, d: any) =>
+                    a +
+                    (d.towns ?? []).reduce(
+                      (ta: number, t: any) => ta + (t.shops?.length ?? 0),
+                      0
+                    ),
+                  0
+                );
+                return (
+                  <div
+                    key={prov._id?.toString() ?? prov.name}
                     style={{
-                      color: "#2D5016",
-                      margin: 0,
-                      fontSize: "0.85rem",
-                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "9px 10px",
+                      borderRadius: "10px",
+                      marginBottom: "2px",
                     }}
                   >
-                    {prov.name}
-                  </p>
-                  <span
-                    style={{
-                      backgroundColor: "rgba(45,80,22,0.08)",
-                      color: "#2D5016",
-                      fontSize: "0.75rem",
-                      padding: "2px 8px",
-                      borderRadius: "50px",
-                    }}
-                  >
-                    {prov.districts.length} districts
-                  </span>
-                  <span
-                    style={{
-                      backgroundColor: "rgba(212,160,23,0.1)",
-                      color: "#7A5C00",
-                      fontSize: "0.75rem",
-                      padding: "2px 8px",
-                      borderRadius: "50px",
-                    }}
-                  >
-                    {shopCount} stores
-                  </span>
-                </div>
-              );
-            })}
+                    <span style={{ fontSize: "1.2rem" }}>{prov.icon}</span>
+                    <p
+                      style={{
+                        color: "#2D5016",
+                        margin: 0,
+                        fontSize: "0.85rem",
+                        flex: 1,
+                      }}
+                    >
+                      {prov.name}
+                    </p>
+                    <span
+                      style={{
+                        backgroundColor: "rgba(45,80,22,0.08)",
+                        color: "#2D5016",
+                        fontSize: "0.75rem",
+                        padding: "2px 8px",
+                        borderRadius: "50px",
+                      }}
+                    >
+                      {prov.districts?.length ?? 0} districts
+                    </span>
+                    <span
+                      style={{
+                        backgroundColor: "rgba(212,160,23,0.1)",
+                        color: "#7A5C00",
+                        fontSize: "0.75rem",
+                        padding: "2px 8px",
+                        borderRadius: "50px",
+                      }}
+                    >
+                      {shopCount} stores
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

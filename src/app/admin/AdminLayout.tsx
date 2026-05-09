@@ -1,3 +1,4 @@
+// AdminLayout.tsx
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
@@ -11,36 +12,67 @@ import {
   X,
   ChevronRight,
   Bell,
+  User,
 } from "lucide-react";
 import axios from "axios";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/stores", label: "Stores", icon: Store },
   { to: "/admin/services", label: "Services", icon: Sparkles },
+  { to: "/admin/users", label: "Users", icon: User },
 ];
 
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    email?: string;
+  }>({});
 
   useEffect(() => {
+    const localFlag = localStorage.getItem("mustChangePassword") === "true";
+    if (localFlag) {
+      setMustChangePassword(true);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
-        const res = await axios.get(import.meta.env.VITE_BACKEND_URL + "/auth/status", {
-          withCredentials: true
-        });
+        const res = await axios.get(
+          import.meta.env.VITE_BACKEND_URL + "/auth/status",
+          { withCredentials: true }
+        );
 
-        if (res.data.authenticated) {
+        if (res.data?.mustChangePassword) {
+          setMustChangePassword(true);
+          localStorage.setItem("mustChangePassword", "true");
+        } else if (res.data.authenticated) {
           setIsLoading(false);
+          // Fetch current user profile
+          try {
+            const profileRes = await axios.get(
+              import.meta.env.VITE_BACKEND_URL + "/auth/me",
+              { withCredentials: true }
+            );
+            if (profileRes.data?.data) {
+              setCurrentUser(profileRes.data.data);
+            }
+          } catch {
+            // fallback — profile fetch not critical
+          }
         } else {
           navigate("/admin");
         }
-      } catch (err) {
+      } catch {
         localStorage.removeItem("adminAuth");
         navigate("/admin");
       }
@@ -49,37 +81,46 @@ export default function AdminLayout() {
     checkAuth();
   }, [navigate]);
 
+  const handlePasswordChanged = () => {
+    setMustChangePassword(false);
+    localStorage.removeItem("mustChangePassword");
+  };
+
   if (isLoading) return null;
 
-  const handleLogout = () => {
-    logout();
-    navigate("/admin");
-  };
-
-  const logout = async () => {
-    await axios.post(import.meta.env.VITE_BACKEND_URL + "/auth/logout",
-      {},
-      {
-        withCredentials: true,
-      }
-    )
-      .then(res => {
-        if (res.status == 200) {
+  const handleLogout = async () => {
+    await axios
+      .post(
+        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+        {},
+        { withCredentials: true }
+      )
+      .then((res) => {
+        if (res.status === 200) {
           localStorage.removeItem("adminAuth");
           navigate("/admin");
-        } else {
-          console.error("Logout failed:", res);
         }
       })
-      .catch(err => {
-        console.error("Error fetching featured products:", err);
-      })
+      .catch((err) => console.error("Logout error:", err));
   };
 
-
   const isActive = (to: string) => location.pathname === to;
+  const currentPage =
+    location.pathname === "/admin/profile"
+      ? "My Profile"
+      : navItems.find((n) => isActive(n.to))?.label ?? "Admin";
 
-  const currentPage = navItems.find((n) => isActive(n.to))?.label ?? "Admin";
+  const displayInitial =
+    currentUser.firstName?.[0]?.toUpperCase() ??
+    currentUser.email?.[0]?.toUpperCase() ??
+    "A";
+
+  const displayName =
+    currentUser.firstName && currentUser.lastName
+      ? `${currentUser.firstName} ${currentUser.lastName}`
+      : "Administrator";
+
+  const displayRole = currentUser.role ?? "ADMIN";
 
   return (
     <div
@@ -213,15 +254,21 @@ export default function AdminLayout() {
                   padding: "11px 14px",
                   borderRadius: "12px",
                   marginBottom: "4px",
-                  backgroundColor: active ? "rgba(139,195,74,0.15)" : "transparent",
-                  border: active ? "1px solid rgba(139,195,74,0.25)" : "1px solid transparent",
+                  backgroundColor: active
+                    ? "rgba(139,195,74,0.15)"
+                    : "transparent",
+                  border: active
+                    ? "1px solid rgba(139,195,74,0.25)"
+                    : "1px solid transparent",
                   textDecoration: "none",
                   transition: "all 0.2s",
                 }}
               >
                 <Icon
                   size={18}
-                  style={{ color: active ? "#8BC34A" : "rgba(168,197,128,0.6)" }}
+                  style={{
+                    color: active ? "#8BC34A" : "rgba(168,197,128,0.6)",
+                  }}
                 />
                 <span
                   style={{
@@ -240,22 +287,38 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* Logout */}
+        {/* Sidebar bottom — profile + logout */}
         <div
           style={{
             padding: "16px 12px 24px",
             borderTop: "1px solid rgba(139,195,74,0.1)",
           }}
         >
-          <div
+          {/* ── Clickable profile card ── */}
+          <button
+            onClick={() => {
+              navigate("/admin/profile");
+              setSidebarOpen(false);
+            }}
             style={{
-              backgroundColor: "rgba(139,195,74,0.07)",
+              width: "100%",
+              backgroundColor:
+                location.pathname === "/admin/profile"
+                  ? "rgba(139,195,74,0.15)"
+                  : "rgba(139,195,74,0.07)",
+              border:
+                location.pathname === "/admin/profile"
+                  ? "1px solid rgba(139,195,74,0.3)"
+                  : "1px solid transparent",
               borderRadius: "12px",
               padding: "12px 14px",
               marginBottom: "12px",
               display: "flex",
               alignItems: "center",
               gap: "10px",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "all 0.2s",
             }}
           >
             <div
@@ -270,19 +333,36 @@ export default function AdminLayout() {
                 fontSize: "0.8rem",
                 color: "#8BC34A",
                 flexShrink: 0,
+                fontWeight: 700,
               }}
             >
-              A
+              {displayInitial}
             </div>
-            <div>
-              <p style={{ color: "#FAF6EE", margin: 0, fontSize: "0.85rem" }}>
-                Administrator
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                style={{
+                  color: "#FAF6EE",
+                  margin: 0,
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {displayName}
               </p>
               <p style={{ color: "#618C3A", margin: 0, fontSize: "0.72rem" }}>
-                admin
+                {displayRole}
               </p>
             </div>
-          </div>
+            <ChevronRight
+              size={14}
+              style={{ color: "rgba(168,197,128,0.5)", flexShrink: 0 }}
+            />
+          </button>
+
+          {/* Logout */}
           <button
             onClick={handleLogout}
             style={{
@@ -399,7 +479,17 @@ export default function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main style={{ flex: 1, padding: "28px 24px", maxWidth: "1200px", width: "100%" }}>
+        <main
+          style={{
+            flex: 1,
+            padding: "28px 24px",
+            maxWidth: "1200px",
+            width: "100%",
+          }}
+        >
+          {mustChangePassword && (
+            <ChangePasswordModal onSuccess={handlePasswordChanged} />
+          )}
           <Outlet />
         </main>
       </div>
