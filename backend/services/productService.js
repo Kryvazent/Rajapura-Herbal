@@ -22,5 +22,5 @@ export const addProduct = async (productData) => {
 };
 
 export const deleteProduct = async (id) => {
-    await product.findByIdAndDelete(id);
+    return await product.findByIdAndDelete(id);
 };
