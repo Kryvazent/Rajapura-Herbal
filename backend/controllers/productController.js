@@ -1,6 +1,6 @@
 import * as productService from "../services/productService.js";
 
-// Helper to format mongoose validation errors
+
 const formatMongooseError = (error) => {
   if (error.name === "ValidationError") {
     const errors = Object.values(error.errors).map((e) => e.message);
@@ -31,7 +31,7 @@ export const getAllProducts = async (req, res) => {
 export const getProductCount = async (req, res) => {
   const count = parseInt(req.params.count, 10);
 
-  // validate count param
+  
   if (isNaN(count) || count <= 0 || count > 100) {
     return res.status(422).json({
       success: false,
@@ -54,7 +54,7 @@ export const getProductsByPage = async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
 
-  // validate pagination params
+  
   if (page < 1) {
     return res
       .status(422)
@@ -80,7 +80,7 @@ export const getProductsByPage = async (req, res) => {
 };
 
 export const addProduct = async (req, res) => {
-  // Check product object exists in body
+  
   if (!req.body.product || typeof req.body.product !== "object") {
     return res.status(422).json({
       success: false,
@@ -121,7 +121,7 @@ export const deleteProduct = async (req, res) => {
       .json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     console.error("deleteProduct error:", error);
-    // Handle invalid ObjectId format
+    
     if (error.name === "CastError") {
       return res
         .status(422)

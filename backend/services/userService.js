@@ -23,7 +23,7 @@ export const updateUser = async (id, userData) => {
   const user = await User.findById(id);
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  // Check email uniqueness if email is being changed
+  
   if (userData.email && userData.email.toLowerCase() !== user.email) {
     const existing = await User.findOne({
       email: userData.email.toLowerCase(),
@@ -32,7 +32,7 @@ export const updateUser = async (id, userData) => {
     if (existing) throw new Error("EMAIL_EXISTS");
   }
 
-  // Only update password if provided
+  
   if (!userData.password || userData.password.trim() === "") {
     delete userData.password;
   }

@@ -18,7 +18,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface ServiceItem {
   _id?: any;
   id?: any;
@@ -49,7 +49,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const COLOR_PRESETS = [
   { label: "Forest", color: "#2D5016", light: "rgba(45,80,22,0.08)", border: "rgba(45,80,22,0.2)" },
   { label: "Earth",  color: "#8B5E3C", light: "rgba(139,94,60,0.07)", border: "rgba(139,94,60,0.2)" },
@@ -61,7 +61,7 @@ const COLOR_PRESETS = [
 const SERVICE_ICONS = ["🫧","🦶","🧖","💆","🫗","♨️","🌿","🌺","💎","🍃","🏺","✨"];
 const PHONE_REGEX   = /^\+?[\d\s\-\(\)]{7,20}$/;
 
-// ─── Validation ───────────────────────────────────────────────────────────────
+
 const validateLocation = (data: Omit<ServiceLocation, "id">): FormErrors => {
   const errors: FormErrors = {};
 
@@ -124,7 +124,7 @@ const validateServiceItem = (data: Omit<ServiceItem, "id">): FormErrors => {
   return errors;
 };
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
     <div
@@ -151,7 +151,7 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
   );
 }
 
-// ─── FieldError ───────────────────────────────────────────────────────────────
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -162,7 +162,7 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-// ─── FieldRow ─────────────────────────────────────────────────────────────────
+
 function FieldRow({
   label,
   value,
@@ -220,7 +220,7 @@ function FieldRow({
   );
 }
 
-// ─── ModalShell ───────────────────────────────────────────────────────────────
+
 function ModalShell({
   title,
   onClose,
@@ -263,7 +263,7 @@ function ModalShell({
           overflow: "hidden",
         }}
       >
-        {/* Header */}
+        
         <div
           style={{
             background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -298,7 +298,7 @@ function ModalShell({
           </button>
         </div>
 
-        {/* Body */}
+        
         <div
           style={{
             overflowY: "auto",
@@ -312,7 +312,7 @@ function ModalShell({
           {children}
         </div>
 
-        {/* Footer */}
+        
         <div
           style={{
             padding: "14px 24px",
@@ -362,7 +362,7 @@ function ModalShell({
   );
 }
 
-// ─── DeleteConfirm ────────────────────────────────────────────────────────────
+
 function DeleteConfirm({
   name,
   onConfirm,
@@ -473,7 +473,7 @@ function DeleteConfirm({
   );
 }
 
-// ─── Blank forms ──────────────────────────────────────────────────────────────
+
 const blankLocation = (): Omit<ServiceLocation, "id"> => ({
   name: "",
   area: "",
@@ -496,7 +496,7 @@ const blankService = (): Omit<ServiceItem, "id"> => ({
   icon: "🌿",
 });
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function AdminServices() {
   const [locations, setLocations]     = useState<ServiceLocation[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -505,7 +505,7 @@ export default function AdminServices() {
   const [delLoading, setDelLoading]   = useState(false);
   const [toast, setToast]             = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Location modal
+  
   const [locModal, setLocModal] = useState<null | {
     mode: "add" | "edit";
     data: Omit<ServiceLocation, "id">;
@@ -513,7 +513,7 @@ export default function AdminServices() {
     errors: FormErrors;
   }>(null);
 
-  // Service item modal
+  
   const [svcModal, setSvcModal] = useState<null | {
     mode: "add" | "edit";
     location_id: string;
@@ -527,13 +527,13 @@ export default function AdminServices() {
     action: () => void;
   } | null>(null);
 
-  // ── Toast helper ─────────────────────────────────────────────────────────
+  
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ── Toggle expand ─────────────────────────────────────────────────────────
+  
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -542,12 +542,12 @@ export default function AdminServices() {
     });
   };
 
-  // ── Fetch locations ───────────────────────────────────────────────────────
+  
   const fetchServiceLocations = async () => {
     try {
       setPageLoading(true);
       const res = await axios.get(`${API_URL}/user/services`);
-      // Handle both plain array and { success, data: [] } shapes
+      
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setLocations(data);
     } catch (e) {
@@ -563,7 +563,7 @@ export default function AdminServices() {
     fetchServiceLocations();
   }, []);
 
-  // ── Location CRUD ─────────────────────────────────────────────────────────
+  
   const openAddLocation = () =>
     setLocModal({ mode: "add", data: blankLocation(), errors: {} });
 
@@ -580,7 +580,7 @@ export default function AdminServices() {
   const saveLocation = async () => {
     if (!locModal) return;
 
-    // Validate
+    
     const errors = validateLocation(locModal.data);
     if (Object.keys(errors).length > 0) {
       setLocModal({ ...locModal, errors });
@@ -635,7 +635,7 @@ export default function AdminServices() {
     });
   };
 
-  // ── Service item CRUD ─────────────────────────────────────────────────────
+  
   const openAddService = (location_id: string) =>
     setSvcModal({ mode: "add", location_id, data: blankService(), errors: {} });
 
@@ -653,7 +653,7 @@ export default function AdminServices() {
   const saveService = async () => {
     if (!svcModal) return;
 
-    // Validate
+    
     const errors = validateServiceItem(svcModal.data);
     if (Object.keys(errors).length > 0) {
       setSvcModal({ ...svcModal, errors });
@@ -727,7 +727,7 @@ export default function AdminServices() {
     });
   };
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  
   const totalServices = (Array.isArray(locations) ? locations : []).reduce(
     (a, l) => a + (l.services?.length ?? 0),
     0
@@ -735,10 +735,10 @@ export default function AdminServices() {
 
   return (
     <div>
-      {/* Toast */}
+      
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* Header */}
+      
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -775,7 +775,7 @@ export default function AdminServices() {
         </button>
       </div>
 
-      {/* Loading */}
+      
       {pageLoading && (
         <div style={{ padding: "40px", textAlign: "center" }}>
           <div
@@ -795,7 +795,7 @@ export default function AdminServices() {
         </div>
       )}
 
-      {/* Location list */}
+      
       {!pageLoading && (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {locations.length === 0 && (
@@ -830,7 +830,7 @@ export default function AdminServices() {
                 }}
                 
               >
-                {/* Location header row */}
+                
                 <div
                   style={{
                     gap: "14px",
@@ -842,7 +842,7 @@ export default function AdminServices() {
                   onClick={() => toggleExpand(locId)}
                   className="flex flex-col sm:flex-row items-start"
                 >
-                  {/* Icon */}
+                  
                   <div
                     style={{
                       width: "46px",
@@ -859,7 +859,7 @@ export default function AdminServices() {
                     {loc.icon}
                   </div>
 
-                  {/* Info */}
+                  
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "#2D5016", margin: 0, fontSize: "0.98rem", fontWeight: 600 }}>
                       {loc.name}
@@ -890,7 +890,7 @@ export default function AdminServices() {
                     </div>
                   </div>
 
-                  {/* Stats */}
+                  
                   <span
                     style={{
                       backgroundColor: loc.lightColor,
@@ -904,7 +904,7 @@ export default function AdminServices() {
                     {loc.services?.length ?? 0} services
                   </span>
 
-                  {/* Actions */}
+                  
                   <div
                     className="flex items-center gap-2"
                     onClick={(e) => e.stopPropagation()}
@@ -969,7 +969,7 @@ export default function AdminServices() {
                   )}
                 </div>
 
-                {/* Services list (expanded) */}
+                
                 {isOpen && (
                   <div
                     style={{
@@ -1028,7 +1028,7 @@ export default function AdminServices() {
                               gap: "12px",
                             }}
                           >
-                            {/* Service icon */}
+                            
                             <div
                               style={{
                                 width: "36px",
@@ -1045,7 +1045,7 @@ export default function AdminServices() {
                               {svc.icon}
                             </div>
 
-                            {/* Details */}
+                            
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p
@@ -1089,7 +1089,7 @@ export default function AdminServices() {
                               )}
                             </div>
 
-                            {/* Actions */}
+                            
                             <div
                               className="flex items-center gap-2"
                               style={{ flexShrink: 0 }}
@@ -1141,7 +1141,7 @@ export default function AdminServices() {
         </div>
       )}
 
-      {/* ── Location Modal ── */}
+      
       {locModal && (
         <ModalShell
           title={locModal.mode === "add" ? "Add Service Centre" : "Edit Service Centre"}
@@ -1150,7 +1150,7 @@ export default function AdminServices() {
           wide
           loading={saveLoading}
         >
-          {/* Icon + Name */}
+          
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "12px", alignItems: "start" }}>
             <div>
               <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "5px" }}>
@@ -1199,7 +1199,7 @@ export default function AdminServices() {
             />
           </div>
 
-          {/* Area + Map Label */}
+          
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <FieldRow
               label="Area (short name)"
@@ -1240,7 +1240,7 @@ export default function AdminServices() {
             error={locModal.errors.address}
           />
 
-          {/* Mobile + Alt Mobile */}
+          
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <FieldRow
               label="Primary Mobile"
@@ -1286,7 +1286,7 @@ export default function AdminServices() {
             error={locModal.errors.description}
           />
 
-          {/* Colour picker */}
+          
           <div>
             <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "8px" }}>
               Colour Theme
@@ -1333,7 +1333,7 @@ export default function AdminServices() {
         </ModalShell>
       )}
 
-      {/* ── Service Modal ── */}
+      
       {svcModal && (
         <ModalShell
           title={svcModal.mode === "add" ? "Add Service" : "Edit Service"}
@@ -1341,7 +1341,7 @@ export default function AdminServices() {
           onSave={saveService}
           loading={saveLoading}
         >
-          {/* Icon picker */}
+          
           <div>
             <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "6px" }}>
               Icon
@@ -1420,7 +1420,7 @@ export default function AdminServices() {
         </ModalShell>
       )}
 
-      {/* ── Delete Confirm ── */}
+      
       {deleteTarget && (
         <DeleteConfirm
           name={deleteTarget.name}

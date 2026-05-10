@@ -45,7 +45,7 @@ export default function Products() {
     }
   }
 
-  // Safely derive categories only when products is a valid array
+  
   const categories = [
     "All",
     ...Array.from(new Set(products.map((p) => p.category))),
@@ -62,7 +62,7 @@ export default function Products() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* Page Header */}
+      
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -120,7 +120,7 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Decorative band */}
+      
       <div
         style={{
           height: "4px",
@@ -130,9 +130,9 @@ export default function Products() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-12">
-        {/* Search & Filter */}
+        
         <div className="flex flex-col gap-4 mb-8 sm:mb-10">
-          {/* Search */}
+          
           <div style={{ position: "relative" }}>
             <Search
               size={16}
@@ -163,7 +163,7 @@ export default function Products() {
             />
           </div>
 
-          {/* Category filters */}
+          
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
@@ -192,7 +192,7 @@ export default function Products() {
           </div>
         </div>
 
-        {/* Loading State */}
+        
         {loading && (
           <div className="flex justify-center items-center py-20">
             <div
@@ -209,7 +209,7 @@ export default function Products() {
           </div>
         )}
 
-        {/* Results count — only show when not loading */}
+        
         {!loading && (
           <p
             style={{
@@ -223,7 +223,7 @@ export default function Products() {
           </p>
         )}
 
-        {/* Product Grid */}
+        
         {!loading && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {filtered.map((product) => (
@@ -243,7 +243,7 @@ export default function Products() {
                 className="group hover:shadow-lg"
                 onClick={() => setSelectedProduct(product)}
               >
-                {/* Image */}
+                
                 <div
                   style={{
                     position: "relative",
@@ -305,7 +305,7 @@ export default function Products() {
                   </div>
                 </div>
 
-                {/* Details */}
+                
                 <div
                   style={{
                     padding: "16px 18px",
@@ -350,7 +350,7 @@ export default function Products() {
                     {product.description.substring(0, 90)}...
                   </p>
 
-                  {/* Ingredients */}
+                  
                   <div className="flex flex-wrap gap-1" style={{ marginBottom: "12px" }}>
                     {product.ingredients.slice(0, 3).map((ing) => (
                       <span
@@ -433,7 +433,7 @@ export default function Products() {
           </div>
         )}
 
-        {/* No results */}
+        
         {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
             <Leaf
@@ -453,7 +453,7 @@ export default function Products() {
         )}
       </div>
 
-      {/* Product Detail Modal */}
+      
       {selectedProduct && (
         <div
           style={{
@@ -482,7 +482,7 @@ export default function Products() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Mobile close bar */}
+            
             <div
               className="flex sm:hidden items-center justify-between px-4 py-3"
               style={{ backgroundColor: "#2D5016", flexShrink: 0 }}
@@ -513,12 +513,12 @@ export default function Products() {
               </button>
             </div>
 
-            {/* Body */}
+            
             <div
               className="flex flex-col sm:flex-row"
               style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
             >
-              {/* Image panel */}
+              
               <div
                 className="w-full sm:w-[42%] flex-shrink-0 relative"
                 style={{ height: "200px" }}
@@ -602,12 +602,12 @@ export default function Products() {
                 />
               </div>
 
-              {/* Content panel */}
+              
               <div
                 className="flex-1 flex flex-col overflow-hidden sm:h-auto"
                 style={{ minHeight: 0 }}
               >
-                {/* Sticky header (desktop) */}
+                
                 <div
                   className="hidden sm:block"
                   style={{
@@ -675,7 +675,7 @@ export default function Products() {
                   </div>
                 </div>
 
-                {/* Scrollable body */}
+                
                 <div style={{ overflowY: "auto", flex: 1 }}>
                   <div
                     className="px-5 sm:px-7 py-4 sm:py-5"
@@ -819,7 +819,7 @@ export default function Products() {
                         </div>
                       )}
 
-                    {/* Mobile action buttons */}
+                    
                     <div className="flex sm:hidden gap-3 pt-2">
                       <button
                         onClick={() => setSelectedProduct(null)}

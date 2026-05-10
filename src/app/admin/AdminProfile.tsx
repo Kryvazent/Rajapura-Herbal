@@ -1,4 +1,4 @@
-// src/pages/admin/AdminProfile.tsx
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
@@ -21,7 +21,7 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface Profile {
   _id: string;
   firstName: string;
@@ -50,7 +50,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+
 function Toast({
   message,
   type,
@@ -83,7 +83,7 @@ function Toast({
   );
 }
 
-// ─── FieldError ───────────────────────────────────────────────────────────────
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -96,7 +96,7 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-// ─── InputField ───────────────────────────────────────────────────────────────
+
 function InputField({
   label,
   value,
@@ -206,7 +206,7 @@ function InputField({
   );
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+
 function BigAvatar({ profile }: { profile: Profile }) {
   const initials =
     `${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase();
@@ -237,7 +237,7 @@ function BigAvatar({ profile }: { profile: Profile }) {
   );
 }
 
-// ─── Section Card ─────────────────────────────────────────────────────────────
+
 function SectionCard({
   title,
   subtitle,
@@ -259,7 +259,7 @@ function SectionCard({
         boxShadow: "0 2px 8px rgba(45,80,22,0.05)",
       }}
     >
-      {/* Card Header */}
+      
       <div
         style={{
           padding: "18px 24px",
@@ -304,20 +304,20 @@ function SectionCard({
           )}
         </div>
       </div>
-      {/* Card Body */}
+      
       <div style={{ padding: "24px" }}>{children}</div>
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function AdminProfile() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // Profile form
+  
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     firstName: "",
     lastName: "",
@@ -327,7 +327,7 @@ export default function AdminProfile() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileDirty, setProfileDirty] = useState(false);
 
-  // Password form
+  
   const [passwordForm, setPasswordForm] = useState<PasswordForm>({
     currentPassword: "",
     newPassword: "",
@@ -339,7 +339,7 @@ export default function AdminProfile() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Toast
+  
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -350,7 +350,7 @@ export default function AdminProfile() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ── Fetch profile ─────────────────────────────────────────────────────────
+  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -378,7 +378,7 @@ export default function AdminProfile() {
     fetchProfile();
   }, [navigate]);
 
-  // ── Detect dirty profile form ─────────────────────────────────────────────
+  
   useEffect(() => {
     if (!profile) return;
     const dirty =
@@ -388,7 +388,7 @@ export default function AdminProfile() {
     setProfileDirty(dirty);
   }, [profileForm, profile]);
 
-  // ── Validate profile form ─────────────────────────────────────────────────
+  
   const validateProfile = (): FormErrors => {
     const errors: FormErrors = {};
     if (!profileForm.firstName.trim())
@@ -411,7 +411,7 @@ export default function AdminProfile() {
     return errors;
   };
 
-  // ── Save profile ──────────────────────────────────────────────────────────
+  
   const handleSaveProfile = async () => {
     const errors = validateProfile();
     if (Object.keys(errors).length > 0) {
@@ -441,7 +441,7 @@ export default function AdminProfile() {
     }
   };
 
-  // ── Validate password ─────────────────────────────────────────────────────
+  
   const validatePassword = (): FormErrors => {
     const errors: FormErrors = {};
     if (!passwordForm.currentPassword)
@@ -461,7 +461,7 @@ export default function AdminProfile() {
     return errors;
   };
 
-  // ── Save password ─────────────────────────────────────────────────────────
+  
   const handleSavePassword = async () => {
     const errors = validatePassword();
     if (Object.keys(errors).length > 0) {
@@ -493,7 +493,7 @@ export default function AdminProfile() {
     }
   };
 
-  // ── Clear error helper ────────────────────────────────────────────────────
+  
   const clearProfileError = (field: string) => {
     if (profileErrors[field])
       setProfileErrors((e) => {
@@ -511,7 +511,7 @@ export default function AdminProfile() {
       });
   };
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  
   if (loadingProfile) {
     return (
       <div
@@ -564,7 +564,7 @@ export default function AdminProfile() {
       {toast && <Toast message={toast.message} type={toast.type} />}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      {/* ── Profile Hero ───────────────────────────────────────────────────── */}
+      
       <div
         style={{
           background: "linear-gradient(135deg, #2D5016 0%, #4A7C23 100%)",
@@ -600,7 +600,7 @@ export default function AdminProfile() {
             {profile.email}
           </p>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {/* Role badge */}
+            
             <span
               style={{
                 display: "inline-flex",
@@ -622,7 +622,7 @@ export default function AdminProfile() {
               )}
               {profile.role}
             </span>
-            {/* Status badge */}
+            
             <span
               style={{
                 display: "inline-flex",
@@ -660,7 +660,7 @@ export default function AdminProfile() {
             </span>
           </div>
         </div>
-        {/* Meta info */}
+        
         <div
           style={{
             display: "flex",
@@ -706,7 +706,7 @@ export default function AdminProfile() {
         </div>
       </div>
 
-      {/* ── Personal Information ───────────────────────────────────────────── */}
+      
       <div
         style={{
           display: "flex",
@@ -720,7 +720,7 @@ export default function AdminProfile() {
           icon={<User size={16} />}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* Name row */}
+            
             <div
               style={{
                 display: "grid",
@@ -754,7 +754,7 @@ export default function AdminProfile() {
               />
             </div>
 
-            {/* Email — read only */}
+            
             <InputField
               label="Email Address"
               value={profile.email}
@@ -776,7 +776,7 @@ export default function AdminProfile() {
               Email cannot be changed. Contact a super admin if needed.
             </p>
 
-            {/* Phone */}
+            
             <InputField
               label="Phone Number"
               value={profileForm.phone}
@@ -789,7 +789,7 @@ export default function AdminProfile() {
               icon={<Phone size={14} />}
             />
 
-            {/* Role — read only */}
+            
             <InputField
               label="Role"
               value={profile.role}
@@ -798,7 +798,7 @@ export default function AdminProfile() {
               placeholder=""
             />
 
-            {/* Save button */}
+            
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "4px" }}>
               <button
                 onClick={handleSaveProfile}
@@ -845,14 +845,14 @@ export default function AdminProfile() {
           </div>
         </SectionCard>
 
-        {/* ── Change Password ────────────────────────────────────────────────── */}
+        
         <SectionCard
           title="Change Password"
           subtitle="Keep your account secure with a strong password"
           icon={<Lock size={16} />}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {/* Current password */}
+            
             <InputField
               label="Current Password"
               value={passwordForm.currentPassword}
@@ -883,7 +883,7 @@ export default function AdminProfile() {
               }
             />
 
-            {/* New password */}
+            
             <InputField
               label="New Password"
               value={passwordForm.newPassword}
@@ -914,7 +914,7 @@ export default function AdminProfile() {
               }
             />
 
-            {/* Password strength bar */}
+            
             {passwordStrength && (
               <div style={{ marginTop: "-6px" }}>
                 <div
@@ -949,7 +949,7 @@ export default function AdminProfile() {
               </div>
             )}
 
-            {/* Confirm password */}
+            
             <InputField
               label="Confirm New Password"
               value={passwordForm.confirmPassword}
@@ -980,7 +980,7 @@ export default function AdminProfile() {
               }
             />
 
-            {/* Password tips */}
+            
             <div
               style={{
                 backgroundColor: "rgba(45,80,22,0.04)",
@@ -1053,7 +1053,7 @@ export default function AdminProfile() {
               ))}
             </div>
 
-            {/* Save password button */}
+            
             <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "4px" }}>
               <button
                 onClick={handleSavePassword}
@@ -1098,7 +1098,7 @@ export default function AdminProfile() {
           </div>
         </SectionCard>
 
-        {/* ── Account Info (read-only) ────────────────────────────────────────── */}
+        
         <SectionCard
           title="Account Information"
           subtitle="Read-only account metadata"

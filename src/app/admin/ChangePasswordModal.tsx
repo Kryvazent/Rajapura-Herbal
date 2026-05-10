@@ -1,4 +1,4 @@
-// ChangePasswordModal.tsx
+
 import { useState } from "react";
 import { Lock, Eye, EyeOff, AlertCircle, Check, Shield } from "lucide-react";
 import axios from "axios";
@@ -15,7 +15,7 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
-// ✅ Moved OUTSIDE the parent component
+
 interface PasswordInputProps {
   label: string;
   value: string;
@@ -115,7 +115,7 @@ function PasswordInput({
   );
 }
 
-// Password strength indicator — also moved outside
+
 function getStrength(pwd: string): {
   label: string;
   color: string;
@@ -218,7 +218,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
+        
         <div
           style={{
             background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -265,7 +265,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
           </p>
         </div>
 
-        {/* Body */}
+        
         <div
           style={{
             padding: "28px 32px",
@@ -337,7 +337,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
 
           {!success && (
             <>
-              {/* Info box */}
+              
               <div
                 style={{
                   backgroundColor: "rgba(212,160,23,0.08)",
@@ -394,7 +394,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 </div>
               </div>
 
-              {/* ✅ Now uses the stable external PasswordInput component */}
+              
               <PasswordInput
                 label="Current (Temporary) Password"
                 value={currentPassword}
@@ -474,7 +474,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 placeholder="Re-enter your new password"
               />
 
-              {/* Password tips */}
+              
               <div
                 style={{
                   backgroundColor: "rgba(45,80,22,0.04)",
@@ -514,7 +514,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
                 ))}
               </div>
 
-              {/* Submit */}
+              
               <button
                 onClick={handleSubmit}
                 disabled={loading}

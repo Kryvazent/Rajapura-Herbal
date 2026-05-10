@@ -1,6 +1,6 @@
 import * as shopService from "../services/shopService.js";
 
-// Helper to format mongoose validation errors
+
 const formatMongooseError = (error) => {
   if (error.name === "ValidationError") {
     const errors = Object.values(error.errors).map((e) => e.message);
@@ -16,7 +16,7 @@ const formatMongooseError = (error) => {
   return { status: 500, message: "Internal server error" };
 };
 
-// Province CRUD
+
 export const addProvince = async (req, res) => {
   if (!req.body.province || typeof req.body.province !== "object") {
     return res
@@ -125,7 +125,7 @@ export const deleteProvince = async (req, res) => {
   }
 };
 
-// District CRUD
+
 export const addDistrict = async (req, res) => {
   const { _id, name } = req.body;
 
@@ -242,7 +242,7 @@ export const deleteDistrict = async (req, res) => {
   }
 };
 
-// Town CRUD
+
 export const addTown = async (req, res) => {
   const { province_id, district_id, name } = req.body;
 
@@ -379,7 +379,7 @@ export const deleteTown = async (req, res) => {
   }
 };
 
-// Shop CRUD
+
 export const addShop = async (req, res) => {
   const { province_id, district_id, town_id, shopData } = req.body;
 
@@ -617,7 +617,7 @@ export const getAllProvinces = async (req, res) => {
 export const addShopWizard = async (req, res) => {
   const { wizardData } = req.body;
 
-  // Validate wizard data exists
+  
   if (!wizardData || typeof wizardData !== "object") {
     return res
       .status(422)
@@ -638,7 +638,7 @@ export const addShopWizard = async (req, res) => {
     shopForm,
   } = wizardData;
 
-  // Validate province section
+  
   if (!provMode || !["existing", "new"].includes(provMode)) {
     return res
       .status(422)
@@ -662,7 +662,7 @@ export const addShopWizard = async (req, res) => {
     }
   }
 
-  // Validate district section
+  
   if (!distMode || !["existing", "new"].includes(distMode)) {
     return res
       .status(422)
@@ -679,7 +679,7 @@ export const addShopWizard = async (req, res) => {
       .json({ success: false, message: "New district name is required" });
   }
 
-  // Validate town section
+  
   if (!townMode || !["existing", "new"].includes(townMode)) {
     return res
       .status(422)
@@ -696,7 +696,7 @@ export const addShopWizard = async (req, res) => {
       .json({ success: false, message: "New town name is required" });
   }
 
-  // Validate shop form
+  
   if (!shopForm || typeof shopForm !== "object") {
     return res
       .status(422)

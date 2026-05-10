@@ -43,7 +43,7 @@ export default function Services() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* Page Header */}
+      
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -102,7 +102,7 @@ export default function Services() {
         </div>
       </div>
 
-      {/* Decorative band */}
+      
       <div
         style={{
           height: "4px",
@@ -111,7 +111,7 @@ export default function Services() {
         }}
       />
 
-      {/* Booking note banner */}
+      
       <div
         style={{
           backgroundColor: "rgba(212,160,23,0.1)",
@@ -129,7 +129,7 @@ export default function Services() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-10 sm:py-14">
 
-        {/* Loading State */}
+        
         {loading && (
           <div className="flex justify-center items-center py-20">
             <div
@@ -146,7 +146,7 @@ export default function Services() {
           </div>
         )}
 
-        {/* Empty State */}
+        
         {!loading && service.length === 0 && (
           <div className="text-center py-20">
             <Leaf
@@ -178,7 +178,7 @@ export default function Services() {
           </div>
         )}
 
-        {/* Location Cards */}
+        
         {!loading && service.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
             {service.map((location) => (
@@ -192,7 +192,7 @@ export default function Services() {
                   boxShadow: "0 6px 28px rgba(45,80,22,0.08)",
                 }}
               >
-                {/* Location header */}
+                
                 <div
                   style={{
                     background: `linear-gradient(135deg, ${location.color}, ${location.color}CC)`,
@@ -312,7 +312,7 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Description */}
+                
                 <div
                   style={{
                     padding: "16px 22px",
@@ -332,7 +332,7 @@ export default function Services() {
                   </p>
                 </div>
 
-                {/* Services header */}
+                
                 <div style={{ padding: "14px 20px 4px" }}>
                   <div className="flex items-center gap-2 mb-4">
                     <Star size={13} style={{ color: "#D4A017" }} />
@@ -368,7 +368,7 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Service list */}
+                
                 <div
                   style={{
                     padding: "0 16px 20px",
@@ -464,7 +464,7 @@ export default function Services() {
           </div>
         )}
 
-        {/* Bottom info strip */}
+        
         {!loading && service.length > 0 && (
           <div
             style={{

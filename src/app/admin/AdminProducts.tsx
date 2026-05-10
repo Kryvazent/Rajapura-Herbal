@@ -27,12 +27,12 @@ const CATEGORIES = [
 
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface FormErrors {
   [key: string]: string;
 }
 
-// ─── Validation ───────────────────────────────────────────────────────────────
+
 const IMAGE_URL_REGEX =
   /^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i;
 
@@ -80,7 +80,7 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   return errors;
 };
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
     <div
@@ -107,7 +107,7 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
   );
 }
 
-// ─── FieldError ───────────────────────────────────────────────────────────────
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -140,7 +140,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   badge: "",
 });
 
-// ─── InputField ───────────────────────────────────────────────────────────────
+
 function InputField({
   label,
   value,
@@ -193,7 +193,7 @@ function InputField({
   );
 }
 
-// ─── TagsField ────────────────────────────────────────────────────────────────
+
 function TagsField({
   label,
   values,
@@ -290,7 +290,7 @@ function TagsField({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
@@ -308,7 +308,7 @@ export default function AdminProducts() {
     type: "success" | "error";
   } | null>(null);
 
-  // ── Toast helper ─────────────────────────────────────────────────────────
+  
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -318,14 +318,14 @@ export default function AdminProducts() {
     getProducts();
   }, []);
 
-  // ── Fetch products ────────────────────────────────────────────────────────
+  
   async function getProducts() {
     try {
       setLoading(true);
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/products-all"
       );
-      // Handle both plain array and { success, data: [] } shapes
+      
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProducts(data);
     } catch (err) {
@@ -337,7 +337,7 @@ export default function AdminProducts() {
     }
   }
 
-  // ── Save (add or edit) ────────────────────────────────────────────────────
+  
   async function saveProduct(product: Product): Promise<void> {
     await axios.post(
       import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
@@ -363,7 +363,7 @@ export default function AdminProducts() {
     );
   }
 
-  // ── Filter ────────────────────────────────────────────────────────────────
+  
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     const matchSearch =
@@ -372,7 +372,7 @@ export default function AdminProducts() {
     return matchCat && matchSearch;
   });
 
-  // ── Open modals ───────────────────────────────────────────────────────────
+  
   const openAdd = () => {
     setFormData(emptyForm());
     setFormErrors({});
@@ -393,9 +393,9 @@ export default function AdminProducts() {
     setModalMode("edit");
   };
 
-  // ── Handle save ───────────────────────────────────────────────────────────
+  
   const handleSave = async () => {
-    // Run validation
+    
     const errors = validateProduct(formData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -432,7 +432,7 @@ export default function AdminProducts() {
     }
   };
 
-  // ── Handle delete ─────────────────────────────────────────────────────────
+  
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -450,10 +450,10 @@ export default function AdminProducts() {
     }
   };
 
-  // ── Field setter ──────────────────────────────────────────────────────────
+  
   const set = (field: keyof Omit<Product, "_id">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field when user changes it
+    
     if (formErrors[field]) {
       setFormErrors((prev) => {
         const n = { ...prev };
@@ -465,10 +465,10 @@ export default function AdminProducts() {
 
   return (
     <div>
-      {/* Toast */}
+      
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* Header */}
+      
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -505,7 +505,7 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      {/* Filters */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -573,7 +573,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {/* Table */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -583,7 +583,7 @@ export default function AdminProducts() {
           boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
         }}
       >
-        {/* Loading state */}
+        
         {loading && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <div
@@ -801,7 +801,7 @@ export default function AdminProducts() {
         )}
       </div>
 
-      {/* Add / Edit Modal */}
+      
       {modalMode && (
         <div
           style={{
@@ -828,7 +828,7 @@ export default function AdminProducts() {
               margin: "auto",
             }}
           >
-            {/* Modal header */}
+            
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -862,7 +862,7 @@ export default function AdminProducts() {
               </button>
             </div>
 
-            {/* Form body */}
+            
             <div
               style={{
                 padding: "28px",
@@ -871,7 +871,7 @@ export default function AdminProducts() {
                 gap: "18px",
               }}
             >
-              {/* Name row */}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   label="Product Name"
@@ -891,7 +891,7 @@ export default function AdminProducts() {
                 />
               </div>
 
-              {/* Category & Badge */}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -990,7 +990,7 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              {/* Price */}
+              
               <InputField
                 label="Price (LKR)"
                 value={formData.price}
@@ -1004,7 +1004,7 @@ export default function AdminProducts() {
                 error={formErrors.price}
               />
 
-              {/* Description */}
+              
               <div>
                 <label
                   style={{
@@ -1040,12 +1040,12 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.description} />
               </div>
 
-              {/* Image URL */}
+              
               <InputField
                 label="Image URL"
                 value={formData.image}
                 onChange={(v) => set("image", v)}
-                placeholder="https://example.com/image.jpg"
+                placeholder="https:
                 required
                 error={formErrors.image}
               />
@@ -1066,7 +1066,7 @@ export default function AdminProducts() {
                 />
               )}
 
-              {/* Tags */}
+              
               <TagsField
                 label="Benefits"
                 values={formData.benefits}
@@ -1087,7 +1087,7 @@ export default function AdminProducts() {
               />
             </div>
 
-            {/* Modal footer */}
+            
             <div
               style={{
                 padding: "16px 28px",
@@ -1140,7 +1140,7 @@ export default function AdminProducts() {
         </div>
       )}
 
-      {/* Delete Confirm */}
+      
       {deleteTarget && (
         <div
           style={{

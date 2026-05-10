@@ -1,6 +1,6 @@
 import { body, validationResult } from "express-validator";
 
-// ─── Reusable error handler ───────────────────────────────────────────────────
+
 export const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,7 +16,7 @@ export const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
+
 export const loginValidators = [
   body("username")
     .trim()
@@ -32,7 +32,7 @@ export const loginValidators = [
     .withMessage("Password must be between 6 and 128 characters"),
 ];
 
-// ─── PRODUCT ──────────────────────────────────────────────────────────────────
+
 export const productValidators = [
   body("product")
     .notEmpty()
@@ -99,7 +99,7 @@ export const productValidators = [
     .withMessage("How to use must be an array"),
 ];
 
-// ─── PROVINCE ─────────────────────────────────────────────────────────────────
+
 export const provinceValidators = [
   body("province")
     .notEmpty()
@@ -152,7 +152,7 @@ export const deleteProvinceValidators = [
     .withMessage("Invalid province ID format"),
 ];
 
-// ─── DISTRICT ─────────────────────────────────────────────────────────────────
+
 export const addDistrictValidators = [
   body("_id")
     .notEmpty()
@@ -203,7 +203,7 @@ export const deleteDistrictValidators = [
     .withMessage("Invalid district ID format"),
 ];
 
-// ─── TOWN ─────────────────────────────────────────────────────────────────────
+
 export const addTownValidators = [
   body("province_id")
     .notEmpty()
@@ -272,7 +272,7 @@ export const deleteTownValidators = [
     .withMessage("Invalid town ID format"),
 ];
 
-// ─── SHOP ─────────────────────────────────────────────────────────────────────
+
 const shopDataValidators = [
   body("shopData")
     .notEmpty()
@@ -393,7 +393,7 @@ export const deleteShopValidators = [
     .withMessage("Invalid shop ID format"),
 ];
 
-// ─── SERVICE ──────────────────────────────────────────────────────────────────
+
 export const serviceValidators = [
   body("name")
     .trim()
@@ -469,7 +469,7 @@ export const deleteServiceValidators = [
     .withMessage("Invalid service ID format"),
 ];
 
-// ─── SERVICE ITEM ─────────────────────────────────────────────────────────────
+
 export const addServiceItemValidators = [
   body("location_id")
     .notEmpty()

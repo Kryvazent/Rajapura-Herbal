@@ -8,19 +8,19 @@ export function Footer() {
       style={{ backgroundColor: "#1A3009", fontFamily: "'Lato', sans-serif" }}
       className="text-white"
     >
-      {/* Decorative border */}
+      
       <div style={{ height: "4px", background: "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)" }} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Brand */}
+          
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-5">
               <div
                 style={{ backgroundColor: "#8BC34A" }}
                 className="w-10 h-10 rounded-full flex items-center justify-center"
               >
-                {/* <Leaf className="text-white w-5 h-5" /> */}
+                
                 <Logo width={38} height={38} alt="Rajapura Logo" />
               </div>
               <div>
@@ -74,7 +74,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+          
           <div>
             <h3
               style={{
@@ -112,7 +112,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Products */}
+          
           <div>
             <h3
               style={{
@@ -150,7 +150,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
+          
           <div>
             <h3
               style={{
@@ -179,7 +179,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar */}
+        
         <div
           style={{ borderTop: "1px solid rgba(139,195,74,0.2)" }}
           className="mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4"

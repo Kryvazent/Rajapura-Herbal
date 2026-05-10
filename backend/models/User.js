@@ -1,4 +1,3 @@
-// backend/models/user.js
 import mongoose from "mongoose";
 import bcrypt from 'bcrypt';
 
@@ -48,7 +47,7 @@ const userSchema = new mongoose.Schema(
         type: Boolean,
         default: false
       },
-      mustChangePassword: {        // ← NEW
+      mustChangePassword: {
         type: Boolean,
         default: false
       }
@@ -69,7 +68,6 @@ userSchema.pre('save', async function() {
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
-  // return true
 };
 
 export default mongoose.model("User", userSchema);

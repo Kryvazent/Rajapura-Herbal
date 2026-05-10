@@ -76,7 +76,7 @@ export default function Home() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* ── Hero ── */}
+      
       <section
         style={{
           background:
@@ -86,7 +86,7 @@ export default function Home() {
         }}
         className="min-h-screen flex items-center"
       >
-        {/* Decorative circles */}
+        
         <div
           className="hidden sm:block"
           style={{
@@ -115,7 +115,7 @@ export default function Home() {
         />
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-16 sm:py-20 lg:py-24 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
-          {/* Text */}
+          
           <div>
             <div
               style={{
@@ -215,7 +215,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero image – desktop only */}
+          
           <div className="relative hidden lg:block">
             <div
               style={{
@@ -234,7 +234,7 @@ export default function Home() {
               />
             </div>
 
-            {/* Floating badge */}
+            
             <div
               style={{
                 position: "absolute",
@@ -273,7 +273,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Stars badge */}
+            
             <div
               style={{
                 position: "absolute",
@@ -309,7 +309,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats Banner ── */}
+      
       <section style={{ backgroundColor: "#2D5016" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-8 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat) => (
@@ -340,7 +340,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── About Section ── */}
+      
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div>
@@ -357,7 +357,7 @@ export default function Home() {
                   display: "block",
                 }}
               />
-              {/* Floating Est. badge */}
+              
               <div
                 style={{
                   position: "absolute",
@@ -458,7 +458,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Values Section ── */}
+      
       <section style={{ backgroundColor: "#F0EAD6" }} className="py-14 sm:py-16">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16">
           <div className="text-center mb-10 sm:mb-12">
@@ -537,7 +537,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Featured Products ── */}
+      
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-10 sm:mb-12">
           <div>
@@ -581,7 +581,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Loading State */}
+        
         {loading && (
           <div className="flex justify-center items-center py-16">
             <div
@@ -598,7 +598,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty State */}
+        
         {!loading && products.length === 0 && (
           <div className="text-center py-16">
             <Leaf
@@ -620,7 +620,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Products Grid */}
+        
         {!loading && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {products.map((product) => (
@@ -732,7 +732,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* ── CTA Banner ── */}
+      
       <section
         style={{
           background: "linear-gradient(135deg, #2D5016, #4A7C23)",

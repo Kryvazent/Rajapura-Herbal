@@ -110,7 +110,7 @@ export default function AdminLayout() {
     }
   };
 
-  // ── Early returns ───────────────────────────────────────────────────────────
+  
 
   if (mustChangePassword) {
     return (
@@ -165,7 +165,7 @@ export default function AdminLayout() {
     );
   }
 
-  // ── Derived display values ──────────────────────────────────────────────────
+  
 
   const isActive = (to: string) => location.pathname === to;
 
@@ -186,13 +186,13 @@ export default function AdminLayout() {
 
   const displayRole = currentUser.role ?? "ADMIN";
 
-  // ✅ Filter nav items — hide "Users" from STAFF, show only to ADMIN
+  
   const visibleNavItems = navItems.filter(({ to }) => {
     if (to === "/admin/users" && role === "STAFF") return false;
     return true;
   });
 
-  // ── Main layout ─────────────────────────────────────────────────────────────
+  
 
   return (
     <div
@@ -203,7 +203,7 @@ export default function AdminLayout() {
         backgroundColor: "#F0EDE6",
       }}
     >
-      {/* Mobile overlay */}
+      
       {sidebarOpen && (
         <div
           style={{
@@ -216,7 +216,7 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* ── Sidebar ── */}
+      
       <aside
         style={{
           width: "260px",
@@ -234,7 +234,7 @@ export default function AdminLayout() {
         }}
         className="lg:!left-0"
       >
-        {/* Logo */}
+        
         <div
           style={{
             padding: "28px 24px",
@@ -257,7 +257,7 @@ export default function AdminLayout() {
               flexShrink: 0,
             }}
           >
-            {/* ✅ Logo component — sidebar (dark bg) */}
+            
             <Logo size={20} color="#8BC34A" />
           </div>
           <div>
@@ -286,7 +286,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        {/* Nav */}
+        
         <nav style={{ flex: 1, padding: "20px 12px" }}>
           <p
             style={{
@@ -347,14 +347,14 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* Sidebar bottom — profile + logout */}
+        
         <div
           style={{
             padding: "16px 12px 24px",
             borderTop: "1px solid rgba(139,195,74,0.1)",
           }}
         >
-          {/* Clickable profile card */}
+          
           <button
             onClick={() => {
               navigate("/admin/profile");
@@ -422,7 +422,7 @@ export default function AdminLayout() {
             />
           </button>
 
-          {/* Logout */}
+          
           <button
             onClick={handleLogout}
             style={{
@@ -446,7 +446,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* ── Main content ── */}
+      
       <div
         style={{
           flex: 1,
@@ -457,7 +457,7 @@ export default function AdminLayout() {
         }}
         className="lg:!ml-[260px]"
       >
-        {/* Top bar */}
+        
         <header
           style={{
             backgroundColor: "#FAF6EE",
@@ -523,7 +523,7 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* Page content */}
+        
         <main
           style={{
             flex: 1,

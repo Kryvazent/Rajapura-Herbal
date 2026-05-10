@@ -26,10 +26,8 @@ router.post(
   authController.changePassword
 );
 
-// ── Get current logged-in user's profile ──────────────────────────────────────
 router.get("/me", authMiddleware.verifyLoggin, authController.getMe);
 
-// ── Update current logged-in user's profile ───────────────────────────────────
 router.put("/me", authMiddleware.verifyLoggin, authController.updateMe);
 
 export default router;

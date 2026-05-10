@@ -23,7 +23,7 @@ export function Navbar() {
   return (
     <>
       <nav style={{ fontFamily: "'Lato', sans-serif" }} className="sticky top-0 z-50 w-full">
-        {/* Top bar */}
+        
         <div
           style={{ backgroundColor: "#2D5016" }}
           className="text-white text-center py-1.5 text-xs tracking-widest uppercase hidden sm:block"
@@ -31,12 +31,12 @@ export function Navbar() {
           Pure · Natural · Authentic Ayurvedic Heritage
         </div>
 
-        {/* Main nav */}
+        
         <div
           style={{ backgroundColor: "#FAF6EE", borderBottom: "2px solid #8BC34A" }}
           className="px-4 sm:px-6 lg:px-16 py-3 sm:py-4 flex items-center justify-between shadow-sm"
         >
-          {/* Logo */}
+          
           <Link to="/" className="flex items-center gap-2 sm:gap-3 no-underline" onClick={close}>
             <div
               style={{ backgroundColor: "#2D5016" }}
@@ -54,7 +54,7 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop links */}
+          
           <div className="hidden md:flex items-center gap-6 lg:gap-8">
             {links.map((link) => (
               <Link
@@ -77,7 +77,7 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* CTA Button – desktop */}
+          
           <div className="hidden md:block">
             <Link
               to="/store-locator"
@@ -97,7 +97,7 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile hamburger */}
+          
           <button
             className="md:hidden flex items-center justify-center"
             style={{ color: "#2D5016", background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px" }}
@@ -109,7 +109,7 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile overlay */}
+      
       {menuOpen && (
         <div
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(14,26,8,0.55)", zIndex: 40 }}
@@ -117,7 +117,7 @@ export function Navbar() {
         />
       )}
 
-      {/* Mobile slide-in drawer */}
+      
       <div
         style={{
           position: "fixed",
@@ -135,7 +135,7 @@ export function Navbar() {
           fontFamily: "'Lato', sans-serif",
         }}
       >
-        {/* Drawer header */}
+        
         <div
           style={{
             backgroundColor: "#2D5016",
@@ -159,7 +159,7 @@ export function Navbar() {
           </button>
         </div>
 
-        {/* Nav links */}
+        
         <nav style={{ flex: 1, overflowY: "auto", padding: "16px 12px" }}>
           <p style={{ color: "#A8C580", fontSize: "0.62rem", letterSpacing: "0.15em", padding: "0 10px", marginBottom: "8px", marginTop: 0 }}>NAVIGATION</p>
           {links.map((link) => {
@@ -191,7 +191,7 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* CTA at bottom of drawer */}
+        
         <div style={{ padding: "16px 16px 28px", borderTop: "1px solid rgba(45,80,22,0.1)" }}>
           <Link
             to="/store-locator"

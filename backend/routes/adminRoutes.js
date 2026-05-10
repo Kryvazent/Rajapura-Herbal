@@ -30,11 +30,11 @@ import {
 
 const router = express.Router();
 
-// ✅ Apply both authentication AND current role verification to ALL admin routes
-router.use(authMiddleware.verifyLoggin);
-// router.use(roleMiddleware.verifyCurrentRole);
 
-// ─── Product routes ───────────────────────────────────────────────────────────
+router.use(authMiddleware.verifyLoggin);
+
+
+
 router.post(
   "/add-product",
   productValidators,
@@ -53,7 +53,7 @@ router.put(
   productController.updateProduct
 );
 
-// ─── Province routes ──────────────────────────────────────────────────────────
+
 router.post(
   "/add-province",
   provinceValidators,
@@ -73,7 +73,7 @@ router.delete(
   storeController.deleteProvince
 );
 
-// ─── District routes ──────────────────────────────────────────────────────────
+
 router.post(
   "/add-district",
   addDistrictValidators,
@@ -93,7 +93,7 @@ router.delete(
   storeController.deleteDistrict
 );
 
-// ─── Town routes ──────────────────────────────────────────────────────────────
+
 router.post(
   "/add-town",
   addTownValidators,
@@ -113,7 +113,7 @@ router.delete(
   storeController.deleteTown
 );
 
-// ─── Shop routes ──────────────────────────────────────────────────────────────
+
 router.post(
   "/add-shop",
   addShopValidators,
@@ -135,7 +135,7 @@ router.delete(
 router.get("/provinces", storeController.getAllProvinces);
 router.post("/add-shop-wizard", storeController.addShopWizard);
 
-// ─── Service routes ───────────────────────────────────────────────────────────
+
 router.post(
   "/services",
   serviceValidators,
@@ -173,7 +173,7 @@ router.delete(
   serviceController.deleteServiceItem
 );
 
-// ─── User management routes ───────────────────────────────────────────────────
+
 router.get("/users",roleMiddleware.verifyCurrentRole, userController.getAllStaff);
 router.get("/users/search",roleMiddleware.verifyCurrentRole, userController.searchUsers);
 router.get("/users/:id", roleMiddleware.verifyCurrentRole, userController.getUserById);

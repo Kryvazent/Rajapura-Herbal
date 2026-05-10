@@ -1,6 +1,6 @@
 import * as serviceService from "../services/serviceService.js";
 
-// Helper to format mongoose validation errors
+
 const formatMongooseError = (error) => {
   if (error.name === "ValidationError") {
     const errors = Object.values(error.errors).map((e) => e.message);
@@ -29,7 +29,7 @@ export const getAllServices = async (req, res) => {
 };
 
 export const addService = async (req, res) => {
-  // Basic required field check (express-validator handles the rest)
+  
   const { name } = req.body;
   if (!name || !name.trim()) {
     return res
@@ -111,7 +111,7 @@ export const deleteService = async (req, res) => {
 export const addServiceItem = async (req, res) => {
   const { location_id, serviceItem } = req.body;
 
-  // Validate required fields
+  
   if (!location_id) {
     return res
       .status(422)
@@ -154,7 +154,7 @@ export const addServiceItem = async (req, res) => {
 export const updateServiceItem = async (req, res) => {
   const { location_id, service_id, serviceItem } = req.body;
 
-  // Validate required fields
+  
   if (!location_id) {
     return res
       .status(422)

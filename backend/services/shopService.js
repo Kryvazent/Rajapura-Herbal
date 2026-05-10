@@ -10,7 +10,7 @@ const getShopDocument = async () => {
     return shopDoc;
 };
 
-// Province CRUD
+
 export const addProvince = async (provinceData) => {
     const shopDoc = new Shop(provinceData);
     await shopDoc.save();
@@ -36,7 +36,7 @@ export const deleteProvince = async (_id) => {
     return Shop.deleteOne({ _id });
 };
 
-// District CRUD
+
 export const addDistrict = async (_id, districtData) => {
     const shopDoc = await Shop.findOne({ _id })
     shopDoc.districts.push(districtData)
@@ -72,7 +72,7 @@ export const deleteDistrict = async (province_id, district_id) => {
     return { message: "District deleted successfully" };
 };
 
-// Town CRUD
+
 export const addTown = async (province_id, district_id, townData) => {
     const province = await Shop.findById(province_id);
     if (!province) {
@@ -118,7 +118,7 @@ export const deleteTown = async (province_id, district_id, town_id) => {
     return { message: "Town deleted successfully" };
 };
 
-// Shop CRUD
+
 export const addShop = async (province_id, district_id, town_id, shopData) => {
     const province = await Shop.findById(province_id);
     if (!province) {
@@ -196,7 +196,7 @@ export const getAllShops = async () => {
 };
 
 export const addShopWizard = async (wizardData) => {
-    // console.log("199 : ", wizardData);
+    
     const {
         provMode,
         selectedProvId,

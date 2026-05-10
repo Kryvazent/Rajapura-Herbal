@@ -18,7 +18,7 @@ export default function AdminDashboard() {
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/products-all"
       );
-      // Handle both plain array and { success, data: [] } response shapes
+      
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProducts(data);
     } catch (err) {
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/shops"
       );
-      // Handle both plain array and { success, data: [] } response shapes
+      
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProvinces(data);
     } catch (err) {
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      {/* Welcome Banner */}
+
       <div
         style={{
           background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
         <Leaf size={48} style={{ color: "rgba(139,195,74,0.3)" }} />
       </div>
 
-      {/* Stats */}
+
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {stats.map(({ label, value, sub, icon: Icon, color, bg, link }) => (
           <Link
@@ -225,9 +225,9 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions */}
+
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Products */}
+  
         <div
           style={{
             backgroundColor: "#FAF6EE",
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Store Coverage */}
+  
         <div
           style={{
             backgroundColor: "#FAF6EE",

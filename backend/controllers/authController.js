@@ -1,4 +1,4 @@
-// backend/controllers/authController.js
+
 import * as authService from "../services/authService.js";
 
 export const login = async (req, res) => {
@@ -25,13 +25,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // if (user.role !== "ADMIN") {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Access denied. Admin privileges required.",
-    //   });
-    // }
-
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
@@ -39,7 +32,7 @@ export const login = async (req, res) => {
 
     req.session.role = user.role;
     req.session.userId = user._id;
-    // Store mustChangePassword in session so middleware can check it
+    
     req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
 
     req.session.save((err) => {
@@ -51,7 +44,7 @@ export const login = async (req, res) => {
         success: true,
         message: "Logged in successfully",
         role: user.role,
-        mustChangePassword: user.flags?.mustChangePassword ?? false, // ← NEW
+        mustChangePassword: user.flags?.mustChangePassword ?? false, 
       });
     });
   } catch (error) {
@@ -85,13 +78,13 @@ export const status = (req, res) => {
       success: true,
       authenticated: true,
       role: req.session.role,
-      mustChangePassword: req.session.mustChangePassword ?? false, // ← NEW
+      mustChangePassword: req.session.mustChangePassword ?? false, 
     });
   }
   res.status(401).json({ success: false, authenticated: false });
 };
 
-// ── NEW: Change password endpoint ─────────────────────────────────────────────
+
 export const changePassword = async (req, res) => {
   const userId = req.session.userId;
   const { currentPassword, newPassword } = req.body;
@@ -132,7 +125,7 @@ export const changePassword = async (req, res) => {
     user.flags = { ...user.flags, mustChangePassword: false };
     await user.save();
 
-    // Update session
+    
     req.session.mustChangePassword = false;
     req.session.save((err) => {
       if (err) {
@@ -146,7 +139,7 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// Add these two exports to backend/controllers/authController.js
+
 
 export const getMe = async (req, res) => {
   const userId = req.session.userId;
@@ -159,7 +152,7 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    req.session.role = user.role; // Ensure session role is up-to-date
+    req.session.role = user.role; 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error("getMe error:", error);
@@ -175,7 +168,7 @@ export const updateMe = async (req, res) => {
 
   const { firstName, lastName, phone } = req.body;
 
-  // Validate
+  
   if (firstName !== undefined) {
     if (!firstName.trim())
       return res

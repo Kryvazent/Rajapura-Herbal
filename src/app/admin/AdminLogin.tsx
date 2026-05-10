@@ -66,10 +66,10 @@ export default function AdminLogin() {
         { withCredentials: true }
       );
 
-      // In handleSubmit, replace the existing success block:
+      
       if (res.status === 200) {
         localStorage.setItem("adminAuth", "true");
-        // Store mustChangePassword flag so the dashboard can check it
+        
         if (res.data.mustChangePassword) {
           localStorage.setItem("mustChangePassword", "true");
         } else {
@@ -114,7 +114,7 @@ export default function AdminLogin() {
         overflow: "hidden",
       }}
     >
-      {/* Decorative circles */}
+      
       {[
         { size: 500, top: "-200px", right: "-200px", opacity: 0.05 },
         { size: 350, bottom: "-150px", left: "-150px", opacity: 0.04 },
@@ -139,7 +139,7 @@ export default function AdminLogin() {
       ))}
 
       <div style={{ width: "100%", maxWidth: "440px", position: "relative" }}>
-        {/* Card */}
+        
         <div
           style={{
             backgroundColor: "rgba(250,246,238,0.97)",
@@ -149,7 +149,7 @@ export default function AdminLogin() {
               "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,195,74,0.2)",
           }}
         >
-          {/* Header */}
+          
           <div
             style={{
               background: "linear-gradient(135deg, #2D5016, #3D6B1C)",
@@ -206,7 +206,7 @@ export default function AdminLogin() {
             </p>
           </div>
 
-          {/* Form */}
+          
           <form onSubmit={handleSubmit} style={{ padding: "36px 40px 40px" }}>
             <h2
               style={{
@@ -230,7 +230,7 @@ export default function AdminLogin() {
               Sign in to manage your herbal products & stores
             </p>
 
-            {/* Global Error */}
+            
             {error && (
               <div
                 style={{
@@ -254,7 +254,7 @@ export default function AdminLogin() {
               </div>
             )}
 
-            {/* Username */}
+            
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -283,7 +283,7 @@ export default function AdminLogin() {
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
-                    // Clear field error on change
+                    
                     if (fieldErrors.username) {
                       setFieldErrors((prev) => ({
                         ...prev,
@@ -321,7 +321,7 @@ export default function AdminLogin() {
                   }}
                 />
               </div>
-              {/* Field Error Message */}
+              
               {fieldErrors.username && (
                 <div
                   style={{
@@ -345,7 +345,7 @@ export default function AdminLogin() {
               )}
             </div>
 
-            {/* Password */}
+            
             <div style={{ marginBottom: "24px" }}>
               <label
                 style={{
@@ -374,7 +374,7 @@ export default function AdminLogin() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    // Clear field error on change
+                    
                     if (fieldErrors.password) {
                       setFieldErrors((prev) => ({
                         ...prev,
@@ -430,7 +430,7 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {/* Field Error Message */}
+              
               {fieldErrors.password && (
                 <div
                   style={{
@@ -454,7 +454,7 @@ export default function AdminLogin() {
               )}
             </div>
 
-            {/* Submit */}
+            
             <button
               type="submit"
               disabled={loading}
@@ -500,7 +500,7 @@ export default function AdminLogin() {
           </form>
         </div>
 
-        {/* Back link */}
+        
         <p style={{ textAlign: "center", marginTop: "20px" }}>
           <a
             href="/"

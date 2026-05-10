@@ -25,7 +25,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface StaffUser {
   _id: string;
   firstName: string;
@@ -52,7 +52,7 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
 
@@ -102,7 +102,7 @@ const validateForm = (form: UserForm, isEdit: boolean): FormErrors => {
   return errors;
 };
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+
 function Toast({
   message,
   type,
@@ -135,7 +135,7 @@ function Toast({
   );
 }
 
-// ─── FieldError ───────────────────────────────────────────────────────────────
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -148,7 +148,7 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-// ─── InputField ───────────────────────────────────────────────────────────────
+
 function InputField({
   label,
   value,
@@ -243,7 +243,7 @@ function InputField({
   );
 }
 
-// ─── Delete Confirm ───────────────────────────────────────────────────────────
+
 function DeleteConfirm({
   name,
   onConfirm,
@@ -267,7 +267,7 @@ function DeleteConfirm({
         justifyContent: "center",
         padding: "24px",
       }}
-      // ✅ Do NOT close on backdrop click for destructive actions
+      
     >
       <div
         style={{
@@ -358,7 +358,7 @@ function DeleteConfirm({
   );
 }
 
-// ─── Role Badge ───────────────────────────────────────────────────────────────
+
 function RoleBadge({ role }: { role: "ADMIN" | "STAFF" }) {
   const isAdmin = role === "ADMIN";
   return (
@@ -386,7 +386,7 @@ function RoleBadge({ role }: { role: "ADMIN" | "STAFF" }) {
   );
 }
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
+
 function StatusBadge({ status }: { status: "ACTIVE" | "DISABLED" }) {
   const isActive = status === "ACTIVE";
   return (
@@ -421,7 +421,7 @@ function StatusBadge({ status }: { status: "ACTIVE" | "DISABLED" }) {
   );
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+
 function Avatar({ user, size = 40 }: { user: StaffUser; size?: number }) {
   const initials =
     `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
@@ -451,7 +451,7 @@ function Avatar({ user, size = 40 }: { user: StaffUser; size?: number }) {
   );
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
+
 function DetailModal({
   user,
   onClose,
@@ -494,7 +494,7 @@ function DetailModal({
           overflow: "hidden",
         }}
       >
-        {/* Header */}
+        
         <div
           style={{
             background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -538,7 +538,7 @@ function DetailModal({
           </button>
         </div>
 
-        {/* Body */}
+        
         <div style={{ padding: "24px 28px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {[
@@ -609,7 +609,7 @@ function DetailModal({
           </div>
         </div>
 
-        {/* Footer */}
+        
         <div
           style={{
             padding: "14px 28px",
@@ -726,7 +726,7 @@ function DetailModal({
   );
 }
 
-// ─── Form Modal ───────────────────────────────────────────────────────────────
+
 function FormModal({
   title,
   form,
@@ -759,7 +759,7 @@ function FormModal({
       });
   };
 
-  // ✅ KEY FIX: Stop backdrop click from closing modal when clicking inside
+  
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -777,12 +777,12 @@ function FormModal({
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
-        // ✅ FIXED: removed overflowY: "auto" from backdrop — it caused
-        // the backdrop div to be the scroll container and intercept clicks
+        
+        
       }}
       onClick={handleBackdropClick}
     >
-      {/* ✅ Inner scrollable wrapper — separate from the backdrop */}
+      
       <div
         style={{
           width: "100%",
@@ -792,7 +792,7 @@ function FormModal({
           borderRadius: "22px",
           boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
         }}
-        // ✅ CRITICAL FIX: stop ALL clicks inside modal from bubbling to backdrop
+        
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -803,7 +803,7 @@ function FormModal({
             overflow: "hidden",
           }}
         >
-          {/* Header */}
+          
           <div
             style={{
               background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -837,7 +837,7 @@ function FormModal({
             </button>
           </div>
 
-          {/* Body */}
+          
           <div
             style={{
               padding: "24px 28px",
@@ -846,7 +846,7 @@ function FormModal({
               gap: "14px",
             }}
           >
-            {/* Name row */}
+            
             <div
               style={{
                 display: "grid",
@@ -880,7 +880,7 @@ function FormModal({
               />
             </div>
 
-            {/* Email */}
+            
             <InputField
               label="Email Address"
               value={form.email}
@@ -895,7 +895,7 @@ function FormModal({
               icon={<Mail size={14} />}
             />
 
-            {/* Password notice (create mode) */}
+            
             {!isEdit && (
               <div
                 style={{
@@ -952,7 +952,7 @@ function FormModal({
               </div>
             )}
 
-            {/* Password field (edit mode) */}
+            
             {isEdit && (
               <InputField
                 label="New Password (leave blank to keep current)"
@@ -985,7 +985,7 @@ function FormModal({
               />
             )}
 
-            {/* Phone */}
+            
             <InputField
               label="Phone Number"
               value={form.phone}
@@ -998,7 +998,7 @@ function FormModal({
               icon={<Phone size={14} />}
             />
 
-            {/* Role & Status row */}
+            
             <div
               style={{
                 display: "grid",
@@ -1006,7 +1006,7 @@ function FormModal({
                 gap: "12px",
               }}
             >
-              {/* Role */}
+              
               <div>
                 <label
                   style={{
@@ -1069,7 +1069,7 @@ function FormModal({
                 </div>
               </div>
 
-              {/* Status */}
+              
               <div>
                 <label
                   style={{
@@ -1123,7 +1123,7 @@ function FormModal({
             </div>
           </div>
 
-          {/* Footer */}
+          
           <div
             style={{
               padding: "14px 28px",
@@ -1148,11 +1148,11 @@ function FormModal({
             >
               Cancel
             </button>
-            {/* ✅ type="button" prevents any accidental form submission */}
+            
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation(); // extra safety
+                e.stopPropagation(); 
                 onSave();
               }}
               disabled={loading}
@@ -1180,7 +1180,7 @@ function FormModal({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1199,7 +1199,7 @@ export default function AdminUsers() {
   } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
-  // Modal state
+  
   const [detailUser, setDetailUser] = useState<StaffUser | null>(null);
   const [formModal, setFormModal] = useState<{
     mode: "add" | "edit";
@@ -1207,7 +1207,7 @@ export default function AdminUsers() {
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StaffUser | null>(null);
 
-  // Form state
+  
   const [form, setForm] = useState<UserForm>(emptyForm());
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -1216,7 +1216,7 @@ export default function AdminUsers() {
     email: string;
   } | null>(null);
 
-  // ── Toast helper ─────────────────────────────────────────────────────────
+  
   const showToast = useCallback(
     (message: string, type: "success" | "error") => {
       setToast({ message, type });
@@ -1225,7 +1225,7 @@ export default function AdminUsers() {
     []
   );
 
-  // ── Fetch users ───────────────────────────────────────────────────────────
+  
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -1246,7 +1246,7 @@ export default function AdminUsers() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ── Search ────────────────────────────────────────────────────────────────
+  
   useEffect(() => {
     if (!searchQuery.trim()) {
       fetchUsers();
@@ -1270,21 +1270,21 @@ export default function AdminUsers() {
     return () => clearTimeout(timer);
   }, [searchQuery, fetchUsers, showToast]);
 
-  // ── Filtered users ────────────────────────────────────────────────────────
+  
   const filteredUsers = users.filter((u) => {
     if (filterRole !== "ALL" && u.role !== filterRole) return false;
     if (filterStatus !== "ALL" && u.status !== filterStatus) return false;
     return true;
   });
 
-  // ── Open add modal ────────────────────────────────────────────────────────
+  
   const openAddModal = () => {
     setForm(emptyForm());
     setFormErrors({});
     setFormModal({ mode: "add" });
   };
 
-  // ── Open edit modal ───────────────────────────────────────────────────────
+  
   const openEditModal = (user: StaffUser) => {
     setForm({
       firstName: user.firstName,
@@ -1300,8 +1300,8 @@ export default function AdminUsers() {
     setFormModal({ mode: "edit", user });
   };
 
-  // ── Save (create or update) ───────────────────────────────────────────────
-  // ✅ useCallback so the function reference is stable and not stale
+  
+  
   const handleSave = useCallback(async () => {
 
     console.log("form")
@@ -1356,7 +1356,7 @@ export default function AdminUsers() {
     }
   }, [form, formModal, fetchUsers, showToast]);
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -1376,7 +1376,7 @@ export default function AdminUsers() {
     }
   };
 
-  // ── Toggle status ─────────────────────────────────────────────────────────
+  
   const handleToggleStatus = async (user: StaffUser) => {
     try {
       setActionLoading(true);
@@ -1411,7 +1411,7 @@ export default function AdminUsers() {
     }
   };
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
+  
   const totalAdmins = users.filter((u) => u.role === "ADMIN").length;
   const totalStaff = users.filter((u) => u.role === "STAFF").length;
   const totalActive = users.filter((u) => u.status === "ACTIVE").length;
@@ -1419,10 +1419,10 @@ export default function AdminUsers() {
 
   return (
     <div>
-      {/* Toast */}
+      
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -1464,7 +1464,7 @@ export default function AdminUsers() {
         </button>
       </div>
 
-      {/* ── Stats Cards ─────────────────────────────────────────────────────── */}
+      
       <div
         style={{
           display: "grid",
@@ -1540,7 +1540,7 @@ export default function AdminUsers() {
         ))}
       </div>
 
-      {/* ── Search & Filters ─────────────────────────────────────────────────── */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -1554,7 +1554,7 @@ export default function AdminUsers() {
           alignItems: "center",
         }}
       >
-        {/* Search */}
+        
         <div style={{ position: "relative", flex: "1 1 240px" }}>
           <Search
             size={15}
@@ -1600,7 +1600,7 @@ export default function AdminUsers() {
           )}
         </div>
 
-        {/* Role filter */}
+        
         <div style={{ position: "relative" }}>
           <select
             value={filterRole}
@@ -1636,7 +1636,7 @@ export default function AdminUsers() {
           />
         </div>
 
-        {/* Status filter */}
+        
         <div style={{ position: "relative" }}>
           <select
             value={filterStatus}
@@ -1672,7 +1672,7 @@ export default function AdminUsers() {
           />
         </div>
 
-        {/* Refresh */}
+        
         <button
           type="button"
           onClick={fetchUsers}
@@ -1700,7 +1700,7 @@ export default function AdminUsers() {
         </button>
       </div>
 
-      {/* ── Users Table ──────────────────────────────────────────────────────── */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -1710,7 +1710,7 @@ export default function AdminUsers() {
           boxShadow: "0 2px 8px rgba(45,80,22,0.05)",
         }}
       >
-        {/* Table header */}
+        
         <div
           style={{
             display: "grid",
@@ -1737,7 +1737,7 @@ export default function AdminUsers() {
           ))}
         </div>
 
-        {/* Loading */}
+        
         {loading && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <div
@@ -1757,7 +1757,7 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Empty */}
+        
         {!loading && filteredUsers.length === 0 && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <User
@@ -1787,7 +1787,7 @@ export default function AdminUsers() {
           </div>
         )}
 
-        {/* Rows */}
+        
         {!loading &&
           filteredUsers.map((user, i) => (
             <div
@@ -1813,7 +1813,7 @@ export default function AdminUsers() {
               }
               onClick={() => setDetailUser(user)}
             >
-              {/* User */}
+              
               <div
                 style={{ display: "flex", alignItems: "center", gap: "10px" }}
               >
@@ -1843,7 +1843,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              {/* Email */}
+              
               <p
                 style={{
                   color: "#5C4033",
@@ -1857,17 +1857,17 @@ export default function AdminUsers() {
                 {user.email}
               </p>
 
-              {/* Role */}
+              
               <div>
                 <RoleBadge role={user.role} />
               </div>
 
-              {/* Status */}
+              
               <div>
                 <StatusBadge status={user.status} />
               </div>
 
-              {/* Actions */}
+              
               <div
                 style={{ display: "flex", gap: "6px" }}
                 onClick={(e) => e.stopPropagation()}
@@ -1961,7 +1961,7 @@ export default function AdminUsers() {
           ))}
       </div>
 
-      {/* ── Detail Modal ─────────────────────────────────────────────────────── */}
+      
       {detailUser && (
         <DetailModal
           user={detailUser}
@@ -1974,7 +1974,7 @@ export default function AdminUsers() {
         />
       )}
 
-      {/* ── Form Modal ───────────────────────────────────────────────────────── */}
+      
       {formModal && (
         <FormModal
           title={formModal.mode === "add" ? "Add New User" : "Edit User"}
@@ -1992,7 +1992,7 @@ export default function AdminUsers() {
         />
       )}
 
-      {/* ── Delete Confirm ───────────────────────────────────────────────────── */}
+      
       {deleteTarget && (
         <DeleteConfirm
           name={`${deleteTarget.firstName} ${deleteTarget.lastName}`}
@@ -2002,7 +2002,7 @@ export default function AdminUsers() {
         />
       )}
 
-      {/* ── Created Info Modal ───────────────────────────────────────────────── */}
+      
       {createdInfo && (
         <div
           style={{
@@ -2026,7 +2026,7 @@ export default function AdminUsers() {
               boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
             }}
           >
-            {/* Header */}
+            
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -2072,7 +2072,7 @@ export default function AdminUsers() {
               </div>
             </div>
 
-            {/* Body */}
+            
             <div style={{ padding: "20px 24px 24px" }}>
               <p
                 style={{

@@ -32,12 +32,10 @@ const SHOP_TYPES: ShopType[] = [
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface FormErrors {
   [key: string]: string;
 }
 
-// ─── Error Message ────────────────────────────────────────────────────────────
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -57,7 +55,6 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-// ─── Toast Notification ───────────────────────────────────────────────────────
 function Toast({
   message,
   type,
@@ -89,8 +86,6 @@ function Toast({
     </div>
   );
 }
-
-// ─── InputRow ─────────────────────────────────────────────────────────────────
 function InputRow({
   label,
   value,
@@ -140,8 +135,6 @@ function InputRow({
     </div>
   );
 }
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
 function Modal({
   title,
   onClose,
@@ -179,7 +172,7 @@ function Modal({
           overflow: "hidden",
         }}
       >
-        {/* Header */}
+        
         <div
           style={{
             background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -213,7 +206,7 @@ function Modal({
           </button>
         </div>
 
-        {/* Body */}
+        
         <div
           style={{
             padding: "24px",
@@ -225,7 +218,7 @@ function Modal({
           {children}
         </div>
 
-        {/* Footer */}
+        
         <div
           style={{
             padding: "14px 24px",
@@ -273,8 +266,6 @@ function Modal({
     </div>
   );
 }
-
-// ─── DeleteConfirm ────────────────────────────────────────────────────────────
 function DeleteConfirm({ name, onConfirm, onCancel, getComplete }: { name: string; onConfirm: () => void; onCancel: () => void; getComplete: boolean }) {
   return (
     <div
@@ -380,8 +371,6 @@ function DeleteConfirm({ name, onConfirm, onCancel, getComplete }: { name: strin
     </div>
   );
 }
-
-// ─── Wizard input style ───────────────────────────────────────────────────────
 const wizInputStyle: React.CSSProperties = {
   padding: "9px 12px",
   borderRadius: "10px",
@@ -399,8 +388,6 @@ const wizInputErrorStyle: React.CSSProperties = {
   border: "1.5px solid #D4183D",
   backgroundColor: "rgba(212,24,61,0.04)",
 };
-
-// ─── Wizard state type ────────────────────────────────────────────────────────
 interface WizardState {
   step: 1 | 2 | 3 | 4;
   provMode: "existing" | "new";
@@ -415,8 +402,6 @@ interface WizardState {
   newTownName: string;
   shopForm: Omit<Shop, "id">;
 }
-
-// ─── Validation helpers ───────────────────────────────────────────────────────
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
 
 const validateProvince = (name: string, icon: string): FormErrors => {
@@ -467,8 +452,6 @@ const validateShop = (shop: Omit<Shop, "id">): FormErrors => {
 
   return errors;
 };
-
-// ─── Main component ───────────────────────────────────────────────────────────
 export default function AdminStores() {
   const [provinces, setProvincesState] = useState<Province[]>([]);
   const [openProvinces, setOpenProvinces] = useState<Set<string>>(new Set());
@@ -509,13 +492,11 @@ export default function AdminStores() {
     type: "Ayurvedic Store",
   });
 
-  // ── Toast helper ───────────────────────────────────────────────────────────
   const showToast = (message: string, type: "error" | "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // ── Fetch provinces ────────────────────────────────────────────────────────
   useEffect(() => {
     fetchProvinces();
   }, []);
@@ -526,7 +507,7 @@ export default function AdminStores() {
       const res = await axios.get(`${API_URL}/admin/provinces`, {
         withCredentials: true,
       });
-      // Handle both plain array and { success, data: [] } response shapes
+  
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProvincesState(data);
     } catch (error) {
@@ -558,7 +539,6 @@ export default function AdminStores() {
       return n;
     });
 
-  // ── Province CRUD ──────────────────────────────────────────────────────────
   const openAddProvince = () => {
     setProvForm({ _id: "", name: "", icon: "🌿" });
     setFormErrors({});
@@ -636,7 +616,6 @@ export default function AdminStores() {
     });
   };
 
-  // ── District CRUD ──────────────────────────────────────────────────────────
   const openAddDistrict = (pi: number) => {
     setDistForm({ _id: "", name: "" });
     setFormErrors({});
@@ -723,7 +702,6 @@ export default function AdminStores() {
     });
   };
 
-  // ── Town CRUD ──────────────────────────────────────────────────────────────
   const openAddTown = (pi: number, di: number) => {
     setTownForm({ name: "" });
     setFormErrors({});
@@ -813,7 +791,6 @@ export default function AdminStores() {
     });
   };
 
-  // ── Shop CRUD ──────────────────────────────────────────────────────────────
   const openAddShop = (pi: number, di: number, ti: number) => {
     setShopForm({ name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" });
     setFormErrors({});
@@ -923,7 +900,6 @@ export default function AdminStores() {
     });
   };
 
-  // ── Wizard ─────────────────────────────────────────────────────────────────
   const openWizard = () => {
     setWizardErrors({});
     setWizard({
@@ -952,7 +928,6 @@ export default function AdminStores() {
       ? wizardProvince.districts.find((d) => d._id === wizard.selectedDistId) ?? null
       : null;
 
-  // Validate each wizard step before advancing
   const validateWizardStep = (): FormErrors => {
     if (!wizard) return {};
     const errors: FormErrors = {};
@@ -1086,7 +1061,6 @@ export default function AdminStores() {
     }
   };
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   const typeColors: Record<ShopType, { bg: string; text: string }> = {
     "Ayurvedic Store": { bg: "rgba(45,80,22,0.1)", text: "#2D5016" },
     Pharmacy: { bg: "rgba(30,90,160,0.1)", text: "#1E5AA0" },
@@ -1224,7 +1198,7 @@ export default function AdminStores() {
           alignItems: "center",
           gap: "20px"
         }}>
-          {/* Spinner */}
+          
           <div style={{
             width: "50px",
             height: "50px",
@@ -1234,7 +1208,7 @@ export default function AdminStores() {
             animation: "spin 1s linear infinite"
           }}></div>
 
-          {/* Text */}
+          
           <p style={{
             color: "#2D5016",
             fontSize: "1.1rem",
@@ -1245,7 +1219,7 @@ export default function AdminStores() {
           </p>
         </div>
 
-        {/* Add keyframe animation */}
+        
         <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -1258,10 +1232,10 @@ export default function AdminStores() {
 
   return (
     <div>
-      {/* Toast */}
+      
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      {/* Header */}
+      
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -1320,7 +1294,7 @@ export default function AdminStores() {
         </div>
       </div>
 
-      {/* Province tree */}
+      
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         {provinces.map((province, pi) => {
           const provOpen = openProvinces.has(province.name);
@@ -1339,7 +1313,7 @@ export default function AdminStores() {
                 boxShadow: "0 2px 8px rgba(45,80,22,0.05)",
               }}
             >
-              {/* Province row */}
+              
               <div
                 style={{
                   display: "flex",
@@ -1406,7 +1380,7 @@ export default function AdminStores() {
                 )}
               </div>
 
-              {/* Districts */}
+              
               {provOpen && (
                 <div style={{ borderTop: "1px solid rgba(45,80,22,0.08)", padding: "8px 12px 12px" }}>
                   {province.districts.length === 0 && (
@@ -1429,7 +1403,7 @@ export default function AdminStores() {
                           overflow: "hidden",
                         }}
                       >
-                        {/* District row */}
+                        
                         <div
                           style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", cursor: "pointer" }}
                           onClick={() => toggleDistrict(dKey)}
@@ -1488,7 +1462,7 @@ export default function AdminStores() {
                           )}
                         </div>
 
-                        {/* Towns */}
+                        
                         {distOpen && (
                           <div style={{ borderTop: "1px solid rgba(45,80,22,0.07)", padding: "6px 10px 8px" }}>
                             {district.towns.length === 0 && (
@@ -1510,7 +1484,7 @@ export default function AdminStores() {
                                     overflow: "hidden",
                                   }}
                                 >
-                                  {/* Town row */}
+                                  
                                   <div
                                     style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", cursor: "pointer" }}
                                     onClick={() => toggleTown(tKey)}
@@ -1569,7 +1543,7 @@ export default function AdminStores() {
                                     )}
                                   </div>
 
-                                  {/* Shops */}
+                                  
                                   {townOpen && (
                                     <div style={{ borderTop: "1px solid rgba(212,160,23,0.1)", padding: "6px" }}>
                                       {town.shops.length === 0 && (
@@ -1669,7 +1643,7 @@ export default function AdminStores() {
         })}
       </div>
 
-      {/* ── Wizard Modal ── */}
+      
       {wizard && (
         <div
           style={{
@@ -1686,7 +1660,7 @@ export default function AdminStores() {
               overflow: "hidden", display: "flex", flexDirection: "column",
             }}
           >
-            {/* Wizard header */}
+            
             <div style={{ background: "linear-gradient(135deg, #1A3009, #2D5016)", padding: "22px 28px 0" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -1703,7 +1677,7 @@ export default function AdminStores() {
                 </button>
               </div>
 
-              {/* Progress */}
+              
               <div style={{ display: "flex", alignItems: "center", paddingBottom: "0" }}>
                 {[
                   { n: 1, label: "Province" },
@@ -1745,10 +1719,10 @@ export default function AdminStores() {
               </div>
             </div>
 
-            {/* Step body */}
+            
             <div style={{ padding: "24px 28px", flex: 1, minHeight: "220px" }}>
 
-              {/* Step 1 – Province */}
+              
               {wizard.step === 1 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
@@ -1807,7 +1781,7 @@ export default function AdminStores() {
                 </div>
               )}
 
-              {/* Step 2 – District */}
+              
               {wizard.step === 2 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
@@ -1852,7 +1826,7 @@ export default function AdminStores() {
                 </div>
               )}
 
-              {/* Step 3 – Town */}
+              
               {wizard.step === 3 && (
                 <div>
                   <p style={{ color: "#5C4033", fontSize: "0.82rem", marginBottom: "12px", marginTop: 0 }}>
@@ -1897,10 +1871,10 @@ export default function AdminStores() {
                 </div>
               )}
 
-              {/* Step 4 – Shop */}
+              
               {wizard.step === 4 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {/* Path summary */}
+                  
                   <div style={{ backgroundColor: "rgba(45,80,22,0.06)", border: "1px solid rgba(45,80,22,0.15)", borderRadius: "10px", padding: "8px 14px", fontSize: "0.78rem", color: "#4A7C23", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                     <MapPin size={12} />
                     {wizard.provMode === "existing"
@@ -1974,7 +1948,7 @@ export default function AdminStores() {
               )}
             </div>
 
-            {/* Wizard footer */}
+            
             <div style={{ padding: "14px 28px", borderTop: "1px solid rgba(45,80,22,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(45,80,22,0.02)" }}>
               <button
                 onClick={() => {
@@ -2035,7 +2009,7 @@ export default function AdminStores() {
         </div>
       )}
 
-      {/* Unified Modal */}
+      
       {modal && (
         <Modal
           title={getModalTitle()}
@@ -2159,7 +2133,7 @@ export default function AdminStores() {
         </Modal>
       )}
 
-      {/* Delete Confirm */}
+      
       {deleteTarget && (
         <DeleteConfirm name={deleteTarget.name} onConfirm={deleteTarget.action} onCancel={() => setDeleteTarget(null)} getComplete={completing} />
       )}
