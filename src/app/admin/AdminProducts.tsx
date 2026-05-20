@@ -1045,7 +1045,7 @@ export default function AdminProducts() {
                 label="Image URL"
                 value={formData.image}
                 onChange={(v) => set("image", v)}
-                placeholder="https:
+                placeholder="https:"
                 required
                 error={formErrors.image}
               />
