@@ -3,24 +3,34 @@ import { Leaf, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-
 import Logo from "./Logo";
 
 export function Footer() {
+
+  const informationText = [
+    {
+      address: "Parliament Road, Pelawatta, Battaramulla",
+      phoneNumber: "+94 77 283 0878",
+      email: "rajapurawedamedura@yahoo.com",
+      copyright: "© 2026 Rajapura Herbal Company. All Rights Reserved."
+    }
+  ];
+
   return (
     <footer
       style={{ backgroundColor: "#1A3009", fontFamily: "'Lato', sans-serif" }}
       className="text-white"
     >
-      
+
       <div style={{ height: "4px", background: "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)" }} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          
+
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-5">
               <div
                 style={{ backgroundColor: "#8BC34A" }}
                 className="w-10 h-10 rounded-full flex items-center justify-center"
               >
-                
+
                 <Logo width={38} height={38} alt="Rajapura Logo" />
               </div>
               <div>
@@ -74,7 +84,7 @@ export function Footer() {
             </div>
           </div>
 
-          
+
           <div>
             <h3
               style={{
@@ -112,7 +122,7 @@ export function Footer() {
             </ul>
           </div>
 
-          
+
           <div>
             <h3
               style={{
@@ -150,7 +160,7 @@ export function Footer() {
             </ul>
           </div>
 
-          
+
           <div>
             <h3
               style={{
@@ -164,9 +174,9 @@ export function Footer() {
             </h3>
             <div className="space-y-4">
               {[
-                { Icon: MapPin, text: "No. 7, Rajapura Road,\nNuwara Eliya, Sri Lanka" },
-                { Icon: Phone, text: "+94 52 222 0001" },
-                { Icon: Mail, text: "info@rajapuraherbal.lk" },
+                { Icon: MapPin, text: informationText[0].address },
+                { Icon: Phone, text: informationText[0].phoneNumber },
+                { Icon: Mail, text: informationText[0].email },
               ].map(({ Icon, text }, i) => (
                 <div key={i} className="flex gap-3">
                   <Icon size={16} style={{ color: "#8BC34A", marginTop: "2px", flexShrink: 0 }} />
@@ -179,13 +189,13 @@ export function Footer() {
           </div>
         </div>
 
-        
+
         <div
           style={{ borderTop: "1px solid rgba(139,195,74,0.2)" }}
           className="mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4"
         >
           <p style={{ color: "#618C3A", fontSize: "0.8rem", margin: 0 }}>
-            © 2026 Rajapura Herbal Company. All Rights Reserved.
+            {informationText[0].copyright}
           </p>
           <div className="flex gap-6">
             {["Privacy Policy", "Terms of Use", "Quality Guarantee"].map((item) => (

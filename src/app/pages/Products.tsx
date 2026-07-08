@@ -736,7 +736,7 @@ export default function Products() {
                           marginTop: 0,
                         }}
                       >
-                        Ingredients
+                        {selectedProduct.ingredients.length > 0 ? "Ingredients" : ""}
                       </p>
                       <p
                         style={{
