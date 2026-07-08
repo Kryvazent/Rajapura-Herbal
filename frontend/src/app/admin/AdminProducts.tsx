@@ -67,6 +67,13 @@ const IMAGE_URL_REGEX =
 const getProductPriceLabel = (price?: string) =>
   price?.trim() ? price : "Contact for price";
 
+const getUploadedImageUrl = (uploaded: any): string =>
+  uploaded?.ufsUrl ??
+  uploaded?.url ??
+  uploaded?.appUrl ??
+  uploaded?.serverData?.url ??
+  "";
+
 const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   const errors: FormErrors = {};
 
@@ -335,6 +342,7 @@ export default function AdminProducts() {
   const [imageDeleting, setImageDeleting] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedImagePreview, setSelectedImagePreview] = useState("");
+  const [imagePreviewError, setImagePreviewError] = useState(false);
   const [uploadedImageKey, setUploadedImageKey] = useState("");
   const [originalImageUrl, setOriginalImageUrl] = useState("");
   const [originalImageKey, setOriginalImageKey] = useState("");
@@ -353,7 +361,7 @@ export default function AdminProducts() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const { startUpload, isUploading } = useUploadThing("productImage", {
+  const { startUpload } = useUploadThing("productImage", {
     uploadProgressGranularity: "fine",
     onUploadBegin: () => {
       setImageUploading(true);
@@ -361,6 +369,10 @@ export default function AdminProducts() {
       setImageUploadStep("Step 3: Uploading the new image...");
     },
     onUploadProgress: setUploadProgress,
+    onUploadError: () => {
+      setImageUploading(false);
+      setImageDeleting(false);
+    },
   });
 
   useEffect(() => {
@@ -374,6 +386,12 @@ export default function AdminProducts() {
 
     return () => URL.revokeObjectURL(previewUrl);
   }, [selectedImageFile]);
+
+  const imagePreviewSrc = selectedImagePreview || formData.image;
+
+  useEffect(() => {
+    setImagePreviewError(false);
+  }, [imagePreviewSrc]);
 
   useEffect(() => {
     getProducts();
@@ -472,39 +490,43 @@ export default function AdminProducts() {
       return formData.image;
     }
 
-    if (uploadedImageKey) {
-      setImageDeleting(true);
-      setImageUploadStep(
-        "Step 3: Deleting the previously uploaded image..."
-      );
-      await deleteUploadedImageApi(uploadedImageKey);
-      setUploadedImageKey("");
-      set("image", "");
+    try {
+      if (uploadedImageKey) {
+        setImageDeleting(true);
+        setImageUploadStep(
+          "Step 3: Deleting the previously uploaded image..."
+        );
+        await deleteUploadedImageApi(uploadedImageKey);
+        setUploadedImageKey("");
+        set("image", "");
+      }
+
+      setImageUploadStep("Step 4: Uploading the selected image...");
+      setImageUploading(true);
+
+      const result = await startUpload([selectedImageFile]);
+      const uploaded = result?.[0];
+      const imageUrl = getUploadedImageUrl(uploaded);
+
+      if (!uploaded || !imageUrl) {
+        throw new Error("Upload completed without an image URL.");
+      }
+
+      setFormData((prev) => ({ ...prev, image: imageUrl }));
+      setUploadedImageKey(uploaded.key ?? "");
+      setSelectedImageFile(null);
+      setUploadProgress(100);
+      setImageUploadStep("Step 5: Image uploaded and ready to save.");
+
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
+
+      return imageUrl;
+    } finally {
+      setImageDeleting(false);
+      setImageUploading(false);
     }
-
-    setImageUploadStep("Step 4: Uploading the selected image...");
-    setImageUploading(true);
-
-    const result = await startUpload([selectedImageFile]);
-    const uploaded = result?.[0];
-    const imageUrl =
-      uploaded?.serverData?.url ?? uploaded?.ufsUrl ?? uploaded?.url;
-
-    if (!uploaded || !imageUrl) {
-      throw new Error("Upload completed without an image URL.");
-    }
-
-    set("image", imageUrl);
-    setUploadedImageKey(uploaded.key ?? "");
-    setSelectedImageFile(null);
-    setUploadProgress(100);
-    setImageUploadStep("Step 5: Image uploaded and ready to save.");
-
-    if (imageInputRef.current) {
-      imageInputRef.current.value = "";
-    }
-
-    return imageUrl;
   };
 
   const handleUploadSelectedImage = async () => {
@@ -523,9 +545,6 @@ export default function AdminProducts() {
         "Failed to upload image.";
       setImageUploadStep("Upload failed. Select or upload an image again.");
       showToast(message, "error");
-    } finally {
-      setImageDeleting(false);
-      setImageUploading(false);
     }
   };
 
@@ -1308,22 +1327,36 @@ export default function AdminProducts() {
                         color: "#8B5E3C",
                       }}
                     >
-                      {selectedImagePreview || formData.image ? (
+                      {imagePreviewSrc && !imagePreviewError ? (
                         <img
-                          src={selectedImagePreview || formData.image}
+                          key={imagePreviewSrc}
+                          src={imagePreviewSrc}
                           alt="preview"
                           style={{
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
                           }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
+                          onError={() => setImagePreviewError(true)}
                         />
                       ) : (
-                        <ImagePlus size={30} />
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "12px",
+                            textAlign: "center",
+                          }}
+                        >
+                          <ImagePlus size={30} />
+                          {imagePreviewSrc && (
+                            <span style={{ fontSize: "0.72rem" }}>
+                              Preview unavailable
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -1425,7 +1458,7 @@ export default function AdminProducts() {
                             <button
                               type="button"
                               onClick={handleUploadSelectedImage}
-                              disabled={isUploading || imageUploading || imageDeleting}
+                              disabled={imageUploading || imageDeleting}
                               style={{
                                 minWidth: "138px",
                                 minHeight: "38px",
@@ -1433,12 +1466,12 @@ export default function AdminProducts() {
                                 borderRadius: "999px",
                                 border: "none",
                                 backgroundColor:
-                                  isUploading || imageUploading || imageDeleting
+                                  imageUploading || imageDeleting
                                     ? "#A8C580"
                                     : "#2D5016",
                                 color: "#FAF6EE",
                                 cursor:
-                                  isUploading || imageUploading || imageDeleting
+                                  imageUploading || imageDeleting
                                     ? "not-allowed"
                                     : "pointer",
                                 fontSize: "0.84rem",
@@ -1452,14 +1485,14 @@ export default function AdminProducts() {
                               <UploadCloud size={15} />
                               {imageDeleting
                                 ? "Deleting..."
-                                : imageUploading || isUploading
+                                : imageUploading
                                 ? "Uploading..."
                                 : "Upload Image"}
                             </button>
                             <button
                               type="button"
                               onClick={() => imageInputRef.current?.click()}
-                              disabled={isUploading || imageUploading || imageDeleting}
+                              disabled={imageUploading || imageDeleting}
                               style={{
                                 minWidth: "138px",
                                 minHeight: "38px",
@@ -1469,7 +1502,7 @@ export default function AdminProducts() {
                                 backgroundColor: "transparent",
                                 color: "#6B4423",
                                 cursor:
-                                  isUploading || imageUploading || imageDeleting
+                                  imageUploading || imageDeleting
                                     ? "not-allowed"
                                     : "pointer",
                                 fontSize: "0.84rem",
@@ -1485,7 +1518,7 @@ export default function AdminProducts() {
                             <button
                               type="button"
                               onClick={resetSelectedImage}
-                              disabled={isUploading || imageUploading || imageDeleting}
+                              disabled={imageUploading || imageDeleting}
                               style={{
                                 minWidth: "138px",
                                 minHeight: "38px",
@@ -1495,7 +1528,7 @@ export default function AdminProducts() {
                                 backgroundColor: "rgba(212,24,61,0.06)",
                                 color: "#D4183D",
                                 cursor:
-                                  isUploading || imageUploading || imageDeleting
+                                  imageUploading || imageDeleting
                                     ? "not-allowed"
                                     : "pointer",
                                 fontSize: "0.84rem",
