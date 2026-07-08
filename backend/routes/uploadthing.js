@@ -12,12 +12,15 @@ const uploadThingCallbackUrl = backendUrl
   : undefined;
 
 export const uploadRouter = {
-  productImage: f({
-    image: {
-      maxFileSize: "4MB",
-      maxFileCount: 1,
+  productImage: f(
+    {
+      image: {
+        maxFileSize: "4MB",
+        maxFileCount: 1,
+      },
     },
-  })
+    { awaitServerData: true }
+  )
     .middleware(({ req }) => {
       const isAllowedRole =
         req.session?.role === "ADMIN" || req.session?.role === "STAFF";

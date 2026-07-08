@@ -369,10 +369,6 @@ export default function AdminProducts() {
       setImageUploadStep("Step 3: Uploading the new image...");
     },
     onUploadProgress: setUploadProgress,
-    onClientUploadComplete: () => {
-      setImageUploading(false);
-      setUploadProgress(100);
-    },
     onUploadError: () => {
       setImageUploading(false);
       setImageDeleting(false);
@@ -519,6 +515,7 @@ export default function AdminProducts() {
       setFormData((prev) => ({ ...prev, image: imageUrl }));
       setUploadedImageKey(uploaded.key ?? "");
       setSelectedImageFile(null);
+      setUploadProgress(100);
       setImageUploadStep("Step 5: Image uploaded and ready to save.");
 
       if (imageInputRef.current) {
@@ -526,11 +523,9 @@ export default function AdminProducts() {
       }
 
       return imageUrl;
-    } catch (error) {
-      setImageUploading(false);
-      throw error;
     } finally {
       setImageDeleting(false);
+      setImageUploading(false);
     }
   };
 
@@ -1071,7 +1066,7 @@ export default function AdminProducts() {
             padding: "24px",
             overflowY: "auto",
           }}
-          onClick={(e) => e.target === e.currentTarget && !imageUploading && !imageDeleting && setModalMode(null)}
+          onClick={(e) => e.target === e.currentTarget && setModalMode(null)}
         >
           <div
             style={{
