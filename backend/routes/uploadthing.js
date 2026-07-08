@@ -5,15 +5,12 @@ import { deleteUploadThingFileByKey } from "../services/uploadthingService.js";
 const f = createUploadthing();
 
 export const uploadRouter = {
-  productImage: f(
-    {
-      image: {
-        maxFileSize: "4MB",
-        maxFileCount: 1,
-      },
+  productImage: f({
+    image: {
+      maxFileSize: "4MB",
+      maxFileCount: 1,
     },
-    { awaitServerData: true }
-  )
+  })
     .middleware(({ req }) => {
       const isAllowedRole =
         req.session?.role === "ADMIN" || req.session?.role === "STAFF";

@@ -8,9 +8,13 @@ export const { useUploadThing } = generateReactHelpers<any>({
     const requestUrl = input instanceof Request ? input.url : input.toString();
     const isBackendUploadRoute = requestUrl.startsWith(uploadThingUrl);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
     return fetch(input, {
       ...init,
       credentials: isBackendUploadRoute ? "include" : "omit",
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
   },
 });
