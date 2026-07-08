@@ -33,7 +33,8 @@ const productSchema = new mongoose.Schema(
     howToUse: [{ type: String, maxlength: 500 }],
     price: {
       type: String,
-      required: [true, "Price is required"]
+      trim: true,
+      default: "",
     },
     image: {
       type: String,

@@ -5,6 +5,9 @@ import axios from "axios";
 import { Product } from "../interfaces/productInterface";
 import Logo from "../components/Logo";
 
+const getProductPriceLabel = (price?: string) =>
+  price?.trim() ? price : "Contact for price";
+
 const stats = [
   { value: "200+", label: "Years of Heritage" },
   { value: "48", label: "Herbal Ingredients" },
@@ -708,7 +711,7 @@ export default function Home() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {product.price}
+                      {getProductPriceLabel(product.price)}
                     </span>
                     <Link
                       to="/store-locator"

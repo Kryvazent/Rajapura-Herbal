@@ -4,6 +4,9 @@ import { Search, Leaf, ChevronRight, X } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 
+const getProductPriceLabel = (price?: string) =>
+  price?.trim() ? price : "Contact for price";
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -391,7 +394,7 @@ export default function Products() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {product.price}
+                      {getProductPriceLabel(product.price)}
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -638,7 +641,7 @@ export default function Products() {
                         fontSize: "1.15rem",
                       }}
                     >
-                      {selectedProduct.price}
+                      {getProductPriceLabel(selectedProduct.price)}
                     </span>
                     <div className="flex gap-2">
                       <button

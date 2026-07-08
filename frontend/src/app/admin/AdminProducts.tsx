@@ -64,6 +64,9 @@ const getUploadThingKeyFromUrl = (imageUrl: string): string => {
 const IMAGE_URL_REGEX =
   /^https?:\/\/\S+$/i;
 
+const getProductPriceLabel = (price?: string) =>
+  price?.trim() ? price : "Contact for price";
+
 const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   const errors: FormErrors = {};
 
@@ -89,10 +92,6 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
     errors.description = "Description is required.";
   } else if (form.description.trim().length > 1000) {
     errors.description = "Description cannot exceed 1000 characters.";
-  }
-
-  if (!form.price) {
-    errors.price = "Price is required.";
   }
 
   if (!form.image.trim()) {
@@ -944,7 +943,7 @@ export default function AdminProducts() {
                           fontSize: "0.9rem",
                         }}
                       >
-                        {product.price}
+                        {getProductPriceLabel(product.price)}
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1233,7 +1232,6 @@ export default function AdminProducts() {
                   set("price", numeric ? `LKR ${formatted}` : "");
                 }}
                 placeholder="e.g. LKR 850"
-                required
                 error={formErrors.price}
               />
 
