@@ -1,4 +1,5 @@
-import { Leaf, Award, Globe } from "lucide-react";
+import { useRef, useState, type PointerEvent } from "react";
+import { Leaf, Award, Globe, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router";
 import CompanyLogo from "/CompanyLogo.jpg";
 
@@ -11,13 +12,158 @@ const milestones = [
   { year: "2024", title: "Digital Reach", desc: "Launching our digital presence to connect more Sri Lankans with authentic Ayurvedic heritage." },
 ];
 
+const productCertifications = [
+  {
+    name: "Industrial Technology Institute",
+    issuer: "Certification of Industrial Technology Institute",
+    image: "/certifications/industrial-technology-institute.jpg",
+  },
+  {
+    name: "ISO 9001 Certified",
+    issuer: "Quality management certification",
+    image: "/certifications/iso-9001.jpg",
+  },
+  {
+    name: "Department of Ayurveda",
+    issuer: "Department of Ayurveda, Sri Lanka",
+    image: "/certifications/department-ayurveda.jpg",
+  },
+  {
+    name: "GMP Certified",
+    issuer: "Good Manufacturing Practice",
+    image: "/certifications/gmp.jpg",
+  },
+  {
+    name: "Halalan Taiyiban",
+    issuer: "The Halal Chain",
+    image: "/certifications/halalan-taiyiban.jpg",
+  },
+  {
+    name: "Halal Certified",
+    issuer: "Halal food certification",
+    image: "/certifications/halal-certified.jpg",
+  },
+  {
+    name: "Ministry of Health Malaysia",
+    issuer: "Malaysia health authority recognition",
+    image: "/certifications/ministry-health-malaysia.jpg",
+  },
+  {
+    name: "Ministry of Health Indonesia",
+    issuer: "Kementerian Kesehatan Republik Indonesia",
+    image: "/certifications/ministry-health-indonesia.jpg",
+  },
+];
+
 const team = [
   { name: "Dr. Arjuna Rajapura", title: "Chief Ayurvedic Physician", desc: "7th generation heir to the Rajapura lineage, with a PhD in Ayurvedic Medicine from Kelaniya University." },
   { name: "Ms. Nilmini Perera", title: "Head of Formulations", desc: "25 years experience in botanical extraction and standardization of herbal active compounds." },
   { name: "Mr. Chaminda Silva", title: "Quality Assurance Director", desc: "Ensures every batch meets the highest standards of purity, potency, and safety." },
 ];
 
+const branches = [
+  {
+    country: "Sri Lanka",
+    company: "Rajapura Herbal Drugs co.(Pvt) ltd",
+    status: "Mother Company",
+    lat: 7.8731,
+    lon: 80.7718,
+    type: "active",
+  },
+  {
+    country: "Malaysia",
+    company: "Rajapura Herbal Malaya Sdn. Bhd.",
+    status: "Branch",
+    lat: 4.2105,
+    lon: 101.9758,
+    type: "active",
+  },
+  {
+    country: "Indonesia",
+    company: "Rajapura Herbal",
+    status: "Branch",
+    lat: -0.7893,
+    lon: 113.9213,
+    type: "active",
+  },
+  {
+    country: "Germany",
+    company: "Rajapura Herbal",
+    status: "Ongoing",
+    lat: 51.1657,
+    lon: 10.4515,
+    type: "ongoing",
+  },
+  {
+    country: "Russia",
+    company: "Rajapura Herbal",
+    status: "Ongoing",
+    lat: 61.524,
+    lon: 105.3188,
+    type: "ongoing",
+  },
+  {
+    country: "Singapore",
+    company: "Rajapura Herbal",
+    status: "Ongoing",
+    lat: 1.3521,
+    lon: 103.8198,
+    type: "ongoing",
+  },
+];
+
+const mapZoom = 2;
+const mapTiles = Array.from({ length: 4 }, (_, y) =>
+  Array.from({ length: 4 }, (_, x) => ({ x, y }))
+).flat();
+
+function mercatorY(lat: number) {
+  const radians = (Math.min(Math.max(lat, -85), 85) * Math.PI) / 180;
+  return Math.log(Math.tan(Math.PI / 4 + radians / 2));
+}
+
+function getMapPosition(lat: number, lon: number) {
+  const x = ((lon + 180) / 360) * 100;
+  const y = ((1 - mercatorY(lat) / Math.PI) / 2) * 100;
+
+  return { x, y };
+}
+
 export default function About() {
+  const [selectedBranch, setSelectedBranch] = useState(branches[0]);
+  const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
+  const [isMapDragging, setIsMapDragging] = useState(false);
+  const dragStartRef = useRef({ pointerId: 0, x: 0, y: 0, panX: 0, panY: 0 });
+
+  function handleMapPointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      panX: mapPan.x,
+      panY: mapPan.y,
+    };
+    setIsMapDragging(true);
+  }
+
+  function handleMapPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!isMapDragging || dragStartRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    setMapPan({
+      x: dragStartRef.current.panX + event.clientX - dragStartRef.current.x,
+      y: dragStartRef.current.panY + event.clientY - dragStartRef.current.y,
+    });
+  }
+
+  function handleMapPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (dragStartRef.current.pointerId === event.pointerId) {
+      setIsMapDragging(false);
+    }
+  }
+
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
 
@@ -197,6 +343,46 @@ export default function About() {
           </div>
         </div>
 
+        <div className="mb-14 sm:mb-20">
+          <div className="text-center mb-10 sm:mb-12">
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Product Assurance</span>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
+              Product Certifications
+            </h2>
+            <p style={{ color: "#5C4033", maxWidth: "620px", margin: "12px auto 0", lineHeight: 1.8, fontSize: "0.92rem" }}>
+              Recognitions and product quality marks that support our commitment to trusted herbal wellness.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {productCertifications.map((cert) => (
+              <div
+                key={cert.name}
+                style={{
+                  backgroundColor: "#FAF6EE",
+                  border: "1px solid rgba(139,195,74,0.25)",
+                  borderRadius: "16px",
+                  padding: "18px 14px",
+                  textAlign: "center",
+                  boxShadow: "0 4px 16px rgba(45,80,22,0.06)",
+                  minHeight: "210px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ width: "104px", height: "104px", borderRadius: "14px", backgroundColor: "#FFFFFF", border: "1px solid rgba(45,80,22,0.12)", display: "flex", alignItems: "center", justifyContent: "center", padding: "10px", marginBottom: "14px" }}>
+                  <img src={cert.image} alt={cert.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
+                </div>
+                <div className="flex items-center justify-center gap-1.5" style={{ color: "#2D5016", marginBottom: "6px" }}>
+                  <ShieldCheck size={15} />
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.98rem", margin: 0 }}>{cert.name}</h3>
+                </div>
+                <p style={{ color: "#5C4033", fontSize: "0.78rem", lineHeight: 1.55, margin: 0 }}>{cert.issuer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
 
         <div>
           <div className="text-center mb-10 sm:mb-12">
@@ -226,6 +412,173 @@ export default function About() {
                 <p style={{ color: "#5C4033", fontSize: "0.84rem", lineHeight: 1.7, margin: 0 }}>{member.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-14 sm:mt-20">
+          <div className="text-center mb-10 sm:mb-12">
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Global Network</span>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
+              Company Branches
+            </h2>
+          </div>
+
+          <div>
+            <div
+              style={{
+                backgroundColor: "#FAF6EE",
+                border: "1px solid rgba(139,195,74,0.25)",
+                borderRadius: "20px",
+                padding: "clamp(18px, 3vw, 28px)",
+                boxShadow: "0 4px 20px rgba(45,80,22,0.07)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                aria-label="Interactive company branches map"
+                onPointerDown={handleMapPointerDown}
+                onPointerMove={handleMapPointerMove}
+                onPointerUp={handleMapPointerUp}
+                onPointerCancel={handleMapPointerUp}
+                style={{
+                  position: "relative",
+                  minHeight: "clamp(340px, 48vw, 520px)",
+                  borderRadius: "16px",
+                  backgroundColor: "#DDE9ED",
+                  border: "1px solid rgba(45,80,22,0.12)",
+                  overflow: "hidden",
+                  cursor: isMapDragging ? "grabbing" : "grab",
+                  touchAction: "none",
+                  userSelect: "none",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    width: "min(980px, 128%)",
+                    aspectRatio: "1 / 1",
+                    transform: `translate(calc(-50% + ${mapPan.x}px), calc(-50% + ${mapPan.y}px))`,
+                    transformOrigin: "center",
+                    filter: "saturate(0.9) contrast(0.95)",
+                    transition: isMapDragging ? "none" : "transform 120ms ease",
+                  }}
+                >
+                  {mapTiles.map((tile) => (
+                    <img
+                      key={`${tile.x}-${tile.y}`}
+                      src={`https://tile.openstreetmap.org/${mapZoom}/${tile.x}/${tile.y}.png`}
+                      alt=""
+                      draggable={false}
+                      style={{
+                        position: "absolute",
+                        left: `${tile.x * 25}%`,
+                        top: `${tile.y * 25}%`,
+                        width: "25%",
+                        height: "25%",
+                        display: "block",
+                      }}
+                    />
+                  ))}
+
+                  {branches.map((branch) => {
+                    const isSelected = selectedBranch.country === branch.country;
+                    const isActive = branch.type === "active";
+                    const position = getMapPosition(branch.lat, branch.lon);
+
+                    return (
+                      <div
+                        key={branch.country}
+                        style={{
+                          position: "absolute",
+                          left: `${position.x}%`,
+                          top: `${position.y}%`,
+                          transform: "translate(-50%, -50%)",
+                          zIndex: 2,
+                        }}
+                      >
+                        {isSelected && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              bottom: "36px",
+                              transform: "translateX(-50%)",
+                              width: "max-content",
+                              maxWidth: "220px",
+                              backgroundColor: "rgba(250,246,238,0.96)",
+                              border: "1px solid rgba(45,80,22,0.18)",
+                              borderRadius: "12px",
+                              padding: "10px 12px",
+                              boxShadow: "0 10px 26px rgba(45,80,22,0.18)",
+                              pointerEvents: "none",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span style={{ color: isActive ? "#D82920" : "#D4A017", fontSize: "0.64rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                              {branch.status}
+                            </span>
+                            <strong style={{ display: "block", color: "#2D5016", fontFamily: "'Playfair Display', serif", fontSize: "0.98rem", marginTop: "3px", marginBottom: "2px" }}>
+                              {branch.country}
+                            </strong>
+                            <span style={{ display: "block", color: "#5C4033", fontSize: "0.74rem", lineHeight: 1.35 }}>
+                              {branch.company}
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBranch(branch)}
+                          onMouseEnter={() => setSelectedBranch(branch)}
+                          onFocus={() => setSelectedBranch(branch)}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          aria-pressed={isSelected}
+                          aria-label={`${branch.company}, ${branch.country}`}
+                          title={`${branch.company} - ${branch.country}`}
+                          style={{
+                            width: isSelected ? "34px" : "28px",
+                            height: isSelected ? "34px" : "28px",
+                            borderRadius: "50%",
+                            border: `3px solid ${isSelected ? "#2D5016" : "#FAF6EE"}`,
+                            backgroundColor: isActive ? "#D82920" : "#D4A017",
+                            boxShadow: isSelected ? "0 0 0 8px rgba(139,195,74,0.18)" : "0 5px 14px rgba(45,80,22,0.2)",
+                            cursor: "pointer",
+                            transition: "width 180ms ease, height 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(250,246,238,0.08), rgba(45,80,22,0.06))", pointerEvents: "none" }} />
+
+                <div style={{ position: "absolute", left: "24px", bottom: "24px", display: "flex", alignItems: "center", gap: "14px", backgroundColor: "rgba(250,246,238,0.92)", border: "1px solid rgba(45,80,22,0.12)", borderRadius: "14px", padding: "12px 14px", zIndex: 2 }}>
+                  <MapPin size={34} style={{ color: "#D82920" }} />
+                  <img src="/logo.png" alt="Rajapura" style={{ width: "116px", height: "auto", display: "block" }} />
+                </div>
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    bottom: "10px",
+                    backgroundColor: "rgba(250,246,238,0.9)",
+                    color: "#5C4033",
+                    fontSize: "0.68rem",
+                    padding: "4px 8px",
+                    borderRadius: "999px",
+                    textDecoration: "none",
+                    zIndex: 2,
+                  }}
+                >
+                  OpenStreetMap
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
