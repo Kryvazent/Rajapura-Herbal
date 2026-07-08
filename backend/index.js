@@ -42,6 +42,10 @@ app.use("/admin/uploadthing", uploadThingRouter);
 app.use("/admin",authMiddleware.verifyLoggin, authMiddleware.verifyUserRoleBoth, adminRoutes);
 app.use("/user", userRoutes);
 
+app.get("/", (req, res) => {
+    res.send("Welcome to the Rajapura Herbal API");
+});
+
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
         console.log('Connected to MongoDB');
