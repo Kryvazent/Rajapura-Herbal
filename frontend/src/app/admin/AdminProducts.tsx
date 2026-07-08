@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -11,10 +11,14 @@ import {
   ChevronDown,
   AlertCircle,
   Check,
+  ImagePlus,
+  RefreshCw,
+  UploadCloud,
 } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 import { Schema } from "mongoose";
+import { useUploadThing } from "../lib/uploadthing";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -32,9 +36,33 @@ interface FormErrors {
   [key: string]: string;
 }
 
+const getUploadThingKeyFromUrl = (imageUrl: string): string => {
+  try {
+    const url = new URL(imageUrl);
+    const host = url.hostname.toLowerCase();
+    const isUploadThingUrl =
+      host.includes("uploadthing.com") ||
+      host.includes("ufs.sh") ||
+      host.includes("utfs.io");
+
+    if (!isUploadThingUrl) return "";
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    const fileSegmentIndex = parts.indexOf("f");
+    const key =
+      fileSegmentIndex >= 0
+        ? parts[fileSegmentIndex + 1]
+        : parts[parts.length - 1];
+
+    return key ? decodeURIComponent(key) : "";
+  } catch {
+    return "";
+  }
+};
+
 
 const IMAGE_URL_REGEX =
-  /^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i;
+  /^https?:\/\/\S+$/i;
 
 const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   const errors: FormErrors = {};
@@ -68,9 +96,9 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   }
 
   if (!form.image.trim()) {
-    errors.image = "Image URL is required.";
+    errors.image = "Product image is required.";
   } else if (!IMAGE_URL_REGEX.test(form.image.trim())) {
-    errors.image = "Must be a valid image URL (png, jpg, jpeg, gif, webp).";
+    errors.image = "Must be a valid image URL.";
   }
 
   if (form.badge && !["Bestseller", "Premium", "New", "Organic"].includes(form.badge)) {
@@ -303,6 +331,18 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageDeleting, setImageDeleting] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState("");
+  const [uploadedImageKey, setUploadedImageKey] = useState("");
+  const [originalImageUrl, setOriginalImageUrl] = useState("");
+  const [originalImageKey, setOriginalImageKey] = useState("");
+  const [imageUploadStep, setImageUploadStep] = useState(
+    "Step 1: Select a product image."
+  );
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -313,6 +353,28 @@ export default function AdminProducts() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
+
+  const { startUpload, isUploading } = useUploadThing("productImage", {
+    uploadProgressGranularity: "fine",
+    onUploadBegin: () => {
+      setImageUploading(true);
+      setUploadProgress(0);
+      setImageUploadStep("Step 3: Uploading the new image...");
+    },
+    onUploadProgress: setUploadProgress,
+  });
+
+  useEffect(() => {
+    if (!selectedImageFile) {
+      setSelectedImagePreview("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedImageFile);
+    setSelectedImagePreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedImageFile]);
 
   useEffect(() => {
     getProducts();
@@ -363,6 +425,111 @@ export default function AdminProducts() {
     );
   }
 
+  async function deleteUploadedImageApi(key: string): Promise<void> {
+    await axios.delete(
+      import.meta.env.VITE_BACKEND_URL + "/admin/uploadthing-file",
+      { data: { key }, withCredentials: true }
+    );
+  }
+
+  const resetSelectedImage = () => {
+    setSelectedImageFile(null);
+    setUploadProgress(0);
+    setImageUploadStep(
+      formData.image
+        ? "Step 1: Current image is ready. Select a new image to replace it."
+        : "Step 1: Select a product image."
+    );
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+  };
+
+  const handleImageFileSelect = (file?: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Please select an image file.", "error");
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      showToast("Image must be 4MB or smaller.", "error");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setUploadProgress(0);
+    setImageUploadStep(
+      formData.image
+        ? "Step 2: New image selected. Upload to replace the current image."
+        : "Step 2: Image selected. Upload it to continue."
+    );
+  };
+
+  const uploadSelectedImage = async (): Promise<string> => {
+    if (!selectedImageFile) {
+      return formData.image;
+    }
+
+    if (uploadedImageKey) {
+      setImageDeleting(true);
+      setImageUploadStep(
+        "Step 3: Deleting the previously uploaded image..."
+      );
+      await deleteUploadedImageApi(uploadedImageKey);
+      setUploadedImageKey("");
+      set("image", "");
+    }
+
+    setImageUploadStep("Step 4: Uploading the selected image...");
+    setImageUploading(true);
+
+    const result = await startUpload([selectedImageFile]);
+    const uploaded = result?.[0];
+    const imageUrl =
+      uploaded?.serverData?.url ?? uploaded?.ufsUrl ?? uploaded?.url;
+
+    if (!uploaded || !imageUrl) {
+      throw new Error("Upload completed without an image URL.");
+    }
+
+    set("image", imageUrl);
+    setUploadedImageKey(uploaded.key ?? "");
+    setSelectedImageFile(null);
+    setUploadProgress(100);
+    setImageUploadStep("Step 5: Image uploaded and ready to save.");
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+
+    return imageUrl;
+  };
+
+  const handleUploadSelectedImage = async () => {
+    if (!selectedImageFile) {
+      imageInputRef.current?.click();
+      return;
+    }
+
+    try {
+      await uploadSelectedImage();
+      showToast("Image uploaded successfully.", "success");
+    } catch (err: any) {
+      const message =
+        err.response?.data?.message ??
+        err.message ??
+        "Failed to upload image.";
+      setImageUploadStep("Upload failed. Select or upload an image again.");
+      showToast(message, "error");
+    } finally {
+      setImageDeleting(false);
+      setImageUploading(false);
+    }
+  };
+
   
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
@@ -376,6 +543,15 @@ export default function AdminProducts() {
   const openAdd = () => {
     setFormData(emptyForm());
     setFormErrors({});
+    setUploadProgress(0);
+    setImageUploading(false);
+    setImageDeleting(false);
+    setSelectedImageFile(null);
+    setSelectedImagePreview("");
+    setUploadedImageKey("");
+    setOriginalImageUrl("");
+    setOriginalImageKey("");
+    setImageUploadStep("Step 1: Select a product image.");
     setEditingId("");
     setModalMode("add");
   };
@@ -389,35 +565,92 @@ export default function AdminProducts() {
       howToUse: [...(rest.howToUse ?? [])],
     });
     setFormErrors({});
+    setUploadProgress(0);
+    setImageUploading(false);
+    setImageDeleting(false);
+    setSelectedImageFile(null);
+    setSelectedImagePreview("");
+    setUploadedImageKey("");
+    setOriginalImageUrl(rest.image);
+    setOriginalImageKey(getUploadThingKeyFromUrl(rest.image));
+    setImageUploadStep(
+      "Step 1: Current image is ready. Select a new image to replace it."
+    );
     setEditingId(_id);
     setModalMode("edit");
   };
 
   
   const handleSave = async () => {
-    
-    const errors = validateProduct(formData);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
     try {
       setSaveLoading(true);
 
+      let productData = formData;
+      if (selectedImageFile) {
+        setImageUploadStep(
+          "Step 3: Saving detected a new selected image. Uploading it first..."
+        );
+        const uploadedImageUrl = await uploadSelectedImage();
+        productData = { ...formData, image: uploadedImageUrl };
+        setFormData(productData);
+      }
+
+      const errors = validateProduct(productData);
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        return;
+      }
+
       if (modalMode === "add") {
         await saveProduct({
-          ...formData,
-          badge: formData.badge || undefined,
+          ...productData,
+          badge: productData.badge || undefined,
         } as Product);
         showToast("Product added successfully.", "success");
       } else if (editingId) {
+        setImageUploadStep("Step 6: Saving product changes...");
         await editProduct({
           _id: editingId,
-          ...formData,
-          badge: formData.badge || undefined,
+          ...productData,
+          badge: productData.badge || undefined,
         } as Product);
-        showToast("Product updated successfully.", "success");
+
+        const imageWasUpdated =
+          Boolean(originalImageUrl) && productData.image !== originalImageUrl;
+        const shouldDeletePreviousImage =
+          imageWasUpdated &&
+          Boolean(originalImageKey) &&
+          originalImageKey !== uploadedImageKey;
+
+        if (shouldDeletePreviousImage) {
+          try {
+            setImageDeleting(true);
+            setImageUploadStep(
+              "Step 7: Removing the previous saved image from storage..."
+            );
+            await deleteUploadedImageApi(originalImageKey);
+            setImageUploadStep(
+              "Step 8: Product updated and previous image removed."
+            );
+            showToast(
+              "Product updated and previous image removed.",
+              "success"
+            );
+          } catch (cleanupErr) {
+            console.error("Failed to delete previous product image:", cleanupErr);
+            setImageUploadStep(
+              "Product updated, but the previous image could not be removed."
+            );
+            showToast(
+              "Product updated, but the previous image could not be removed.",
+              "error"
+            );
+          } finally {
+            setImageDeleting(false);
+          }
+        } else {
+          showToast("Product updated successfully.", "success");
+        }
       }
 
       await getProducts();
@@ -1041,30 +1274,315 @@ export default function AdminProducts() {
               </div>
 
               
-              <InputField
-                label="Image URL"
-                value={formData.image}
-                onChange={(v) => set("image", v)}
-                placeholder="https:"
-                required
-                error={formErrors.image}
-              />
-              {formData.image && !formErrors.image && (
-                <img
-                  src={formData.image}
-                  alt="preview"
+              <div>
+                <label
                   style={{
-                    height: "80px",
-                    width: "120px",
-                    objectFit: "cover",
-                    borderRadius: "10px",
-                    border: "1px solid rgba(45,80,22,0.15)",
+                    display: "block",
+                    color: "#2D5016",
+                    fontSize: "0.82rem",
+                    marginBottom: "6px",
                   }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
+                >
+                  Product Image <span style={{ color: "#D4183D" }}>*</span>
+                </label>
+                <div
+                  style={{
+                    border: `1.5px solid ${formErrors.image ? "#D4183D" : "rgba(45,80,22,0.2)"}`,
+                    borderRadius: "14px",
+                    backgroundColor: formErrors.image
+                      ? "rgba(212,24,61,0.04)"
+                      : "rgba(45,80,22,0.03)",
+                    padding: "14px",
                   }}
-                />
-              )}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
+                    <div
+                      style={{
+                        width: "100%",
+                        aspectRatio: "4 / 3",
+                        borderRadius: "12px",
+                        border: "1px solid rgba(45,80,22,0.15)",
+                        backgroundColor: "#F0EDE6",
+                        overflow: "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#8B5E3C",
+                      }}
+                    >
+                      {selectedImagePreview || formData.image ? (
+                        <img
+                          src={selectedImagePreview || formData.image}
+                          alt="preview"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display =
+                              "none";
+                          }}
+                        />
+                      ) : (
+                        <ImagePlus size={30} />
+                      )}
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          width: "100%",
+                          minHeight: "132px",
+                          border: "1px dashed rgba(74,124,35,0.45)",
+                          borderRadius: "12px",
+                          backgroundColor: "#FAF6EE",
+                          padding: "18px",
+                          color: "#2D5016",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "10px",
+                          textAlign: "center",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        <UploadCloud size={34} style={{ color: "#2D5016" }} />
+                        <div>
+                          <p
+                            style={{
+                              color: "#2D5016",
+                              fontSize: "0.88rem",
+                              fontWeight: 700,
+                              margin: 0,
+                            }}
+                          >
+                            {selectedImageFile
+                              ? selectedImageFile.name
+                              : "Drop an image here or choose a file"}
+                          </p>
+                          <p
+                            style={{
+                              color: "#8B5E3C",
+                              fontSize: "0.76rem",
+                              margin: "2px 0 0",
+                            }}
+                          >
+                            {selectedImageFile
+                              ? "Ready to upload"
+                              : "Images up to 4MB"}
+                          </p>
+                        </div>
+
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) =>
+                            handleImageFileSelect(e.target.files?.[0])
+                          }
+                        />
+
+                        {!selectedImageFile ? (
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={imageUploading || imageDeleting}
+                            style={{
+                              minWidth: "138px",
+                              minHeight: "38px",
+                              padding: "8px 18px",
+                              borderRadius: "999px",
+                              border: "none",
+                              backgroundColor:
+                                imageUploading || imageDeleting
+                                  ? "#C8D8B0"
+                                  : "#8B5E3C",
+                              color: "#FAF6EE",
+                              cursor:
+                                imageUploading || imageDeleting
+                                  ? "not-allowed"
+                                  : "pointer",
+                              fontSize: "0.84rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "7px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <ImagePlus size={15} /> Select Image
+                          </button>
+                        ) : (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              justifyContent: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={handleUploadSelectedImage}
+                              disabled={isUploading || imageUploading || imageDeleting}
+                              style={{
+                                minWidth: "138px",
+                                minHeight: "38px",
+                                padding: "8px 18px",
+                                borderRadius: "999px",
+                                border: "none",
+                                backgroundColor:
+                                  isUploading || imageUploading || imageDeleting
+                                    ? "#A8C580"
+                                    : "#2D5016",
+                                color: "#FAF6EE",
+                                cursor:
+                                  isUploading || imageUploading || imageDeleting
+                                    ? "not-allowed"
+                                    : "pointer",
+                                fontSize: "0.84rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "7px",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <UploadCloud size={15} />
+                              {imageDeleting
+                                ? "Deleting..."
+                                : imageUploading || isUploading
+                                ? "Uploading..."
+                                : "Upload Image"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => imageInputRef.current?.click()}
+                              disabled={isUploading || imageUploading || imageDeleting}
+                              style={{
+                                minWidth: "138px",
+                                minHeight: "38px",
+                                padding: "8px 18px",
+                                borderRadius: "999px",
+                                border: "1px solid rgba(139,94,60,0.35)",
+                                backgroundColor: "transparent",
+                                color: "#6B4423",
+                                cursor:
+                                  isUploading || imageUploading || imageDeleting
+                                    ? "not-allowed"
+                                    : "pointer",
+                                fontSize: "0.84rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "7px",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <RefreshCw size={14} /> Change Image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={resetSelectedImage}
+                              disabled={isUploading || imageUploading || imageDeleting}
+                              style={{
+                                minWidth: "138px",
+                                minHeight: "38px",
+                                padding: "8px 18px",
+                                borderRadius: "999px",
+                                border: "1px solid rgba(212,24,61,0.25)",
+                                backgroundColor: "rgba(212,24,61,0.06)",
+                                color: "#D4183D",
+                                cursor:
+                                  isUploading || imageUploading || imageDeleting
+                                    ? "not-allowed"
+                                    : "pointer",
+                                fontSize: "0.84rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "7px",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <X size={14} /> Clear Selected
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <p
+                        style={{
+                          color: imageDeleting || imageUploading ? "#2D5016" : "#8B5E3C",
+                          fontSize: "0.78rem",
+                          margin: "10px 0 0",
+                          fontWeight: imageDeleting || imageUploading ? 700 : 400,
+                        }}
+                      >
+                        {imageUploadStep}
+                      </p>
+
+                      {(imageUploading || imageDeleting) && (
+                        <div style={{ marginTop: "10px" }}>
+                          <div
+                            style={{
+                              height: "8px",
+                              borderRadius: "999px",
+                              backgroundColor: "rgba(45,80,22,0.12)",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: `${uploadProgress}%`,
+                                height: "100%",
+                                borderRadius: "999px",
+                                backgroundColor: "#4A7C23",
+                                transition: "width 0.15s ease",
+                              }}
+                            />
+                          </div>
+                          <p
+                            style={{
+                              color: "#8B5E3C",
+                              fontSize: "0.76rem",
+                              margin: "6px 0 0",
+                            }}
+                          >
+                            {imageDeleting
+                              ? "Deleting previous image..."
+                              : `Uploading ${Math.round(uploadProgress)}%`}
+                          </p>
+                        </div>
+                      )}
+
+                      {formData.image && (
+                        <input
+                          value={formData.image}
+                          onChange={(e) => set("image", e.target.value)}
+                          placeholder="Uploaded image URL"
+                          style={{
+                            width: "100%",
+                            marginTop: "10px",
+                            padding: "9px 12px",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(45,80,22,0.15)",
+                            backgroundColor: "#F0EDE6",
+                            color: "#2D5016",
+                            fontSize: "0.78rem",
+                            outline: "none",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <FieldError message={formErrors.image} />
+              </div>
 
               
               <TagsField

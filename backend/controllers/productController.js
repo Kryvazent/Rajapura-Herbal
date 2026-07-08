@@ -1,4 +1,5 @@
 import * as productService from "../services/productService.js";
+import { deleteUploadThingFileByUrl } from "../services/uploadthingService.js";
 
 
 const formatMongooseError = (error) => {
@@ -116,9 +117,22 @@ export const deleteProduct = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
+
+    let imageCleanupWarning;
+    try {
+      await deleteUploadThingFileByUrl(deleted.image);
+    } catch (cleanupError) {
+      console.error("deleteProduct image cleanup error:", cleanupError);
+      imageCleanupWarning = "Product deleted, but image cleanup failed";
+    }
+
     res
       .status(200)
-      .json({ success: true, message: "Product deleted successfully" });
+      .json({
+        success: true,
+        message: imageCleanupWarning ?? "Product deleted successfully",
+        warning: imageCleanupWarning,
+      });
   } catch (error) {
     console.error("deleteProduct error:", error);
     
@@ -147,8 +161,12 @@ export const updateProduct = async (req, res) => {
   }
 
   try {
-    await productService.deleteProduct(_id);
-    const product = await productService.addProduct(productData);
+    const product = await productService.updateProduct(_id, productData);
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     console.error("updateProduct error:", error);

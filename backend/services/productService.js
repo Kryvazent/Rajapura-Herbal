@@ -24,3 +24,10 @@ export const addProduct = async (productData) => {
 export const deleteProduct = async (id) => {
     return await product.findByIdAndDelete(id);
 };
+
+export const updateProduct = async (id, productData) => {
+    return await product.findByIdAndUpdate(id, productData, {
+        new: true,
+        runValidators: true,
+    });
+};

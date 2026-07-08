@@ -21,6 +21,7 @@
     "express-validator": "^7.3.2",
     "install": "^0.13.0",
     "mongoose": "^9.4.1",
-    "npm": "^11.14.1"
+    "npm": "^11.14.1",
+    "uploadthing": "^7.7.4"
   }
 }

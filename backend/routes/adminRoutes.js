@@ -5,6 +5,7 @@ import * as serviceController from "../controllers/serviceController.js";
 import * as userController from "../controllers/userController.js";
 import * as authMiddleware from "../middleware/auth.js";
 import * as roleMiddleware from "../middleware/roleMiddleware.js";
+import { deleteUploadThingFile } from "./uploadthing.js";
 import {
   handleValidationErrors,
   productValidators,
@@ -33,6 +34,8 @@ const router = express.Router();
 
 router.use(authMiddleware.verifyLoggin);
 
+
+router.delete("/uploadthing-file", deleteUploadThingFile);
 
 
 router.post(

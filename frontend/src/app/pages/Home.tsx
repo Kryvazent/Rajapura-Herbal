@@ -2,7 +2,6 @@ import { Link } from "react-router";
 import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import "../../styles/index.css";
 import { Product } from "../interfaces/productInterface";
 import Logo from "../components/Logo";
 
