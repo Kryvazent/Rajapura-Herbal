@@ -136,7 +136,7 @@ export default function About() {
           </div>
           <div className="order-1 lg:order-2">
             <img
-              src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080"
+              src="/dr-rajapura.png"
               alt="Dr. Rajapura"
               style={{ width: "100%", height: "clamp(360px, 52vw, 640px)", objectFit: "cover", objectPosition: "center", borderRadius: "20px", boxShadow: "0 20px 60px rgba(45,80,22,0.15)", display: "block" }}
             />
