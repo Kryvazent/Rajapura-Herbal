@@ -3,6 +3,13 @@ import { UploadThingError } from "uploadthing/server";
 import { deleteUploadThingFileByKey } from "../services/uploadthingService.js";
 
 const f = createUploadthing();
+const backendUrl =
+  process.env.BACKEND_URL ||
+  process.env.UPLOADTHING_CALLBACK_ORIGIN ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+const uploadThingCallbackUrl = backendUrl
+  ? `${backendUrl.replace(/\/$/, "")}/admin/uploadthing`
+  : undefined;
 
 export const uploadRouter = {
   productImage: f({
@@ -41,6 +48,9 @@ export const uploadRouter = {
 
 export const uploadThingRouter = createRouteHandler({
   router: uploadRouter,
+  config: {
+    ...(uploadThingCallbackUrl && { callbackUrl: uploadThingCallbackUrl }),
+  },
 });
 
 export const deleteUploadThingFile = async (req, res) => {
