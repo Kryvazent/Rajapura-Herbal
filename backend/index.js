@@ -15,11 +15,16 @@ dotenv.config({ path: new URL(".env", import.meta.url) });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
+const isProduction = process.env.NODE_ENV === 'production' || isVercel;
 const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
 const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+if (isProduction) {
+    app.set("trust proxy", 1);
+}
 
 app.use(cors({
     origin(origin, callback) {
@@ -39,10 +44,11 @@ const sessionConfig = {
     rolling: true,
     resave: false,
     saveUninitialized: false,
+    proxy: isProduction,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: isProduction,
         maxAge: 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         httpOnly: true       
     }
 };
