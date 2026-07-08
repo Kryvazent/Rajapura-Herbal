@@ -11,11 +11,16 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@types/express-validator": "^2.20.33",
     "bcrypt": "^6.0.0",
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "mongoose": "^9.4.1"
+    "express-validator": "^7.3.2",
+    "install": "^0.13.0",
+    "mongoose": "^9.4.1",
+    "npm": "^11.14.1"
   }
 }

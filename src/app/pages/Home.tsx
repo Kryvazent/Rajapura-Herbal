@@ -1,9 +1,10 @@
 import { Link } from "react-router";
 import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucide-react";
-import { getProducts } from "../admin/adminData";
-import "./../../styles/index.css";
-
-const featuredProducts = getProducts().slice(0, 3);
+import { useEffect, useState } from "react";
+import axios from "axios";
+import "../../styles/index.css";
+import { Product } from "../interfaces/productInterface";
+import Logo from "../components/Logo";
 
 const stats = [
   { value: "200+", label: "Years of Heritage" },
@@ -36,23 +37,85 @@ const values = [
 ];
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      const res = await axios.get(
+        import.meta.env.VITE_BACKEND_URL + "/user/product-count/3"
+      );
+
+      console.log("API response:", res.data);
+
+      const data = res.data;
+
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else if (Array.isArray(data?.products)) {
+        setProducts(data.products);
+      } else if (Array.isArray(data?.data)) {
+        setProducts(data.data);
+      } else if (Array.isArray(data?.items)) {
+        setProducts(data.items);
+      } else {
+        console.error("Unexpected response shape:", data);
+        setProducts([]);
+      }
+    } catch (err) {
+      console.error("Error fetching featured products:", err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* ── Hero ── */}
+      
       <section
         style={{
-          background: "linear-gradient(135deg, #1A3009 0%, #2D5016 40%, #3D6B1C 100%)",
+          background:
+            "linear-gradient(135deg, #1A3009 0%, #2D5016 40%, #3D6B1C 100%)",
           position: "relative",
           overflow: "hidden",
         }}
         className="min-h-screen flex items-center"
       >
-        {/* Decorative circles – hidden on mobile so they don't cause overflow */}
-        <div className="hidden sm:block" style={{ position: "absolute", top: "-100px", right: "-100px", width: "500px", height: "500px", borderRadius: "50%", background: "rgba(139,195,74,0.07)", border: "1px solid rgba(139,195,74,0.12)" }} />
-        <div className="hidden sm:block" style={{ position: "absolute", bottom: "-80px", left: "-80px", width: "350px", height: "350px", borderRadius: "50%", background: "rgba(212,160,23,0.06)", border: "1px solid rgba(212,160,23,0.1)" }} />
+        
+        <div
+          className="hidden sm:block"
+          style={{
+            position: "absolute",
+            top: "-100px",
+            right: "-100px",
+            width: "500px",
+            height: "500px",
+            borderRadius: "50%",
+            background: "rgba(139,195,74,0.07)",
+            border: "1px solid rgba(139,195,74,0.12)",
+          }}
+        />
+        <div
+          className="hidden sm:block"
+          style={{
+            position: "absolute",
+            bottom: "-80px",
+            left: "-80px",
+            width: "350px",
+            height: "350px",
+            borderRadius: "50%",
+            background: "rgba(212,160,23,0.06)",
+            border: "1px solid rgba(212,160,23,0.1)",
+          }}
+        />
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-16 sm:py-20 lg:py-24 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
-          {/* Text */}
+          
           <div>
             <div
               style={{
@@ -67,7 +130,13 @@ export default function Home() {
               }}
             >
               <Leaf size={14} style={{ color: "#D4A017" }} />
-              <span style={{ color: "#D4A017", fontSize: "0.75rem", letterSpacing: "0.1em" }}>
+              <span
+                style={{
+                  color: "#D4A017",
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 AUTHENTIC AYURVEDIC HERITAGE
               </span>
             </div>
@@ -83,7 +152,10 @@ export default function Home() {
             >
               Nature's Wisdom,
               <br />
-              <span style={{ color: "#8BC34A", fontStyle: "italic" }}>Rajapura</span>'s
+              <span style={{ color: "#8BC34A", fontStyle: "italic" }}>
+                Rajapura
+              </span>
+              's
               <br />
               Pure Heritage
             </h1>
@@ -97,9 +169,9 @@ export default function Home() {
                 maxWidth: "480px",
               }}
             >
-              Discover the healing power of authentic Sri Lankan herbs, crafted with two
-              centuries of Ayurvedic wisdom. Pure, potent, and prepared with reverence for
-              ancient traditions.
+              Discover the healing power of authentic Sri Lankan herbs, crafted
+              with two centuries of Ayurvedic wisdom. Pure, potent, and prepared
+              with reverence for ancient traditions.
             </p>
 
             <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -143,7 +215,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero image – desktop only */}
+          
           <div className="relative hidden lg:block">
             <div
               style={{
@@ -161,7 +233,8 @@ export default function Home() {
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </div>
-            {/* Floating badge */}
+
+            
             <div
               style={{
                 position: "absolute",
@@ -176,15 +249,31 @@ export default function Home() {
                 gap: "12px",
               }}
             >
-              <div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2D5016",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
                 <Droplets size={20} style={{ color: "#FAF6EE" }} />
               </div>
               <div>
-                <p style={{ color: "#2D5016", margin: 0, lineHeight: 1.3 }}><strong>100% Pure</strong></p>
-                <p style={{ color: "#8B5E3C", fontSize: "0.8rem", margin: 0 }}>No additives or preservatives</p>
+                <p style={{ color: "#2D5016", margin: 0, lineHeight: 1.3 }}>
+                  <strong>100% Pure</strong>
+                </p>
+                <p style={{ color: "#8B5E3C", fontSize: "0.8rem", margin: 0 }}>
+                  No additives or preservatives
+                </p>
               </div>
             </div>
-            {/* Stars badge */}
+
+            
             <div
               style={{
                 position: "absolute",
@@ -198,24 +287,52 @@ export default function Home() {
             >
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={12} style={{ color: "#1A3009", fill: "#1A3009" }} />
+                  <Star
+                    key={i}
+                    size={12}
+                    style={{ color: "#1A3009", fill: "#1A3009" }}
+                  />
                 ))}
               </div>
-              <p style={{ color: "#1A3009", fontSize: "0.75rem", margin: "2px 0 0", textAlign: "center" }}>Trusted Since 1826</p>
+              <p
+                style={{
+                  color: "#1A3009",
+                  fontSize: "0.75rem",
+                  margin: "2px 0 0",
+                  textAlign: "center",
+                }}
+              >
+                Trusted Since 1826
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Stats Banner ── */}
+      
       <section style={{ backgroundColor: "#2D5016" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-8 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <p style={{ fontFamily: "'Playfair Display', serif", color: "#D4A017", fontSize: "clamp(1.5rem, 4vw, 2rem)", margin: 0, lineHeight: 1 }}>
+              <p
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  color: "#D4A017",
+                  fontSize: "clamp(1.5rem, 4vw, 2rem)",
+                  margin: 0,
+                  lineHeight: 1,
+                }}
+              >
                 {stat.value}
               </p>
-              <p style={{ color: "#A8C580", fontSize: "0.75rem", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+              <p
+                style={{
+                  color: "#A8C580",
+                  fontSize: "0.75rem",
+                  margin: "4px 0 0",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 {stat.label}
               </p>
             </div>
@@ -223,7 +340,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── About Section ── */}
+      
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div>
@@ -240,7 +357,7 @@ export default function Home() {
                   display: "block",
                 }}
               />
-              {/* Floating Est. badge — stays inside relative container on all screens */}
+              
               <div
                 style={{
                   position: "absolute",
@@ -253,16 +370,32 @@ export default function Home() {
                   boxShadow: "0 8px 30px rgba(45,80,22,0.15)",
                 }}
               >
-                <p style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.2rem", margin: 0 }}>
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    color: "#2D5016",
+                    fontSize: "1.2rem",
+                    margin: 0,
+                  }}
+                >
                   Est. 1826
                 </p>
-                <p style={{ color: "#8B5E3C", fontSize: "0.75rem", margin: 0 }}>Rajapura, Nuwara Eliya</p>
+                <p style={{ color: "#8B5E3C", fontSize: "0.75rem", margin: 0 }}>
+                  Rajapura, Nuwara Eliya
+                </p>
               </div>
             </div>
           </div>
 
           <div className="mt-6 lg:mt-0">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+            <span
+              style={{
+                color: "#8B5E3C",
+                fontSize: "0.8rem",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
               Our Heritage
             </span>
             <h2
@@ -277,15 +410,33 @@ export default function Home() {
             >
               Two Centuries of
               <br />
-              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>Ayurvedic Wisdom</span>
+              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>
+                Ayurvedic Wisdom
+              </span>
             </h2>
-            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Founded in the highlands of Nuwara Eliya in 1826, Rajapura Herbal Company has been the
-              guardian of traditional Sri Lankan herbal medicine for nearly two centuries.
+            <p
+              style={{
+                color: "#5C4033",
+                lineHeight: 1.8,
+                marginBottom: "14px",
+                fontSize: "0.95rem",
+              }}
+            >
+              Founded in the highlands of Nuwara Eliya in 1826, Rajapura Herbal
+              Company has been the guardian of traditional Sri Lankan herbal
+              medicine for nearly two centuries.
             </p>
-            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "28px", fontSize: "0.95rem" }}>
-              Today, we blend this ancient wisdom with modern quality standards, bringing the healing
-              gifts of nature to households across Sri Lanka — always pure, always authentic.
+            <p
+              style={{
+                color: "#5C4033",
+                lineHeight: 1.8,
+                marginBottom: "28px",
+                fontSize: "0.95rem",
+              }}
+            >
+              Today, we blend this ancient wisdom with modern quality standards,
+              bringing the healing gifts of nature to households across Sri Lanka
+              — always pure, always authentic.
             </p>
             <Link
               to="/about"
@@ -307,14 +458,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Values Section ── */}
+      
       <section style={{ backgroundColor: "#F0EAD6" }} className="py-14 sm:py-16">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16">
           <div className="text-center mb-10 sm:mb-12">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+            <span
+              style={{
+                color: "#8B5E3C",
+                fontSize: "0.8rem",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
               Why Choose Us
             </span>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: "#2D5016",
+                fontSize: "clamp(1.5rem, 3vw, 2.2rem)",
+                marginTop: "8px",
+              }}
+            >
               The Rajapura Difference
             </h2>
           </div>
@@ -332,25 +497,68 @@ export default function Home() {
                   boxShadow: "0 4px 20px rgba(45,80,22,0.07)",
                 }}
               >
-                <div style={{ width: "52px", height: "52px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <div
+                  style={{
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "50%",
+                    backgroundColor: "#2D5016",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 14px",
+                  }}
+                >
                   <Icon size={22} style={{ color: "#8BC34A" }} />
                 </div>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", marginBottom: "10px", fontSize: "1rem" }}>{title}</h3>
-                <p style={{ color: "#6B4423", fontSize: "0.85rem", lineHeight: 1.7, margin: 0 }}>{desc}</p>
+                <h3
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    color: "#2D5016",
+                    marginBottom: "10px",
+                    fontSize: "1rem",
+                  }}
+                >
+                  {title}
+                </h3>
+                <p
+                  style={{
+                    color: "#6B4423",
+                    fontSize: "0.85rem",
+                    lineHeight: 1.7,
+                    margin: 0,
+                  }}
+                >
+                  {desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Featured Products ── */}
+      
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-10 sm:mb-12">
           <div>
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+            <span
+              style={{
+                color: "#8B5E3C",
+                fontSize: "0.8rem",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+              }}
+            >
               Our Collection
             </span>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: "#2D5016",
+                fontSize: "clamp(1.5rem, 3vw, 2.2rem)",
+                marginTop: "8px",
+              }}
+            >
               Featured Products
             </h2>
           </div>
@@ -373,55 +581,158 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {featuredProducts.map((product) => (
+        
+        {loading && (
+          <div className="flex justify-center items-center py-16">
             <div
-              key={product.id}
               style={{
-                backgroundColor: "#FAF6EE",
-                borderRadius: "20px",
-                overflow: "hidden",
-                border: "1px solid rgba(139,195,74,0.25)",
-                boxShadow: "0 4px 20px rgba(45,80,22,0.08)",
-                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                width: "48px",
+                height: "48px",
+                border: "4px solid rgba(45,80,22,0.15)",
+                borderTop: "4px solid #2D5016",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
               }}
-              className="group hover:shadow-xl"
+            />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+
+        
+        {!loading && products.length === 0 && (
+          <div className="text-center py-16">
+            <Leaf
+              size={48}
+              style={{ color: "#A8C580", margin: "0 auto 16px", display: "block" }}
+            />
+            <p
+              style={{
+                color: "#5C4033",
+                fontSize: "1rem",
+                fontFamily: "'Playfair Display', serif",
+              }}
             >
-              <div style={{ position: "relative", height: "220px", overflow: "hidden" }}>
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
-                  className="group-hover:scale-105"
-                />
-                {product.badge && (
-                  <div style={{ position: "absolute", top: "12px", right: "12px", backgroundColor: "#D4A017", color: "#1A3009", fontSize: "0.7rem", fontWeight: 700, padding: "4px 10px", borderRadius: "50px", letterSpacing: "0.05em" }}>
-                    {product.badge}
-                  </div>
-                )}
-              </div>
-              <div style={{ padding: "18px 20px" }}>
-                <p style={{ color: "#8B5E3C", fontSize: "0.72rem", letterSpacing: "0.1em", marginBottom: "4px" }}>{product.category.toUpperCase()}</p>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.05rem", marginBottom: "8px" }}>{product.name}</h3>
-                <p style={{ color: "#5C4033", fontSize: "0.85rem", lineHeight: 1.6, marginBottom: "16px" }}>
-                  {product.description.substring(0, 90)}...
-                </p>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.05rem" }}>{product.price}</span>
-                  <Link
-                    to="/store-locator"
-                    style={{ backgroundColor: "#2D5016", color: "#FAF6EE", padding: "8px 16px", borderRadius: "50px", textDecoration: "none", fontSize: "0.8rem" }}
+              No products available at the moment.
+            </p>
+            <p style={{ color: "#8B5E3C", fontSize: "0.85rem", marginTop: "6px" }}>
+              Please check back soon.
+            </p>
+          </div>
+        )}
+
+        
+        {!loading && products.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+            {products.map((product) => (
+              <div
+                key={product._id}
+                style={{
+                  backgroundColor: "#FAF6EE",
+                  borderRadius: "20px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(139,195,74,0.25)",
+                  boxShadow: "0 4px 20px rgba(45,80,22,0.08)",
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                }}
+                className="group hover:shadow-xl"
+              >
+                <div
+                  style={{ position: "relative", height: "220px", overflow: "hidden" }}
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      transition: "transform 0.5s ease",
+                    }}
+                    className="group-hover:scale-105"
+                  />
+                  {product.badge && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "12px",
+                        right: "12px",
+                        backgroundColor: "#D4A017",
+                        color: "#1A3009",
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        padding: "4px 10px",
+                        borderRadius: "50px",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {product.badge}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: "18px 20px" }}>
+                  <p
+                    style={{
+                      color: "#8B5E3C",
+                      fontSize: "0.72rem",
+                      letterSpacing: "0.1em",
+                      marginBottom: "4px",
+                    }}
                   >
-                    Find Store
-                  </Link>
+                    {product.category.toUpperCase()}
+                  </p>
+                  <h3
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      color: "#2D5016",
+                      fontSize: "1.05rem",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {product.name}
+                  </h3>
+                  <p
+                    style={{
+                      color: "#5C4033",
+                      fontSize: "0.85rem",
+                      lineHeight: 1.6,
+                      marginBottom: "16px",
+                    }}
+                  >
+                    {product.description.substring(0, 90)}...
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        color: "#2D5016",
+                        fontSize: "1.05rem",
+                      }}
+                    >
+                      {product.price}
+                    </span>
+                    <Link
+                      to="/store-locator"
+                      style={{
+                        backgroundColor: "#2D5016",
+                        color: "#FAF6EE",
+                        padding: "8px 16px",
+                        borderRadius: "50px",
+                        textDecoration: "none",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      Find Store
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* ── CTA Banner ── */}
+      
       <section
         style={{
           background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -431,20 +742,62 @@ export default function Home() {
           overflow: "hidden",
         }}
       >
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 30% 50%, rgba(212,160,23,0.07) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(139,195,74,0.07) 0%, transparent 60%)" }} />
-        <div style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
-          <Leaf size={36} style={{ color: "#D4A017", margin: "0 auto 16px", display: "block" }} />
-          <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#FAF6EE", fontSize: "clamp(1.5rem, 3vw, 2.4rem)", marginBottom: "14px" }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "radial-gradient(circle at 30% 50%, rgba(212,160,23,0.07) 0%, transparent 60%), radial-gradient(circle at 70% 50%, rgba(139,195,74,0.07) 0%, transparent 60%)",
+          }}
+        />
+        <div className="flex flex-col items-center" style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
+          
+
+          <img
+            src="/logo2.png"
+            style={{
+              objectFit: 'contain',
+              display: 'block',
+              width: '300px',
+              aspectRatio: '1 / 1',
+            }}
+          />
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              color: "#FAF6EE",
+              fontSize: "clamp(1.5rem, 3vw, 2.4rem)",
+              marginBottom: "14px",
+            }}
+          >
             Find Rajapura Products
             <br />
             <span style={{ fontStyle: "italic", color: "#D4A017" }}>Near You</span>
           </h2>
-          <p style={{ color: "#A8C580", lineHeight: 1.8, marginBottom: "28px", fontSize: "0.95rem" }}>
-            Available at pharmacies, Ayurvedic stores, and health centres across all 9 provinces of Sri Lanka.
+          <p
+            style={{
+              color: "#A8C580",
+              lineHeight: 1.8,
+              marginBottom: "28px",
+              fontSize: "0.95rem",
+            }}
+          >
+            Available at pharmacies, Ayurvedic stores, and health centres across all 9
+            provinces of Sri Lanka.
           </p>
           <Link
             to="/store-locator"
-            style={{ backgroundColor: "#D4A017", color: "#1A3009", padding: "14px 32px", borderRadius: "50px", textDecoration: "none", fontSize: "0.95rem", display: "inline-flex", alignItems: "center", gap: "8px" }}
+            style={{
+              backgroundColor: "#D4A017",
+              color: "#1A3009",
+              padding: "14px 32px",
+              borderRadius: "50px",
+              textDecoration: "none",
+              fontSize: "0.95rem",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
           >
             Use Store Locator <ChevronRight size={16} />
           </Link>

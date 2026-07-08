@@ -1,49 +1,198 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
-  Leaf,
   LayoutDashboard,
   Package,
   Store,
   Sparkles,
   LogOut,
   Menu,
-  X,
   ChevronRight,
-  Bell,
+  User,
+  Leaf,
 } from "lucide-react";
-import { logout, isAuthenticated } from "./adminAuth";
+import axios from "axios";
+import ChangePasswordModal from "./ChangePasswordModal";
+import Logo from "../components/Logo";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/stores", label: "Stores", icon: Store },
   { to: "/admin/services", label: "Services", icon: Sparkles },
+  { to: "/admin/users", label: "Users", icon: User },
 ];
+
+interface CurrentUser {
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  email?: string;
+}
 
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CurrentUser>({});
+  const [role, setRole] = useState("");
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate("/admin");
+    const localFlag = localStorage.getItem("mustChangePassword") === "true";
+    if (localFlag) {
+      setMustChangePassword(true);
+      setIsLoading(false);
+      return;
     }
+
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get(
+          import.meta.env.VITE_BACKEND_URL + "/auth/status",
+          { withCredentials: true }
+        );
+
+        if (res.data?.mustChangePassword) {
+          setMustChangePassword(true);
+          localStorage.setItem("mustChangePassword", "true");
+          setIsLoading(false);
+          navigate("/admin");
+        } else if (res.data.authenticated) {
+          setRole(res.data.role);
+          setIsLoading(false);
+
+          try {
+            const profileRes = await axios.get(
+              import.meta.env.VITE_BACKEND_URL + "/auth/me",
+              { withCredentials: true }
+            );
+            if (profileRes.data?.data) {
+              setCurrentUser(profileRes.data.data);
+            }
+          } catch (err) {
+            console.error("Failed to fetch user profile:", err);
+          }
+        } else {
+          setIsLoading(false);
+          localStorage.removeItem("adminAuth");
+          navigate("/admin");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsLoading(false);
+        localStorage.removeItem("adminAuth");
+        navigate("/admin");
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
-  if (!isAuthenticated()) {
-    return null;
+  const handlePasswordChanged = () => {
+    setMustChangePassword(false);
+    localStorage.removeItem("mustChangePassword");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("adminAuth");
+      navigate("/admin");
+    }
+  };
+
+  
+
+  if (mustChangePassword) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F0EDE6",
+          fontFamily: "'Lato', sans-serif",
+        }}
+      >
+        <ChangePasswordModal onSuccess={handlePasswordChanged} />
+      </div>
+    );
   }
 
-  const handleLogout = () => {
-    logout();
-    navigate("/admin");
-  };
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F0EDE6",
+          fontFamily: "'Lato', sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              border: "3px solid rgba(139,195,74,0.2)",
+              borderTop: "3px solid #8BC34A",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <p style={{ color: "#2D5016", margin: 0 }}>Loading...</p>
+        </div>
+        <style>{`
+          @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  
 
   const isActive = (to: string) => location.pathname === to;
 
-  const currentPage = navItems.find((n) => isActive(n.to))?.label ?? "Admin";
+  const currentPage =
+    location.pathname === "/admin/profile"
+      ? "My Profile"
+      : (navItems.find((n) => isActive(n.to))?.label ?? "Admin");
+
+  const displayInitial =
+    currentUser.firstName?.[0]?.toUpperCase() ??
+    currentUser.email?.[0]?.toUpperCase() ??
+    "A";
+
+  const displayName =
+    currentUser.firstName && currentUser.lastName
+      ? `${currentUser.firstName} ${currentUser.lastName}`
+      : "Administrator";
+
+  const displayRole = currentUser.role ?? "ADMIN";
+
+  
+  const visibleNavItems = navItems.filter(({ to }) => {
+    if (to === "/admin/users" && role === "STAFF") return false;
+    return true;
+  });
+
+  
 
   return (
     <div
@@ -54,7 +203,7 @@ export default function AdminLayout() {
         backgroundColor: "#F0EDE6",
       }}
     >
-      {/* Mobile overlay */}
+      
       {sidebarOpen && (
         <div
           style={{
@@ -67,7 +216,7 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* Sidebar */}
+      
       <aside
         style={{
           width: "260px",
@@ -85,7 +234,7 @@ export default function AdminLayout() {
         }}
         className="lg:!left-0"
       >
-        {/* Logo */}
+        
         <div
           style={{
             padding: "28px 24px",
@@ -108,7 +257,8 @@ export default function AdminLayout() {
               flexShrink: 0,
             }}
           >
-            <Leaf size={20} style={{ color: "#8BC34A" }} />
+            
+            <Logo size={20} color="#8BC34A" />
           </div>
           <div>
             <p
@@ -134,23 +284,9 @@ export default function AdminLayout() {
               ADMIN PANEL
             </p>
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            style={{
-              marginLeft: "auto",
-              background: "none",
-              border: "none",
-              color: "#A8C580",
-              cursor: "pointer",
-              display: "flex",
-            }}
-            className="lg:hidden"
-          >
-            <X size={18} />
-          </button>
         </div>
 
-        {/* Nav */}
+        
         <nav style={{ flex: 1, padding: "20px 12px" }}>
           <p
             style={{
@@ -163,7 +299,8 @@ export default function AdminLayout() {
           >
             NAVIGATION
           </p>
-          {navItems.map(({ to, label, icon: Icon }) => {
+
+          {visibleNavItems.map(({ to, label, icon: Icon }) => {
             const active = isActive(to);
             return (
               <Link
@@ -177,15 +314,21 @@ export default function AdminLayout() {
                   padding: "11px 14px",
                   borderRadius: "12px",
                   marginBottom: "4px",
-                  backgroundColor: active ? "rgba(139,195,74,0.15)" : "transparent",
-                  border: active ? "1px solid rgba(139,195,74,0.25)" : "1px solid transparent",
+                  backgroundColor: active
+                    ? "rgba(139,195,74,0.15)"
+                    : "transparent",
+                  border: active
+                    ? "1px solid rgba(139,195,74,0.25)"
+                    : "1px solid transparent",
                   textDecoration: "none",
                   transition: "all 0.2s",
                 }}
               >
                 <Icon
                   size={18}
-                  style={{ color: active ? "#8BC34A" : "rgba(168,197,128,0.6)" }}
+                  style={{
+                    color: active ? "#8BC34A" : "rgba(168,197,128,0.6)",
+                  }}
                 />
                 <span
                   style={{
@@ -204,22 +347,38 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        {/* Logout */}
+        
         <div
           style={{
             padding: "16px 12px 24px",
             borderTop: "1px solid rgba(139,195,74,0.1)",
           }}
         >
-          <div
+          
+          <button
+            onClick={() => {
+              navigate("/admin/profile");
+              setSidebarOpen(false);
+            }}
             style={{
-              backgroundColor: "rgba(139,195,74,0.07)",
+              width: "100%",
+              backgroundColor:
+                location.pathname === "/admin/profile"
+                  ? "rgba(139,195,74,0.15)"
+                  : "rgba(139,195,74,0.07)",
+              border:
+                location.pathname === "/admin/profile"
+                  ? "1px solid rgba(139,195,74,0.3)"
+                  : "1px solid transparent",
               borderRadius: "12px",
               padding: "12px 14px",
               marginBottom: "12px",
               display: "flex",
               alignItems: "center",
               gap: "10px",
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "all 0.2s",
             }}
           >
             <div
@@ -234,19 +393,36 @@ export default function AdminLayout() {
                 fontSize: "0.8rem",
                 color: "#8BC34A",
                 flexShrink: 0,
+                fontWeight: 700,
               }}
             >
-              A
+              {displayInitial}
             </div>
-            <div>
-              <p style={{ color: "#FAF6EE", margin: 0, fontSize: "0.85rem" }}>
-                Administrator
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p
+                style={{
+                  color: "#FAF6EE",
+                  margin: 0,
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {displayName}
               </p>
               <p style={{ color: "#618C3A", margin: 0, fontSize: "0.72rem" }}>
-                admin
+                {displayRole}
               </p>
             </div>
-          </div>
+            <ChevronRight
+              size={14}
+              style={{ color: "rgba(168,197,128,0.5)", flexShrink: 0 }}
+            />
+          </button>
+
+          
           <button
             onClick={handleLogout}
             style={{
@@ -270,7 +446,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main */}
+      
       <div
         style={{
           flex: 1,
@@ -281,7 +457,7 @@ export default function AdminLayout() {
         }}
         className="lg:!ml-[260px]"
       >
-        {/* Top bar */}
+        
         <header
           style={{
             backgroundColor: "#FAF6EE",
@@ -311,35 +487,20 @@ export default function AdminLayout() {
             >
               <Menu size={22} />
             </button>
-            <div>
-              <h1
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  color: "#2D5016",
-                  margin: 0,
-                  fontSize: "1.2rem",
-                  lineHeight: 1,
-                }}
-              >
-                {currentPage}
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div
+            <h1
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(45,80,22,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
+                fontFamily: "'Playfair Display', serif",
+                color: "#2D5016",
+                margin: 0,
+                fontSize: "1.2rem",
+                lineHeight: 1,
               }}
             >
-              <Bell size={16} style={{ color: "#2D5016" }} />
-            </div>
+              {currentPage}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
             <a
               href="/"
               target="_blank"
@@ -356,17 +517,31 @@ export default function AdminLayout() {
                 gap: "6px",
               }}
             >
-              <Leaf size={12} />
+              <Leaf size={14} />
               View Site
             </a>
           </div>
         </header>
 
-        {/* Page content */}
-        <main style={{ flex: 1, padding: "28px 24px", maxWidth: "1200px", width: "100%" }}>
+        
+        <main
+          style={{
+            flex: 1,
+            padding: "28px 24px",
+            maxWidth: "1200px",
+            width: "100%",
+          }}
+        >
           <Outlet />
         </main>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

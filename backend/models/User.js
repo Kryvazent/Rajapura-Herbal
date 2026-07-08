@@ -8,13 +8,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-
     lastName: {
       type: String,
       required: true,
       trim: true
     },
-
     email: {
       type: String,
       required: true,
@@ -22,36 +20,34 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       index: true
     },
-
     password: {
       type: String,
       required: true
     },
-
     role: {
       type: String,
       enum: ["ADMIN", "USER", "STAFF"],
       default: "USER",
       index: true
     },
-
     status: {
       type: String,
       enum: ["ACTIVE", "DISABLED"],
       default: "ACTIVE"
     },
-
     phone: String,
-
     address: {
       street: String,
       city: String,
       district: String,
       province: String
     },
-
     flags: {
       isEmailVerified: {
+        type: Boolean,
+        default: false
+      },
+      mustChangePassword: {
         type: Boolean,
         default: false
       }
@@ -60,25 +56,18 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.pre('save', async function(next) {
-
-    // Only hash the password if it has been modified (or is new)
-    if (!this.isModified('password')) {
-      return next();
-    }
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (err) {
-        next(err);
-    }
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (err) {
+    throw err;
+  }
 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+  return await bcrypt.compare(candidatePassword, this.password);
 };
-
 
 export default mongoose.model("User", userSchema);

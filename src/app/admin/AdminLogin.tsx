@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Leaf, Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react";
-import { login } from "./adminAuth";
+import axios from "axios";
+
+interface FieldErrors {
+  username?: string;
+  password?: string;
+}
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -10,28 +15,96 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loggedin = localStorage.getItem("adminAuth");
+    if (loggedin) {
+      navigate("/admin/dashboard");
+    } else {
+      setIsChecking(false);
+    }
+  }, []);
+
+  if (isChecking) return null;
+
+  const validate = (): boolean => {
+    const newErrors: FieldErrors = {};
+
+    if (!username.trim()) {
+      newErrors.username = "Username is required.";
+    } else if (username.trim().length < 3) {
+      newErrors.username = "Username must be at least 3 characters.";
+    } else if (username.trim().length > 50) {
+      newErrors.username = "Username cannot exceed 50 characters.";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters.";
+    } else if (password.length > 128) {
+      newErrors.password = "Password cannot exceed 128 characters.";
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!validate()) return;
+
     setLoading(true);
-    // Simulate network delay
-    setTimeout(() => {
-      const ok = login(username.trim(), password);
-      if (ok) {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+        { username, password },
+        { withCredentials: true }
+      );
+
+      
+      if (res.status === 200) {
+        localStorage.setItem("adminAuth", "true");
+        
+        if (res.data.mustChangePassword) {
+          localStorage.setItem("mustChangePassword", "true");
+        } else {
+          localStorage.removeItem("mustChangePassword");
+        }
         navigate("/admin/dashboard");
-      } else {
-        setError("Invalid username or password. Please try again.");
       }
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError("Invalid username or password. Please try again.");
+      } else if (err.response?.status === 403) {
+        setError("Access denied. Admin privileges required.");
+      } else if (err.response?.status === 422) {
+        const validationErrors = err.response?.data?.errors;
+        if (validationErrors && validationErrors.length > 0) {
+          setError(validationErrors.map((e: any) => e.msg).join(" "));
+        } else {
+          setError("Invalid input. Please check your credentials.");
+        }
+      } else if (err.response?.status === 400) {
+        setError("Already logged in.");
+      } else {
+        setError("Something went wrong. Please try again later.");
+      }
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #0E1A08 0%, #1A3009 50%, #243D10 100%)",
+        background:
+          "linear-gradient(135deg, #0E1A08 0%, #1A3009 50%, #243D10 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -41,7 +114,7 @@ export default function AdminLogin() {
         overflow: "hidden",
       }}
     >
-      {/* Decorative circles */}
+      
       {[
         { size: 500, top: "-200px", right: "-200px", opacity: 0.05 },
         { size: 350, bottom: "-150px", left: "-150px", opacity: 0.04 },
@@ -66,16 +139,17 @@ export default function AdminLogin() {
       ))}
 
       <div style={{ width: "100%", maxWidth: "440px", position: "relative" }}>
-        {/* Card */}
+        
         <div
           style={{
             backgroundColor: "rgba(250,246,238,0.97)",
             borderRadius: "28px",
             overflow: "hidden",
-            boxShadow: "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,195,74,0.2)",
+            boxShadow:
+              "0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,195,74,0.2)",
           }}
         >
-          {/* Header */}
+          
           <div
             style={{
               background: "linear-gradient(135deg, #2D5016, #3D6B1C)",
@@ -132,7 +206,7 @@ export default function AdminLogin() {
             </p>
           </div>
 
-          {/* Form */}
+          
           <form onSubmit={handleSubmit} style={{ padding: "36px 40px 40px" }}>
             <h2
               style={{
@@ -156,7 +230,7 @@ export default function AdminLogin() {
               Sign in to manage your herbal products & stores
             </p>
 
-            {/* Error */}
+            
             {error && (
               <div
                 style={{
@@ -170,12 +244,17 @@ export default function AdminLogin() {
                   gap: "10px",
                 }}
               >
-                <AlertCircle size={16} style={{ color: "#D4183D", flexShrink: 0 }} />
-                <p style={{ color: "#D4183D", fontSize: "0.85rem", margin: 0 }}>{error}</p>
+                <AlertCircle
+                  size={16}
+                  style={{ color: "#D4183D", flexShrink: 0 }}
+                />
+                <p style={{ color: "#D4183D", fontSize: "0.85rem", margin: 0 }}>
+                  {error}
+                </p>
               </div>
             )}
 
-            {/* Username */}
+            
             <div style={{ marginBottom: "16px" }}>
               <label
                 style={{
@@ -196,34 +275,77 @@ export default function AdminLogin() {
                     left: "14px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    color: "#8B5E3C",
+                    color: fieldErrors.username ? "#D4183D" : "#8B5E3C",
                   }}
                 />
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    
+                    if (fieldErrors.username) {
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        username: undefined,
+                      }));
+                    }
+                  }}
                   placeholder="Enter your username"
-                  required
                   style={{
                     width: "100%",
                     padding: "12px 14px 12px 42px",
                     borderRadius: "12px",
-                    border: "1.5px solid rgba(45,80,22,0.2)",
-                    backgroundColor: "#FAF6EE",
+                    border: `1.5px solid ${fieldErrors.username
+                        ? "#D4183D"
+                        : "rgba(45,80,22,0.2)"
+                      }`,
+                    backgroundColor: fieldErrors.username
+                      ? "rgba(212,24,61,0.04)"
+                      : "#FAF6EE",
                     color: "#2D5016",
                     fontSize: "0.9rem",
                     outline: "none",
                     boxSizing: "border-box",
-                    transition: "border-color 0.2s",
+                    transition: "border-color 0.2s, background-color 0.2s",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "#2D5016")}
-                  onBlur={(e) => (e.target.style.borderColor = "rgba(45,80,22,0.2)")}
+                  onFocus={(e) => {
+                    if (!fieldErrors.username) {
+                      e.target.style.borderColor = "#2D5016";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!fieldErrors.username) {
+                      e.target.style.borderColor = "rgba(45,80,22,0.2)";
+                    }
+                  }}
                 />
               </div>
+              
+              {fieldErrors.username && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <AlertCircle size={12} style={{ color: "#D4183D" }} />
+                  <p
+                    style={{
+                      color: "#D4183D",
+                      fontSize: "0.75rem",
+                      margin: 0,
+                    }}
+                  >
+                    {fieldErrors.username}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Password */}
+            
             <div style={{ marginBottom: "24px" }}>
               <label
                 style={{
@@ -244,29 +366,50 @@ export default function AdminLogin() {
                     left: "14px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    color: "#8B5E3C",
+                    color: fieldErrors.password ? "#D4183D" : "#8B5E3C",
                   }}
                 />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    
+                    if (fieldErrors.password) {
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                      }));
+                    }
+                  }}
                   placeholder="Enter your password"
-                  required
                   style={{
                     width: "100%",
                     padding: "12px 44px 12px 42px",
                     borderRadius: "12px",
-                    border: "1.5px solid rgba(45,80,22,0.2)",
-                    backgroundColor: "#FAF6EE",
+                    border: `1.5px solid ${fieldErrors.password
+                        ? "#D4183D"
+                        : "rgba(45,80,22,0.2)"
+                      }`,
+                    backgroundColor: fieldErrors.password
+                      ? "rgba(212,24,61,0.04)"
+                      : "#FAF6EE",
                     color: "#2D5016",
                     fontSize: "0.9rem",
                     outline: "none",
                     boxSizing: "border-box",
-                    transition: "border-color 0.2s",
+                    transition: "border-color 0.2s, background-color 0.2s",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "#2D5016")}
-                  onBlur={(e) => (e.target.style.borderColor = "rgba(45,80,22,0.2)")}
+                  onFocus={(e) => {
+                    if (!fieldErrors.password) {
+                      e.target.style.borderColor = "#2D5016";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!fieldErrors.password) {
+                      e.target.style.borderColor = "rgba(45,80,22,0.2)";
+                    }
+                  }}
                 />
                 <button
                   type="button"
@@ -287,9 +430,31 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              
+              {fieldErrors.password && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    marginTop: "6px",
+                  }}
+                >
+                  <AlertCircle size={12} style={{ color: "#D4183D" }} />
+                  <p
+                    style={{
+                      color: "#D4183D",
+                      fontSize: "0.75rem",
+                      margin: 0,
+                    }}
+                  >
+                    {fieldErrors.password}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Submit */}
+            
             <button
               type="submit"
               disabled={loading}
@@ -298,7 +463,9 @@ export default function AdminLogin() {
                 padding: "14px",
                 borderRadius: "12px",
                 border: "none",
-                background: loading ? "#A8C580" : "linear-gradient(135deg, #2D5016, #4A7C23)",
+                background: loading
+                  ? "#A8C580"
+                  : "linear-gradient(135deg, #2D5016, #4A7C23)",
                 color: "#FAF6EE",
                 fontSize: "0.95rem",
                 cursor: loading ? "not-allowed" : "pointer",
@@ -330,25 +497,10 @@ export default function AdminLogin() {
                 </>
               )}
             </button>
-
-            {/* Hint */}
-            <div
-              style={{
-                marginTop: "20px",
-                backgroundColor: "rgba(45,80,22,0.06)",
-                border: "1px solid rgba(45,80,22,0.12)",
-                borderRadius: "10px",
-                padding: "10px 14px",
-              }}
-            >
-              <p style={{ color: "#6B4423", fontSize: "0.78rem", margin: 0 }}>
-                <strong>Demo credentials:</strong> admin / rajapura2026
-              </p>
-            </div>
           </form>
         </div>
 
-        {/* Back link */}
+        
         <p style={{ textAlign: "center", marginTop: "20px" }}>
           <a
             href="/"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -9,9 +9,12 @@ import {
   Package,
   AlertTriangle,
   ChevronDown,
+  AlertCircle,
+  Check,
 } from "lucide-react";
-import { getProducts, addProduct, updateProduct, deleteProduct } from "./adminData";
-import type { Product } from "../data/products";
+import { Product } from "../interfaces/productInterface";
+import axios from "axios";
+import { Schema } from "mongoose";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -24,7 +27,107 @@ const CATEGORIES = [
 
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 
-const emptyForm = (): Omit<Product, "id"> => ({
+
+interface FormErrors {
+  [key: string]: string;
+}
+
+
+const IMAGE_URL_REGEX =
+  /^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i;
+
+const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
+  const errors: FormErrors = {};
+
+  if (!form.name.trim()) {
+    errors.name = "Product name is required.";
+  } else if (form.name.trim().length < 2) {
+    errors.name = "Name must be at least 2 characters.";
+  } else if (form.name.trim().length > 100) {
+    errors.name = "Name cannot exceed 100 characters.";
+  }
+
+  if (!form.sinhalaName.trim()) {
+    errors.sinhalaName = "Sinhala name is required.";
+  } else if (form.sinhalaName.trim().length < 2) {
+    errors.sinhalaName = "Must be at least 2 characters.";
+  }
+
+  if (!form.category) {
+    errors.category = "Category is required.";
+  }
+
+  if (!form.description.trim()) {
+    errors.description = "Description is required.";
+  } else if (form.description.trim().length > 1000) {
+    errors.description = "Description cannot exceed 1000 characters.";
+  }
+
+  if (!form.price) {
+    errors.price = "Price is required.";
+  }
+
+  if (!form.image.trim()) {
+    errors.image = "Image URL is required.";
+  } else if (!IMAGE_URL_REGEX.test(form.image.trim())) {
+    errors.image = "Must be a valid image URL (png, jpg, jpeg, gif, webp).";
+  }
+
+  if (form.badge && !["Bestseller", "Premium", "New", "Organic"].includes(form.badge)) {
+    errors.badge = "Invalid badge value.";
+  }
+
+  return errors;
+};
+
+
+function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        zIndex: 999,
+        backgroundColor: type === "error" ? "#D4183D" : "#2D5016",
+        color: "#FAF6EE",
+        padding: "12px 20px",
+        borderRadius: "12px",
+        fontSize: "0.85rem",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        maxWidth: "360px",
+      }}
+    >
+      {type === "error" ? <AlertCircle size={15} /> : <Check size={15} />}
+      {message}
+    </div>
+  );
+}
+
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        marginTop: "4px",
+      }}
+    >
+      <AlertCircle size={12} style={{ color: "#D4183D", flexShrink: 0 }} />
+      <p style={{ color: "#D4183D", fontSize: "0.73rem", margin: 0 }}>
+        {message}
+      </p>
+    </div>
+  );
+}
+
+const emptyForm = (): Omit<Product, "_id"> => ({
   name: "",
   sinhalaName: "",
   category: CATEGORIES[0],
@@ -37,6 +140,7 @@ const emptyForm = (): Omit<Product, "id"> => ({
   badge: "",
 });
 
+
 function InputField({
   label,
   value,
@@ -44,6 +148,7 @@ function InputField({
   placeholder,
   type = "text",
   required,
+  error,
 }: {
   label: string;
   value: string;
@@ -51,10 +156,18 @@ function InputField({
   placeholder?: string;
   type?: string;
   required?: boolean;
+  error?: string;
 }) {
   return (
     <div>
-      <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>
+      <label
+        style={{
+          display: "block",
+          color: "#2D5016",
+          fontSize: "0.82rem",
+          marginBottom: "6px",
+        }}
+      >
         {label} {required && <span style={{ color: "#D4183D" }}>*</span>}
       </label>
       <input
@@ -62,33 +175,37 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        required={required}
         style={{
           width: "100%",
           padding: "10px 14px",
           borderRadius: "10px",
-          border: "1.5px solid rgba(45,80,22,0.2)",
-          backgroundColor: "#FAF6EE",
+          border: `1.5px solid ${error ? "#D4183D" : "rgba(45,80,22,0.2)"}`,
+          backgroundColor: error ? "rgba(212,24,61,0.04)" : "#FAF6EE",
           color: "#2D5016",
           fontSize: "0.88rem",
           outline: "none",
           boxSizing: "border-box",
+          transition: "border-color 0.2s",
         }}
       />
+      <FieldError message={error} />
     </div>
   );
 }
+
 
 function TagsField({
   label,
   values,
   onChange,
   placeholder,
+  error,
 }: {
   label: string;
   values: string[];
   onChange: (vals: string[]) => void;
   placeholder?: string;
+  error?: string;
 }) {
   const update = (i: number, v: string) => {
     const copy = [...values];
@@ -97,9 +214,17 @@ function TagsField({
   };
   const remove = (i: number) => onChange(values.filter((_, idx) => idx !== i));
   const add = () => onChange([...values, ""]);
+
   return (
     <div>
-      <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>
+      <label
+        style={{
+          display: "block",
+          color: "#2D5016",
+          fontSize: "0.82rem",
+          marginBottom: "6px",
+        }}
+      >
         {label}
       </label>
       <div className="space-y-2">
@@ -160,21 +285,85 @@ function TagsField({
           <Plus size={13} /> Add {label.split(" ")[0]}
         </button>
       </div>
+      <FieldError message={error} />
     </div>
   );
 }
 
+
 export default function AdminProducts() {
-  const [products, setProducts] = useState<Product[]>(getProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
-  const [formData, setFormData] = useState<Omit<Product, "id">>(emptyForm());
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<Omit<Product, "_id">>(emptyForm());
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [editingId, setEditingId] = useState<Schema.Types.ObjectId | string>("");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const refresh = () => setProducts(getProducts());
+  
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
+  useEffect(() => {
+    getProducts();
+  }, []);
+
+  
+  async function getProducts() {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+      );
+      
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setProducts(data);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setProducts([]);
+      showToast("Failed to load products.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  
+  async function saveProduct(product: Product): Promise<void> {
+    await axios.post(
+      import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
+      { product },
+      { withCredentials: true }
+    );
+  }
+
+  async function editProduct(product: Product): Promise<void> {
+    await axios.put(
+      import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
+      { product },
+      { withCredentials: true }
+    );
+  }
+
+  async function deleteProductApi(
+    id: Schema.Types.ObjectId | string
+  ): Promise<void> {
+    await axios.delete(
+      import.meta.env.VITE_BACKEND_URL + "/admin/delete-product",
+      { data: { id }, withCredentials: true }
+    );
+  }
+
+  
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     const matchSearch =
@@ -183,43 +372,103 @@ export default function AdminProducts() {
     return matchCat && matchSearch;
   });
 
+  
   const openAdd = () => {
     setFormData(emptyForm());
-    setEditingId(null);
+    setFormErrors({});
+    setEditingId("");
     setModalMode("add");
   };
 
   const openEdit = (product: Product) => {
-    const { id, ...rest } = product;
-    setFormData({ ...rest, benefits: [...rest.benefits], ingredients: [...rest.ingredients], howToUse: [...(rest.howToUse ?? [])] });
-    setEditingId(id);
+    const { _id, ...rest } = product;
+    setFormData({
+      ...rest,
+      benefits: [...rest.benefits],
+      ingredients: [...rest.ingredients],
+      howToUse: [...(rest.howToUse ?? [])],
+    });
+    setFormErrors({});
+    setEditingId(_id);
     setModalMode("edit");
   };
 
-  const handleSave = () => {
-    if (!formData.name || !formData.price || !formData.image || !formData.description) return;
-    if (modalMode === "add") {
-      addProduct({ ...formData, badge: formData.badge || undefined });
-    } else if (editingId !== null) {
-      updateProduct({ id: editingId, ...formData, badge: formData.badge || undefined });
+  
+  const handleSave = async () => {
+    
+    const errors = validateProduct(formData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
     }
-    refresh();
-    setModalMode(null);
+
+    try {
+      setSaveLoading(true);
+
+      if (modalMode === "add") {
+        await saveProduct({
+          ...formData,
+          badge: formData.badge || undefined,
+        } as Product);
+        showToast("Product added successfully.", "success");
+      } else if (editingId) {
+        await editProduct({
+          _id: editingId,
+          ...formData,
+          badge: formData.badge || undefined,
+        } as Product);
+        showToast("Product updated successfully.", "success");
+      }
+
+      await getProducts();
+      setModalMode(null);
+      setFormErrors({});
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ?? "Failed to save product.";
+      showToast(msg, "error");
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handleDelete = () => {
+  
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    deleteProduct(deleteTarget.id);
-    refresh();
-    setDeleteTarget(null);
+    try {
+      setDeleteLoading(true);
+      await deleteProductApi(deleteTarget._id);
+      await getProducts();
+      setDeleteTarget(null);
+      showToast("Product deleted successfully.", "success");
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ?? "Failed to delete product.";
+      showToast(msg, "error");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
-  const set = (field: keyof Omit<Product, "id">, value: any) =>
+  
+  const set = (field: keyof Omit<Product, "_id">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const n = { ...prev };
+        delete n[field];
+        return n;
+      });
+    }
+  };
 
   return (
     <div>
-      {/* Header row */}
+      
+      {toast && <Toast message={toast.message} type={toast.type} />}
+
+      
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -238,16 +487,17 @@ export default function AdminProducts() {
         </div>
         <button
           onClick={openAdd}
+          disabled={loading}
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            backgroundColor: "#2D5016",
+            backgroundColor: loading ? "#A8C580" : "#2D5016",
             color: "#FAF6EE",
             border: "none",
             padding: "10px 20px",
             borderRadius: "50px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
             fontSize: "0.88rem",
           }}
         >
@@ -255,7 +505,7 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      {/* Filters */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -270,7 +520,16 @@ export default function AdminProducts() {
         }}
       >
         <div style={{ position: "relative", flex: "1 1 200px" }}>
-          <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#8B5E3C" }} />
+          <Search
+            size={15}
+            style={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#8B5E3C",
+            }}
+          />
           <input
             type="text"
             placeholder="Search products..."
@@ -295,9 +554,12 @@ export default function AdminProducts() {
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               style={{
-                backgroundColor: categoryFilter === cat ? "#2D5016" : "transparent",
+                backgroundColor:
+                  categoryFilter === cat ? "#2D5016" : "transparent",
                 color: categoryFilter === cat ? "#FAF6EE" : "#6B4423",
-                border: `1px solid ${categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"}`,
+                border: `1px solid ${
+                  categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
+                }`,
                 padding: "6px 14px",
                 borderRadius: "50px",
                 fontSize: "0.8rem",
@@ -311,7 +573,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {/* Table */}
+      
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -321,148 +583,225 @@ export default function AdminProducts() {
           boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "rgba(45,80,22,0.06)", borderBottom: "1px solid rgba(45,80,22,0.1)" }}>
-                {["Product", "Category", "Price", "Badge", "Actions"].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: "12px 16px",
-                      textAlign: "left",
-                      color: "#2D5016",
-                      fontSize: "0.78rem",
-                      letterSpacing: "0.05em",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((product, i) => (
+        
+        {loading && (
+          <div style={{ padding: "40px", textAlign: "center" }}>
+            <div
+              style={{
+                width: "28px",
+                height: "28px",
+                border: "3px solid rgba(45,80,22,0.15)",
+                borderTopColor: "#2D5016",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+                margin: "0 auto 10px",
+              }}
+            />
+            <p style={{ color: "#8B5E3C", fontSize: "0.85rem", margin: 0 }}>
+              Loading products...
+            </p>
+          </div>
+        )}
+
+        {!loading && (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
                 <tr
-                  key={product.id}
                   style={{
-                    borderBottom: i < filtered.length - 1 ? "1px solid rgba(45,80,22,0.06)" : "none",
-                    transition: "background-color 0.15s",
+                    backgroundColor: "rgba(45,80,22,0.06)",
+                    borderBottom: "1px solid rgba(45,80,22,0.1)",
                   }}
-                  className="hover:bg-[rgba(45,80,22,0.02)]"
                 >
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        style={{ width: "44px", height: "44px", borderRadius: "10px", objectFit: "cover", flexShrink: 0 }}
-                      />
-                      <div>
-                        <p style={{ color: "#2D5016", margin: 0, fontSize: "0.88rem", fontWeight: 500 }}>
-                          {product.name}
-                        </p>
-                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.75rem", fontStyle: "italic" }}>
-                          {product.sinhalaName}
-                        </p>
+                  {["Product", "Category", "Price", "Badge", "Actions"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: "12px 16px",
+                          textAlign: "left",
+                          color: "#2D5016",
+                          fontSize: "0.78rem",
+                          letterSpacing: "0.05em",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((product, i) => (
+                  <tr
+                    key={product._id.toString()}
+                    style={{
+                      borderBottom:
+                        i < filtered.length - 1
+                          ? "1px solid rgba(45,80,22,0.06)"
+                          : "none",
+                      transition: "background-color 0.15s",
+                    }}
+                    className="hover:bg-[rgba(45,80,22,0.02)]"
+                  >
+                    <td style={{ padding: "12px 16px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "10px",
+                            objectFit: "cover",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div>
+                          <p
+                            style={{
+                              color: "#2D5016",
+                              margin: 0,
+                              fontSize: "0.88rem",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {product.name}
+                          </p>
+                          <p
+                            style={{
+                              color: "#8B5E3C",
+                              margin: 0,
+                              fontSize: "0.75rem",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {product.sinhalaName}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span
-                      style={{
-                        backgroundColor: "rgba(45,80,22,0.08)",
-                        color: "#2D5016",
-                        fontSize: "0.75rem",
-                        padding: "3px 10px",
-                        borderRadius: "50px",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {product.category}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "0.9rem" }}>
-                      {product.price}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    {product.badge ? (
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
                       <span
                         style={{
-                          backgroundColor: "rgba(212,160,23,0.15)",
-                          color: "#7A5C00",
-                          fontSize: "0.72rem",
-                          padding: "3px 8px",
-                          borderRadius: "50px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {product.badge}
-                      </span>
-                    ) : (
-                      <span style={{ color: "#C8D8B0", fontSize: "0.8rem" }}>—</span>
-                    )}
-                  </td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button
-                        onClick={() => openEdit(product)}
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "8px",
-                          border: "1px solid rgba(45,80,22,0.2)",
-                          backgroundColor: "rgba(45,80,22,0.06)",
+                          backgroundColor: "rgba(45,80,22,0.08)",
                           color: "#2D5016",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontSize: "0.75rem",
+                          padding: "3px 10px",
+                          borderRadius: "50px",
+                          whiteSpace: "nowrap",
                         }}
-                        title="Edit"
                       >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(product)}
+                        {product.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span
                         style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "8px",
-                          border: "1px solid rgba(212,24,61,0.2)",
-                          backgroundColor: "rgba(212,24,61,0.06)",
-                          color: "#D4183D",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontFamily: "'Playfair Display', serif",
+                          color: "#2D5016",
+                          fontSize: "0.9rem",
                         }}
-                        title="Delete"
                       >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} style={{ padding: "40px", textAlign: "center" }}>
-                    <Package size={32} style={{ color: "#C8D8B0", margin: "0 auto 8px", display: "block" }} />
-                    <p style={{ color: "#A8C580", margin: 0, fontSize: "0.9rem" }}>No products found</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {product.price}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {product.badge ? (
+                        <span
+                          style={{
+                            backgroundColor: "rgba(212,160,23,0.15)",
+                            color: "#7A5C00",
+                            fontSize: "0.72rem",
+                            padding: "3px 8px",
+                            borderRadius: "50px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {product.badge}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#C8D8B0", fontSize: "0.8rem" }}>
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          onClick={() => openEdit(product)}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(45,80,22,0.2)",
+                            backgroundColor: "rgba(45,80,22,0.06)",
+                            color: "#2D5016",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(product)}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(212,24,61,0.2)",
+                            backgroundColor: "rgba(212,24,61,0.06)",
+                            color: "#D4183D",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: "40px", textAlign: "center" }}>
+                      <Package
+                        size={32}
+                        style={{
+                          color: "#C8D8B0",
+                          margin: "0 auto 8px",
+                          display: "block",
+                        }}
+                      />
+                      <p style={{ color: "#A8C580", margin: 0, fontSize: "0.9rem" }}>
+                        {search || categoryFilter !== "All"
+                          ? "No products match your search."
+                          : "No products yet. Click 'Add Product' to get started."}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Add / Edit Modal */}
+      
       {modalMode && (
         <div
           style={{
@@ -489,7 +828,7 @@ export default function AdminProducts() {
               margin: "auto",
             }}
           >
-            {/* Modal header */}
+            
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -511,23 +850,58 @@ export default function AdminProducts() {
               </h3>
               <button
                 onClick={() => setModalMode(null)}
-                style={{ background: "none", border: "none", color: "rgba(250,246,238,0.7)", cursor: "pointer", display: "flex" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "rgba(250,246,238,0.7)",
+                  cursor: "pointer",
+                  display: "flex",
+                }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Form body */}
-            <div style={{ padding: "28px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            
+            <div
+              style={{
+                padding: "28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "18px",
+              }}
+            >
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputField label="Product Name" value={formData.name} onChange={(v) => set("name", v)} placeholder="e.g. Rajapura Herbal Tea" required />
-                <InputField label="Sinhala Name" value={formData.sinhalaName} onChange={(v) => set("sinhalaName", v)} placeholder="e.g. රාජපුර ඖෂධ තේ" />
+                <InputField
+                  label="Product Name"
+                  value={formData.name}
+                  onChange={(v) => set("name", v)}
+                  placeholder="e.g. Rajapura Herbal Tea"
+                  required
+                  error={formErrors.name}
+                />
+                <InputField
+                  label="Sinhala Name"
+                  value={formData.sinhalaName}
+                  onChange={(v) => set("sinhalaName", v)}
+                  placeholder="e.g. රාජපුර ඖෂධ තේ"
+                  required
+                  error={formErrors.sinhalaName}
+                />
               </div>
 
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Category */}
                 <div>
-                  <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      color: "#2D5016",
+                      fontSize: "0.82rem",
+                      marginBottom: "6px",
+                    }}
+                  >
                     Category <span style={{ color: "#D4183D" }}>*</span>
                   </label>
                   <div style={{ position: "relative" }}>
@@ -538,7 +912,7 @@ export default function AdminProducts() {
                         width: "100%",
                         padding: "10px 36px 10px 14px",
                         borderRadius: "10px",
-                        border: "1.5px solid rgba(45,80,22,0.2)",
+                        border: `1.5px solid ${formErrors.category ? "#D4183D" : "rgba(45,80,22,0.2)"}`,
                         backgroundColor: "#FAF6EE",
                         color: "#2D5016",
                         fontSize: "0.88rem",
@@ -547,15 +921,36 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                      {CATEGORIES.map((c) => (
+                        <option key={c}>{c}</option>
+                      ))}
                     </select>
-                    <ChevronDown size={14} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#8B5E3C", pointerEvents: "none" }} />
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#8B5E3C",
+                        pointerEvents: "none",
+                      }}
+                    />
                   </div>
+                  <FieldError message={formErrors.category} />
                 </div>
 
-                {/* Badge */}
                 <div>
-                  <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>Badge</label>
+                  <label
+                    style={{
+                      display: "block",
+                      color: "#2D5016",
+                      fontSize: "0.82rem",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Badge
+                  </label>
                   <div style={{ position: "relative" }}>
                     <select
                       value={formData.badge ?? ""}
@@ -573,17 +968,52 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {BADGES.map((b) => <option key={b} value={b}>{b || "— None —"}</option>)}
+                      {BADGES.map((b) => (
+                        <option key={b} value={b}>
+                          {b || "— None —"}
+                        </option>
+                      ))}
                     </select>
-                    <ChevronDown size={14} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#8B5E3C", pointerEvents: "none" }} />
+                    <ChevronDown
+                      size={14}
+                      style={{
+                        position: "absolute",
+                        right: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#8B5E3C",
+                        pointerEvents: "none",
+                      }}
+                    />
                   </div>
+                  <FieldError message={formErrors.badge} />
                 </div>
               </div>
 
-              <InputField label="Price (LKR)" value={formData.price} onChange={(v) => set("price", v)} placeholder="e.g. LKR 850" required />
+              
+              <InputField
+                label="Price (LKR)"
+                value={formData.price}
+                onChange={(v) => {
+                  const numeric = v.replace(/[^0-9]/g, "");
+                  const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                  set("price", numeric ? `LKR ${formatted}` : "");
+                }}
+                placeholder="e.g. LKR 850"
+                required
+                error={formErrors.price}
+              />
 
+              
               <div>
-                <label style={{ display: "block", color: "#2D5016", fontSize: "0.82rem", marginBottom: "6px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    color: "#2D5016",
+                    fontSize: "0.82rem",
+                    marginBottom: "6px",
+                  }}
+                >
                   Description <span style={{ color: "#D4183D" }}>*</span>
                 </label>
                 <textarea
@@ -595,8 +1025,10 @@ export default function AdminProducts() {
                     width: "100%",
                     padding: "10px 14px",
                     borderRadius: "10px",
-                    border: "1.5px solid rgba(45,80,22,0.2)",
-                    backgroundColor: "#FAF6EE",
+                    border: `1.5px solid ${formErrors.description ? "#D4183D" : "rgba(45,80,22,0.2)"}`,
+                    backgroundColor: formErrors.description
+                      ? "rgba(212,24,61,0.04)"
+                      : "#FAF6EE",
                     color: "#2D5016",
                     fontSize: "0.88rem",
                     outline: "none",
@@ -605,19 +1037,57 @@ export default function AdminProducts() {
                     boxSizing: "border-box",
                   }}
                 />
+                <FieldError message={formErrors.description} />
               </div>
 
-              <InputField label="Image URL" value={formData.image} onChange={(v) => set("image", v)} placeholder="https://..." required />
-              {formData.image && (
-                <img src={formData.image} alt="preview" style={{ height: "80px", width: "120px", objectFit: "cover", borderRadius: "10px", border: "1px solid rgba(45,80,22,0.15)" }} />
+              
+              <InputField
+                label="Image URL"
+                value={formData.image}
+                onChange={(v) => set("image", v)}
+                placeholder="https:"
+                required
+                error={formErrors.image}
+              />
+              {formData.image && !formErrors.image && (
+                <img
+                  src={formData.image}
+                  alt="preview"
+                  style={{
+                    height: "80px",
+                    width: "120px",
+                    objectFit: "cover",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(45,80,22,0.15)",
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
               )}
 
-              <TagsField label="Benefits" values={formData.benefits} onChange={(v) => set("benefits", v)} placeholder="e.g. Improves digestion" />
-              <TagsField label="Ingredients" values={formData.ingredients} onChange={(v) => set("ingredients", v)} placeholder="e.g. Ginger" />
-              <TagsField label="How to Use Steps" values={formData.howToUse ?? [""]} onChange={(v) => set("howToUse", v)} placeholder="e.g. Mix 1 teaspoon in warm water..." />
+              
+              <TagsField
+                label="Benefits"
+                values={formData.benefits}
+                onChange={(v) => set("benefits", v)}
+                placeholder="e.g. Improves digestion"
+              />
+              <TagsField
+                label="Ingredients"
+                values={formData.ingredients}
+                onChange={(v) => set("ingredients", v)}
+                placeholder="e.g. Ginger"
+              />
+              <TagsField
+                label="How to Use Steps"
+                values={formData.howToUse ?? [""]}
+                onChange={(v) => set("howToUse", v)}
+                placeholder="e.g. Mix 1 teaspoon in warm water..."
+              />
             </div>
 
-            {/* Modal footer */}
+            
             <div
               style={{
                 padding: "16px 28px",
@@ -629,7 +1099,7 @@ export default function AdminProducts() {
               }}
             >
               <button
-                onClick={() => setModalMode(null)}
+                onClick={() => { setModalMode(null); setFormErrors({}); }}
                 style={{
                   padding: "10px 22px",
                   borderRadius: "50px",
@@ -644,27 +1114,33 @@ export default function AdminProducts() {
               </button>
               <button
                 onClick={handleSave}
+                disabled={saveLoading}
                 style={{
                   padding: "10px 22px",
                   borderRadius: "50px",
                   border: "none",
-                  backgroundColor: "#2D5016",
+                  backgroundColor: saveLoading ? "#A8C580" : "#2D5016",
                   color: "#FAF6EE",
-                  cursor: "pointer",
+                  cursor: saveLoading ? "not-allowed" : "pointer",
                   fontSize: "0.88rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                 }}
               >
-                <Save size={15} /> {modalMode === "add" ? "Add Product" : "Save Changes"}
+                <Save size={15} />
+                {saveLoading
+                  ? "Saving..."
+                  : modalMode === "add"
+                  ? "Add Product"
+                  : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirm */}
+      
       {deleteTarget && (
         <div
           style={{
@@ -704,15 +1180,33 @@ export default function AdminProducts() {
             >
               <AlertTriangle size={24} style={{ color: "#D4183D" }} />
             </div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", marginBottom: "8px" }}>
+            <h3
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: "#2D5016",
+                marginBottom: "8px",
+              }}
+            >
               Delete Product?
             </h3>
-            <p style={{ color: "#5C4033", fontSize: "0.88rem", marginBottom: "24px", lineHeight: 1.6 }}>
-              Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This action cannot be undone.
+            <p
+              style={{
+                color: "#5C4033",
+                fontSize: "0.88rem",
+                marginBottom: "24px",
+                lineHeight: 1.6,
+              }}
+            >
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget.name}</strong>? This action cannot be
+              undone.
             </p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            <div
+              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
+            >
               <button
                 onClick={() => setDeleteTarget(null)}
+                disabled={deleteLoading}
                 style={{
                   padding: "10px 22px",
                   borderRadius: "50px",
@@ -727,25 +1221,31 @@ export default function AdminProducts() {
               </button>
               <button
                 onClick={handleDelete}
+                disabled={deleteLoading}
                 style={{
                   padding: "10px 22px",
                   borderRadius: "50px",
                   border: "none",
-                  backgroundColor: "#D4183D",
+                  backgroundColor: deleteLoading ? "#e8738a" : "#D4183D",
                   color: "#FAF6EE",
-                  cursor: "pointer",
+                  cursor: deleteLoading ? "not-allowed" : "pointer",
                   fontSize: "0.88rem",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                 }}
               >
-                <Trash2 size={14} /> Delete
+                <Trash2 size={14} />
+                {deleteLoading ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

@@ -19,7 +19,7 @@ const team = [
 export default function About() {
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* Header */}
+      
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -48,7 +48,7 @@ export default function About() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-12 sm:py-20">
 
-        {/* Mission / Vision / Values */}
+        
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8 mb-14 sm:mb-16">
           {[
             { icon: Leaf, title: "Our Mission", text: "To preserve and share the authentic healing traditions of Sri Lankan Ayurveda, making pure herbal wellness accessible to all." },
@@ -75,7 +75,7 @@ export default function About() {
           ))}
         </div>
 
-        {/* Story */}
+        
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
           <div className="order-2 lg:order-1">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Story</span>
@@ -102,7 +102,7 @@ export default function About() {
           </div>
         </div>
 
-        {/* Timeline */}
+        
         <div className="mb-14 sm:mb-20">
           <div className="text-center mb-10 sm:mb-12">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Journey</span>
@@ -132,7 +132,7 @@ export default function About() {
           </div>
         </div>
 
-        {/* Team */}
+        
         <div>
           <div className="text-center mb-10 sm:mb-12">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our People</span>
@@ -165,7 +165,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA */}
+      
       <section style={{ backgroundColor: "#F0EAD6", padding: "clamp(40px, 8vw, 60px) 24px", textAlign: "center" }}>
         <Leaf size={32} style={{ color: "#2D5016", margin: "0 auto 16px", display: "block" }} />
         <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginBottom: "14px" }}>

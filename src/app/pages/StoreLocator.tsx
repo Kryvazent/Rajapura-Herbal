@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, ChevronRight, ChevronDown, Leaf, Store } from "lucide-react";
-import { getProvinces } from "../admin/adminData";
-import type { Province, District, Town, Shop } from "../data/stores";
+import { District, PanelProps, Province, Shop, Town } from "../interfaces/storeInterface";
+import axios from "axios";
 
 const typeColors: Record<Shop["type"], { bg: string; text: string; icon: string }> = {
   "Ayurvedic Store": { bg: "rgba(45,80,22,0.1)", text: "#2D5016", icon: "🌿" },
@@ -19,13 +19,6 @@ function EmptyState({ icon, message }: { icon: React.ReactNode; message: string 
   );
 }
 
-interface PanelProps {
-  active: boolean;
-  color: string;
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}
 function Panel({ active, color, icon, title, children }: PanelProps) {
   return (
     <div
@@ -62,12 +55,7 @@ function Panel({ active, color, icon, title, children }: PanelProps) {
   );
 }
 
-function SelectionButton({
-  isSelected,
-  activeColor,
-  onClick,
-  children,
-}: {
+function SelectionButton({ isSelected, activeColor, onClick, children }: {
   isSelected: boolean;
   activeColor: string;
   onClick: () => void;
@@ -96,15 +84,33 @@ function SelectionButton({
 }
 
 export default function StoreLocator() {
-  const provinces = getProvinces();
+
+  const [provinces, setProvinces] = useState([]);
 
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [selectedTown, setSelectedTown] = useState<Town | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("All");
 
-  // Mobile accordion expansion
+  
   const [mobileStep, setMobileStep] = useState<1 | 2 | 3 | 4>(1);
+
+
+  useEffect(() => {
+    loadData();
+  }, [])
+
+  const loadData = async () => {
+
+    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
+      .then(res => {
+        setProvinces(res.data);
+      })
+      .catch(err => {
+        console.error("Error fetching featured products:", err);
+      })
+  }
+
 
   const handleProvinceClick = (province: Province) => {
     if (selectedProvince?.name === province.name) {
@@ -150,7 +156,7 @@ export default function StoreLocator() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {/* Page Header */}
+      
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -175,12 +181,12 @@ export default function StoreLocator() {
         </div>
       </div>
 
-      {/* Decorative band */}
+      
       <div style={{ height: "4px", background: "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)" }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-5 sm:py-6">
 
-        {/* ── Step Indicator (mobile & tablet) ── */}
+        
         <div
           className="lg:hidden flex items-center mb-4 overflow-x-auto pb-1"
           style={{ scrollbarWidth: "none", gap: "0" }}
@@ -232,12 +238,12 @@ export default function StoreLocator() {
           ))}
         </div>
 
-        {/* ── Desktop: classic 4-column grid ── */}
+        
         <div
           className="hidden lg:grid"
           style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", height: "calc(100vh - 300px)", minHeight: "440px" }}
         >
-          {/* Panel 1 – Province */}
+          
           <Panel active color="#2D5016" icon={<Leaf size={14} />} title="Select Province">
             {provinces.map((province) => {
               const isSelected = selectedProvince?.name === province.name;
@@ -257,7 +263,7 @@ export default function StoreLocator() {
             })}
           </Panel>
 
-          {/* Panel 2 – District */}
+          
           <Panel active={!!selectedProvince} color="#4A7C23" icon={<MapPin size={14} />} title={selectedProvince ? selectedProvince.name : "Select Province First"}>
             {!selectedProvince ? (
               <EmptyState icon={<MapPin size={28} />} message="Select a province to see districts." />
@@ -281,7 +287,7 @@ export default function StoreLocator() {
             )}
           </Panel>
 
-          {/* Panel 3 – Town */}
+          
           <Panel active={!!selectedDistrict} color="#8B5E3C" icon={<MapPin size={14} />} title={selectedDistrict ? `${selectedDistrict.name} Towns` : "Select District First"}>
             {!selectedDistrict ? (
               <EmptyState icon={<MapPin size={28} />} message="Select a district to see towns." />
@@ -304,7 +310,7 @@ export default function StoreLocator() {
             )}
           </Panel>
 
-          {/* Panel 4 – Stores */}
+          
           <Panel active={!!selectedTown} color="#D4A017" icon={<Store size={14} />} title={selectedTown ? `Stores in ${selectedTown.name}` : "Select Town First"}>
             {!selectedTown ? (
               <EmptyState icon={<Store size={28} />} message="Select a town to view stores." />
@@ -329,10 +335,10 @@ export default function StoreLocator() {
           </Panel>
         </div>
 
-        {/* ── Mobile / Tablet: accordion step-by-step ── */}
+        
         <div className="lg:hidden flex flex-col gap-3">
 
-          {/* Step 1 – Province */}
+          
           <MobileAccordion
             step={1}
             title="Province"
@@ -375,7 +381,7 @@ export default function StoreLocator() {
             </div>
           </MobileAccordion>
 
-          {/* Step 2 – District */}
+          
           {selectedProvince && (
             <MobileAccordion
               step={2}
@@ -419,7 +425,7 @@ export default function StoreLocator() {
             </MobileAccordion>
           )}
 
-          {/* Step 3 – Town */}
+          
           {selectedDistrict && (
             <MobileAccordion
               step={3}
@@ -455,7 +461,7 @@ export default function StoreLocator() {
             </MobileAccordion>
           )}
 
-          {/* Step 4 – Stores */}
+          
           {selectedTown && (
             <MobileAccordion
               step={4}
@@ -467,7 +473,7 @@ export default function StoreLocator() {
               onToggle={() => setMobileStep(4)}
             >
               <div style={{ padding: "8px" }}>
-                {/* Filter tabs */}
+                
                 <div className="flex flex-wrap gap-2 mb-3">
                   {["All", "Ayurvedic Store", "Pharmacy", "Health Center", "Supermarket"].map((f) => (
                     <button key={f} onClick={() => setActiveFilter(f)} style={{ backgroundColor: activeFilter === f ? "#2D5016" : "transparent", color: activeFilter === f ? "#FAF6EE" : "#6B4423", border: `1px solid ${activeFilter === f ? "#2D5016" : "rgba(45,80,22,0.2)"}`, padding: "4px 10px", borderRadius: "50px", fontSize: "0.72rem", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -487,7 +493,7 @@ export default function StoreLocator() {
           )}
         </div>
 
-        {/* Summary Bar */}
+        
         {selectedTown && (
           <div
             style={{
@@ -530,7 +536,7 @@ export default function StoreLocator() {
   );
 }
 
-// ── Shop Card ──────────────────────────────────────────────────────────────────
+
 function ShopCard({ shop }: { shop: Shop }) {
   const typeStyle = typeColors[shop.type];
   return (
@@ -561,7 +567,7 @@ function ShopCard({ shop }: { shop: Shop }) {
   );
 }
 
-// ── Mobile Accordion ──────────────────────────────────────────────────────────
+
 function MobileAccordion({
   step,
   title,

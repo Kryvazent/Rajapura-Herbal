@@ -1,4 +1,4 @@
-import product from "../models/product.js";
+import product from "../models/Product.js";
 
 export const getAllProducts = async () => {
 
@@ -14,3 +14,13 @@ export const getProductsByPage = async (skip, limit) => {
 
     return await product.find({}).skip(skip).limit(limit);
 }
+
+export const addProduct = async (productData) => {
+
+    const newProduct = new product(productData);
+    return await newProduct.save();
+};
+
+export const deleteProduct = async (id) => {
+    return await product.findByIdAndDelete(id);
+};
