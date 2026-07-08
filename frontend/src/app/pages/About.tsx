@@ -1,5 +1,6 @@
 import { Leaf, Award, Globe } from "lucide-react";
 import { Link } from "react-router";
+import CompanyLogo from "/CompanyLogo.jpg";
 
 const milestones = [
   { year: "1826", title: "Founded in Nuwara Eliya", desc: "Vaidya Rajapura Senanayake establishes the first herbal preparation centre in the highlands of Sri Lanka." },
@@ -19,7 +20,7 @@ const team = [
 export default function About() {
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      
+
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -48,7 +49,7 @@ export default function About() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-12 sm:py-20">
 
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8 mb-14 sm:mb-16">
           {[
             { icon: Leaf, title: "Our Mission", text: "To preserve and share the authentic healing traditions of Sri Lankan Ayurveda, making pure herbal wellness accessible to all." },
@@ -75,27 +76,42 @@ export default function About() {
           ))}
         </div>
 
-        
+
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
           <div className="order-2 lg:order-2">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Story</span>
+            {/* <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>About The Company</span> */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
-              From the Mountains of<br />
-              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>Nuwara Eliya</span>
+              About The 
+              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}> Company</span>
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Our story begins in 1826, high in the misty highlands of Nuwara Eliya, where Vaidya Rajapura Senanayake, a renowned Ayurvedic physician, began documenting the healing properties of local mountain herbs.
+              RajapuraHerbal  Drugs co.(pvt)  ltd, is the  leading
+              manufacturing   and   distributing   of   herbal   medical
+              products  in  the  huge  of the  Sri Lankan market  and  the
+              registered  as  the   legal   limited  company  under  the  law of
+              government of Sri Lanka.
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Through British colonial rule, independence, and modernization, the Rajapura family kept the flame of traditional Ayurveda alive. Each generation mastered the ancient texts and added their own observations.
+              Dr. SumithRajapura is The founder of RajapuraHerbal Drugs co.(pvt) ltd,
+              and  also this  is the traditional  herbal  treatments  system develop  with
+              experiences, knowledge, graduated as Ayurveda treatments and practice from
+              his  family  history of  more  than 100 years  ago, many of  patients  of Sri Lanka.
+              Asthma, Gastritis and Arthritis use these treatments and 100% undergone only by
+              RajapuraHerbal Medical treatments.
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
-              Today, under the guidance of Dr. Arjuna Rajapura, the seventh generation, we combine this timeless wisdom with modern quality standards. Every product is still prepared according to classical methods.
+              Sri Lanka is a country rich of heritage, one of which is its indigenous system of Medicine,
+              which has been practiced by the people since time immemorial. The Ayurveda system of
+              medicine from North India, the Siddha system of medicine from South India and the Unani
+              system of medicine of Arabs enriched with contributions from the traditional system of
+              medicine called DESHEEYA CHIKITHSA is popularly known as the Indigenous system of
+              medicine in Sri Lanka.
             </p>
           </div>
           <div className="order-1 lg:order-1">
             <img
-              src="https://images.unsplash.com/photo-1708667027894-6e9481ae1baf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBtZWRpY2luZSUyMGdyZWVuJTIwbGVhdmVzJTIwb3JnYW5pY3xlbnwxfHx8fDE3NzIwMzUxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+              // src="https://images.unsplash.com/photo-1708667027894-6e9481ae1baf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBtZWRpY2luZSUyMGdyZWVuJTIwbGVhdmVzJTIwb3JnYW5pY3xlbnwxfHx8fDE3NzIwMzUxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
+              src={CompanyLogo}
               alt="Herbal leaves"
               style={{ width: "100%", height: "clamp(280px, 40vw, 460px)", objectFit: "cover", borderRadius: "20px", boxShadow: "0 20px 60px rgba(45,80,22,0.15)", display: "block" }}
             />
@@ -104,34 +120,42 @@ export default function About() {
 
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
           <div className="order-2 lg:order-1">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Founder's Story</span>
+            {/* <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Founder's Story</span> */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
-              Healing Through Generations:<br />
+              Founder's Story<br />
               <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>The Story of Dr. Rajapura</span>
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              For over three decades, Dr. Wiswamithra Rajapura has bridged the gap between ancient Vedic wisdom and modern wellness. Born into a lineage of traditional Ayurveda practitioners, his childhood was defined by the scents of drying herbs, crushed roots, and simmering oils.
-            </p>
-            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              Dr. Sumith Rajapura is The founder of Rajapura Herbel Drugs co.(pvt) Itd, and also this is
+              the traditional herbal treatments system develop with experiences, knowledge,
+              graduated as Ayurveda treatments and practice from his family history of more than
+              100 years ago, many of the patients of Sri Lanka Asthma, Gastritis, and Arthritis use
+              these treatments and 100% undergone only Rajapura Herbal Medical treatments.            </p>
+            {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               He watched his grandfather heal villagers using nothing but nature and deep empathy. This sparked a lifelong calling to preserve Sri Lanka's authentic herbal heritage.
-            </p>
+            </p> */}
             <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>The Vision</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Dr. Rajapura observed a growing global shift toward synthetic medicine. He saw people treating symptoms while ignoring the root cause of illness.
+              To provide the quality treatments to
+              our esteemed customers with the
+              herb.
             </p>
-            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+            {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               Determined to offer a holistic alternative, he founded Rajapura Herbal. His mission was simple: make time-tested, premium Ayurvedic remedies accessible to the modern world without compromising on purity.
-            </p>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>Earth to Bottle</h3>
+            </p> */}
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>The Mission</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Dr. Rajapura personally oversees the sourcing of every ingredient. He collaborates directly with local organic farmers in Sri Lanka.
+              By produce and introduce best herbal
+              medicine product and keep long-term
+              relationship with our customers.
             </p>
-            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+            {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               He ensures that plants are harvested at their peak potency according to traditional lunar cycles. Every formulation blends ancient palm-leaf manuscript recipes with rigorous modern quality standards.
-            </p>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>A Legacy of Trust</h3>
+            </p> */}
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>Our Goals</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
-              Today, Dr. Rajapura is more than a formulator; he is a guide to balanced living. He believes that true healing requires harmony between body, mind, and spirit. Through Rajapura Herbal, his family's legacy continues to restore vitality and wellness to thousands of homes worldwide.
+              Be a leader of the herbal medicine product
+              manufacturing and distributing.
             </p>
           </div>
           <div className="order-1 lg:order-2">
@@ -143,7 +167,7 @@ export default function About() {
           </div>
         </div>
 
-        
+
         <div className="mb-14 sm:mb-20">
           <div className="text-center mb-10 sm:mb-12">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Journey</span>
@@ -173,7 +197,7 @@ export default function About() {
           </div>
         </div>
 
-        
+
         <div>
           <div className="text-center mb-10 sm:mb-12">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our People</span>
@@ -206,7 +230,7 @@ export default function About() {
         </div>
       </section>
 
-      
+
       <section style={{ backgroundColor: "#F0EAD6", padding: "clamp(40px, 8vw, 60px) 24px", textAlign: "center" }}>
         <Leaf size={32} style={{ color: "#2D5016", margin: "0 auto 16px", display: "block" }} />
         <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginBottom: "14px" }}>
