@@ -69,9 +69,10 @@ export const productValidators = [
     .withMessage("Description cannot exceed 1000 characters"),
 
   body("product.price")
-    .notEmpty()
-    .withMessage("Price is required")
-    .withMessage("Price must be a valid positive number"),
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Price cannot exceed 50 characters"),
 
   body("product.image")
     .trim()

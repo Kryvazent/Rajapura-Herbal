@@ -77,27 +77,68 @@ export default function About() {
 
         
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
-          <div className="order-2 lg:order-1">
+          <div className="order-2 lg:order-2">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Story</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
               From the Mountains of<br />
               <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>Nuwara Eliya</span>
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Our story begins in 1826, high in the misty highlands of Nuwara Eliya, where Vaidya Rajapura Senanayake — a renowned Ayurvedic physician — began documenting the healing properties of local mountain herbs.
+              Our story begins in 1826, high in the misty highlands of Nuwara Eliya, where Vaidya Rajapura Senanayake, a renowned Ayurvedic physician, began documenting the healing properties of local mountain herbs.
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               Through British colonial rule, independence, and modernization, the Rajapura family kept the flame of traditional Ayurveda alive. Each generation mastered the ancient texts and added their own observations.
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
-              Today, under the guidance of Dr. Arjuna Rajapura — the seventh generation — we combine this timeless wisdom with modern quality standards. Every product is still prepared according to classical methods.
+              Today, under the guidance of Dr. Arjuna Rajapura, the seventh generation, we combine this timeless wisdom with modern quality standards. Every product is still prepared according to classical methods.
             </p>
           </div>
-          <div className="order-1 lg:order-2">
+          <div className="order-1 lg:order-1">
             <img
               src="https://images.unsplash.com/photo-1708667027894-6e9481ae1baf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBtZWRpY2luZSUyMGdyZWVuJTIwbGVhdmVzJTIwb3JnYW5pY3xlbnwxfHx8fDE3NzIwMzUxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
               alt="Herbal leaves"
               style={{ width: "100%", height: "clamp(280px, 40vw, 460px)", objectFit: "cover", borderRadius: "20px", boxShadow: "0 20px 60px rgba(45,80,22,0.15)", display: "block" }}
+            />
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
+          <div className="order-2 lg:order-1">
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Founder's Story</span>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
+              Healing Through Generations:<br />
+              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>The Story of Dr. Rajapura</span>
+            </h2>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              For over three decades, Dr. Wiswamithra Rajapura has bridged the gap between ancient Vedic wisdom and modern wellness. Born into a lineage of traditional Ayurveda practitioners, his childhood was defined by the scents of drying herbs, crushed roots, and simmering oils.
+            </p>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              He watched his grandfather heal villagers using nothing but nature and deep empathy. This sparked a lifelong calling to preserve Sri Lanka's authentic herbal heritage.
+            </p>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>The Vision</h3>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              Dr. Rajapura observed a growing global shift toward synthetic medicine. He saw people treating symptoms while ignoring the root cause of illness.
+            </p>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              Determined to offer a holistic alternative, he founded Rajapura Herbal. His mission was simple: make time-tested, premium Ayurvedic remedies accessible to the modern world without compromising on purity.
+            </p>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>Earth to Bottle</h3>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              Dr. Rajapura personally oversees the sourcing of every ingredient. He collaborates directly with local organic farmers in Sri Lanka.
+            </p>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
+              He ensures that plants are harvested at their peak potency according to traditional lunar cycles. Every formulation blends ancient palm-leaf manuscript recipes with rigorous modern quality standards.
+            </p>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>A Legacy of Trust</h3>
+            <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
+              Today, Dr. Rajapura is more than a formulator; he is a guide to balanced living. He believes that true healing requires harmony between body, mind, and spirit. Through Rajapura Herbal, his family's legacy continues to restore vitality and wellness to thousands of homes worldwide.
+            </p>
+          </div>
+          <div className="order-1 lg:order-2">
+            <img
+              src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080"
+              alt="Dr. Rajapura"
+              style={{ width: "100%", height: "clamp(360px, 52vw, 640px)", objectFit: "cover", objectPosition: "center", borderRadius: "20px", boxShadow: "0 20px 60px rgba(45,80,22,0.15)", display: "block" }}
             />
           </div>
         </div>

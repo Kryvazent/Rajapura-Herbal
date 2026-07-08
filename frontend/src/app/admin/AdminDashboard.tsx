@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 
+const getProductPriceLabel = (price?: string) =>
+  price?.trim() ? price : "Contact for price";
+
 export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -332,7 +335,7 @@ export default function AdminDashboard() {
                       flexShrink: 0,
                     }}
                   >
-                    {p.price}
+                    {getProductPriceLabel(p.price)}
                   </span>
                 </div>
               ))

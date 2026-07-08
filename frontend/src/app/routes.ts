@@ -5,6 +5,7 @@ import Products from "./pages/Products";
 import StoreLocator from "./pages/StoreLocator";
 import About from "./pages/About";
 import Services from "./pages/Services";
+import NotFound from "./pages/NotFound";
 import AdminLogin from "./admin/AdminLogin";
 import AdminLayout from "./admin/AdminLayout";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "services", Component: Services },
       { path: "store-locator", Component: StoreLocator },
       { path: "about", Component: About },
+      { path: "*", Component: NotFound },
     ],
   },
   { path: "/admin", Component: AdminLogin },
@@ -37,6 +39,7 @@ export const router = createBrowserRouter([
       { path: "services", Component: AdminServices },
       { path: "users", Component: AdminUsers },
       { path: "profile", Component: AdminProfile },
+      { path: "*", Component: NotFound },
     ],
   },
 ]);

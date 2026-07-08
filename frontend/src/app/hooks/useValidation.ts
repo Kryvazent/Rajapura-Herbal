@@ -28,7 +28,6 @@ export const useValidation = () => {
     if (!product.name?.trim()) newErrors.name = "Product name is required";
     if (!product.sinhalaName?.trim()) newErrors.sinhalaName = "Sinhala name required";
     if (!product.category?.trim()) newErrors.category = "Category required";
-    if (!product.price || isNaN(Number(product.price))) newErrors.price = "Valid price required";
     
     setErrors(newErrors);
     setIsValid(Object.keys(newErrors).length === 0);
