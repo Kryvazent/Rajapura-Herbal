@@ -30,6 +30,7 @@ const CATEGORIES = [
 ];
 
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
+const VALID_BADGES = BADGES.filter(Boolean);
 
 
 interface FormErrors {
@@ -107,7 +108,7 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
     errors.image = "Must be a valid image URL.";
   }
 
-  if (form.badge && !["Bestseller", "Premium", "New", "Organic"].includes(form.badge)) {
+  if (form.badge && !VALID_BADGES.includes(form.badge)) {
     errors.badge = "Invalid badge value.";
   }
 
@@ -581,6 +582,7 @@ export default function AdminProducts() {
       benefits: [...rest.benefits],
       ingredients: [...rest.ingredients],
       howToUse: [...(rest.howToUse ?? [])],
+      badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
     });
     setFormErrors({});
     setUploadProgress(0);
@@ -1066,7 +1068,6 @@ export default function AdminProducts() {
             padding: "24px",
             overflowY: "auto",
           }}
-          onClick={(e) => e.target === e.currentTarget && setModalMode(null)}
         >
           <div
             style={{

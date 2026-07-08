@@ -82,7 +82,7 @@ export const productValidators = [
     .withMessage("Image must be a valid URL"),
 
   body("product.badge")
-    .optional({ nullable: true })
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(["Bestseller", "Premium", "New", "Organic"])
     .withMessage("Badge must be one of: Bestseller, Premium, New, Organic"),
 
