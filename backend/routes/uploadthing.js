@@ -12,7 +12,7 @@ export const uploadRouter = {
         maxFileCount: 1,
       },
     },
-    { awaitServerData: false }
+    { awaitServerData: true }
   )
     .middleware(({ req }) => {
       const isAllowedRole =
