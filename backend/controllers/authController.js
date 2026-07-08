@@ -60,7 +60,18 @@ export const logout = (req, res) => {
       console.error("Logout error:", err);
       return res.status(500).json({ success: false, message: "Could not log out" });
     }
-    res.clearCookie("connect.sid");
+    const isHosted = Boolean(
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL ||
+      process.env.RAILWAY_ENVIRONMENT ||
+      process.env.RAILWAY_PUBLIC_DOMAIN ||
+      process.env.RAILWAY_STATIC_URL
+    );
+    res.clearCookie("connect.sid", {
+      httpOnly: true,
+      secure: isHosted,
+      sameSite: isHosted ? "none" : "lax",
+    });
     res.status(200).json({ success: true, message: "Logged out successfully" });
   });
 };

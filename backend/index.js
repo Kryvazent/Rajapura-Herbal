@@ -15,7 +15,13 @@ dotenv.config({ path: new URL(".env", import.meta.url) });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
-const isProduction = process.env.NODE_ENV === 'production' || isVercel;
+const isRailway = Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    process.env.RAILWAY_STATIC_URL
+);
+const isProduction =
+    process.env.NODE_ENV === 'production' || isVercel || isRailway;
 const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
 const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
@@ -49,7 +55,7 @@ const sessionConfig = {
         secure: isProduction,
         maxAge: 60 * 60 * 1000,
         sameSite: isProduction ? 'none' : 'lax',
-        httpOnly: true       
+        httpOnly: true
     }
 };
 
