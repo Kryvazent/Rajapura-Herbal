@@ -15,6 +15,7 @@ dotenv.config({ path: new URL(".env", import.meta.url) });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
+const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
 const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
@@ -46,51 +47,87 @@ const sessionConfig = {
     }
 };
 
-if (process.env.MONGO_URL) {
-    sessionConfig.store = MongoStore.create({
-        mongoUrl: process.env.MONGO_URL,
-        collectionName: 'sessions'
-    });
+if (mongoUrl) {
+    try {
+        sessionConfig.store = MongoStore.create({
+            mongoUrl,
+            collectionName: 'sessions'
+        });
+    } catch (error) {
+        console.error("Failed to create Mongo session store:", error);
+    }
 } else {
     console.error("MONGO_URL is missing. Session persistence and database routes will not work.");
 }
 
 app.use(session(sessionConfig));
 
-app.use("/auth", authRoutes);
-app.use("/admin/uploadthing", uploadThingRouter);
-app.use("/admin",authMiddleware.verifyLoggin, authMiddleware.verifyUserRoleBoth, adminRoutes);
-app.use("/user", userRoutes);
-
-app.get("/", (req, res) => {
-    res.send("Welcome to the Rajapura Herbal API");
-});
-
+let dbConnectionPromise = null;
 const connectDB = async () => {
-    if (!process.env.MONGO_URL) {
-        console.error("MONGO_URL is required to connect to MongoDB");
-        return;
+    if (!mongoUrl) {
+        throw new Error("MONGO_URL or MONGODB_URI is required to connect to MongoDB");
     }
 
     if (mongoose.connection.readyState >= 1) {
         return;
     }
 
-    await mongoose.connect(process.env.MONGO_URL);
+    if (!dbConnectionPromise) {
+        dbConnectionPromise = mongoose.connect(mongoUrl).catch((error) => {
+            dbConnectionPromise = null;
+            throw error;
+        });
+    }
+
+    await dbConnectionPromise;
 };
 
-connectDB()
-    .then(() => {
-        console.log('Connected to MongoDB');
+const requireDatabase = async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("Database connection error:", error);
+        res.status(503).json({
+            success: false,
+            message: "Database connection is not available",
+        });
+    }
+};
 
-        if (!isVercel) {
+app.use("/auth", requireDatabase, authRoutes);
+app.use("/admin/uploadthing", uploadThingRouter);
+app.use("/admin", requireDatabase, authMiddleware.verifyLoggin, authMiddleware.verifyUserRoleBoth, adminRoutes);
+app.use("/user", requireDatabase, userRoutes);
+
+app.get("/", (req, res) => {
+    res.send("Welcome to the Rajapura Herbal API");
+});
+
+app.get("/health", async (req, res) => {
+    try {
+        await connectDB();
+        res.status(200).json({ success: true, database: "connected" });
+    } catch (error) {
+        res.status(503).json({
+            success: false,
+            database: "unavailable",
+            message: error.message,
+        });
+    }
+});
+
+if (!isVercel) {
+    connectDB()
+        .then(() => {
+            console.log('Connected to MongoDB');
             app.listen(PORT, () => {
                 console.log(`Server is running on port ${PORT}`);
             });
-        }
-    })
-    .catch((err) => {
-        console.error('Failed to connect to MongoDB', err);
-    });
+        })
+        .catch((err) => {
+            console.error('Failed to connect to MongoDB', err);
+        });
+}
 
 export default app;
