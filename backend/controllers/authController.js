@@ -110,7 +110,7 @@ export const changePassword = async (req, res) => {
   }
 
   try {
-    const User = (await import("../models/user.js")).default;
+    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId);
 
     if (!user) {
@@ -148,7 +148,7 @@ export const getMe = async (req, res) => {
     return res.status(401).json({ success: false, message: "Not logged in" });
   }
   try {
-    const User = (await import("../models/user.js")).default;
+    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -207,7 +207,7 @@ export const updateMe = async (req, res) => {
   }
 
   try {
-    const User = (await import("../models/user.js")).default;
+    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
