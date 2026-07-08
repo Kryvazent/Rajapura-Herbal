@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Image is required"],
       match: [
-        /(http[s]?:\/\/.*\.(?:png|jpg|jpeg|gif|webp))/i,
+        /^https?:\/\/\S+$/i,
         "Please provide a valid image URL",
       ],
     },

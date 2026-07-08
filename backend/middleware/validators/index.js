@@ -76,7 +76,9 @@ export const productValidators = [
   body("product.image")
     .trim()
     .notEmpty()
-    .withMessage("Image URL is required"),
+    .withMessage("Image URL is required")
+    .isURL({ protocols: ["http", "https"], require_protocol: true })
+    .withMessage("Image must be a valid URL"),
 
   body("product.badge")
     .optional({ nullable: true })

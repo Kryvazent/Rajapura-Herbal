@@ -55,7 +55,7 @@ export function Navbar() {
           </Link>
 
           
-          <div className="hidden md:flex items-center gap-6 lg:gap-8">
+          <div className="rajapura-desktop-nav hidden md:flex items-center gap-6 lg:gap-8">
             {links.map((link) => (
               <Link
                 key={link.to}
@@ -78,7 +78,7 @@ export function Navbar() {
           </div>
 
           
-          <div className="hidden md:block">
+          <div className="rajapura-desktop-cta hidden md:block">
             <Link
               to="/store-locator"
               style={{
@@ -99,7 +99,7 @@ export function Navbar() {
 
           
           <button
-            className="md:hidden flex items-center justify-center"
+            className="rajapura-mobile-toggle md:hidden flex items-center justify-center"
             style={{ color: "#2D5016", background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px" }}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
@@ -112,6 +112,7 @@ export function Navbar() {
       
       {menuOpen && (
         <div
+          className="rajapura-mobile-overlay"
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(14,26,8,0.55)", zIndex: 40 }}
           onClick={close}
         />
@@ -119,6 +120,7 @@ export function Navbar() {
 
       
       <div
+        className="rajapura-mobile-drawer"
         style={{
           position: "fixed",
           top: 0,
@@ -212,6 +214,30 @@ export function Navbar() {
           </Link>
         </div>
       </div>
+      <style>{`
+        @media (min-width: 768px) {
+          .rajapura-desktop-nav {
+            display: flex !important;
+          }
+
+          .rajapura-desktop-cta {
+            display: block !important;
+          }
+
+          .rajapura-mobile-toggle,
+          .rajapura-mobile-overlay,
+          .rajapura-mobile-drawer {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .rajapura-desktop-nav,
+          .rajapura-desktop-cta {
+            display: none !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

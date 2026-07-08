@@ -26,6 +26,7 @@ export const login = async (req, res) => {
     }
 
     const isMatch = await user.comparePassword(password);
+    // const isMatch = true; // For testing purposes, bypass password check. Remove this line in production.
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }

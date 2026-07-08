@@ -8,6 +8,7 @@ import MongoStore from 'connect-mongo';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js'
+import { uploadThingRouter } from './routes/uploadthing.js';
 import * as authMiddleware from './middleware/auth.js';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use(session({
 }));
 
 app.use("/auth", authRoutes);
+app.use("/admin/uploadthing", uploadThingRouter);
 app.use("/admin",authMiddleware.verifyLoggin, authMiddleware.verifyUserRoleBoth, adminRoutes);
 app.use("/user", userRoutes);
 
