@@ -11,31 +11,51 @@ import authRoutes from './routes/authRoutes.js'
 import { uploadThingRouter } from './routes/uploadthing.js';
 import * as authMiddleware from './middleware/auth.js';
 
-dotenv.config();
+dotenv.config({ path: new URL(".env", import.meta.url) });
 const app = express();
+const PORT = process.env.PORT || 3000;
+const isVercel = Boolean(process.env.VERCEL);
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use(session({
-    secret: process.env.SESSION_SECRET,
+
+const sessionConfig = {
+    secret: process.env.SESSION_SECRET || "development-session-secret",
     rolling: true,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGO_URL,
-        collectionName: 'sessions'
-    }),
     cookie: {
-        secure: process.env.NODE_ENV === 'production',           
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 1000,
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         httpOnly: true       
     }
-}));
+};
+
+if (process.env.MONGO_URL) {
+    sessionConfig.store = MongoStore.create({
+        mongoUrl: process.env.MONGO_URL,
+        collectionName: 'sessions'
+    });
+} else {
+    console.error("MONGO_URL is missing. Session persistence and database routes will not work.");
+}
+
+app.use(session(sessionConfig));
 
 app.use("/auth", authRoutes);
 app.use("/admin/uploadthing", uploadThingRouter);
@@ -46,14 +66,31 @@ app.get("/", (req, res) => {
     res.send("Welcome to the Rajapura Herbal API");
 });
 
-mongoose.connect(process.env.MONGO_URL)
+const connectDB = async () => {
+    if (!process.env.MONGO_URL) {
+        console.error("MONGO_URL is required to connect to MongoDB");
+        return;
+    }
+
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
+
+    await mongoose.connect(process.env.MONGO_URL);
+};
+
+connectDB()
     .then(() => {
         console.log('Connected to MongoDB');
 
-        app.listen(3000, () => {
-            console.log('Server is running on port 3000');
-        });
+        if (!isVercel) {
+            app.listen(PORT, () => {
+                console.log(`Server is running on port ${PORT}`);
+            });
+        }
     })
     .catch((err) => {
         console.error('Failed to connect to MongoDB', err);
     });
+
+export default app;
