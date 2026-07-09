@@ -10,10 +10,14 @@ import {
   ChevronRight,
   User,
   Leaf,
+  CircleHelp,
 } from "lucide-react";
 import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
 import Logo from "../components/Logo";
+import AdminTour, { AdminTourStep } from "./AdminTour";
+
+const ADMIN_TOUR_STORAGE_KEY = "rajapuraAdminTourCompleted";
 
 const navItems = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +42,7 @@ export default function AdminLayout() {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser>({});
   const [role, setRole] = useState("");
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     const localFlag = localStorage.getItem("mustChangePassword") === "true";
@@ -62,6 +67,10 @@ export default function AdminLayout() {
         } else if (res.data.authenticated) {
           setRole(res.data.role);
           setIsLoading(false);
+          if (!localStorage.getItem(ADMIN_TOUR_STORAGE_KEY)) {
+            setTourOpen(true);
+            setSidebarOpen(true);
+          }
 
           try {
             const profileRes = await axios.get(
@@ -93,6 +102,21 @@ export default function AdminLayout() {
   const handlePasswordChanged = () => {
     setMustChangePassword(false);
     localStorage.removeItem("mustChangePassword");
+    if (!localStorage.getItem(ADMIN_TOUR_STORAGE_KEY)) {
+      setTourOpen(true);
+      setSidebarOpen(true);
+    }
+  };
+
+  const closeTour = () => {
+    localStorage.setItem(ADMIN_TOUR_STORAGE_KEY, "true");
+    setTourOpen(false);
+    setSidebarOpen(false);
+  };
+
+  const startTour = () => {
+    setSidebarOpen(true);
+    setTourOpen(true);
   };
 
   const handleLogout = async () => {
@@ -191,6 +215,66 @@ export default function AdminLayout() {
     if (to === "/admin/users" && role === "STAFF") return false;
     return true;
   });
+
+  const tourSteps: AdminTourStep[] = [
+    {
+      title: "Welcome to the admin panel",
+      description:
+        "This short guide shows where to manage each part of the website and why each area matters. You can leave at any time and restart it from the help button.",
+    },
+    {
+      selector: '[data-tour="dashboard"]',
+      title: "Dashboard",
+      description:
+        "Start here for a quick overview of products, stores, services, and recent activity. It helps you spot what needs attention before making changes.",
+    },
+    {
+      selector: '[data-tour="products"]',
+      title: "Products",
+      description:
+        "Add, edit, and remove herbal products here. Keep product details and images accurate so visitors can confidently understand what each remedy offers.",
+    },
+    {
+      selector: '[data-tour="stores"]',
+      title: "Stores",
+      description:
+        "Manage provinces, districts, towns, and store contact details. This keeps the public store finder useful and prevents customers from travelling to outdated locations.",
+    },
+    {
+      selector: '[data-tour="services"]',
+      title: "Services",
+      description:
+        "Maintain service centres and the treatments available at each location. Clear service information helps visitors choose the right centre before contacting the team.",
+    },
+    ...(role === "STAFF"
+      ? []
+      : [
+          {
+            selector: '[data-tour="users"]',
+            title: "Users",
+            description:
+              "Create staff accounts, assign access, and disable accounts that should no longer use the admin panel. Review this area whenever team responsibilities change.",
+          },
+        ]),
+    {
+      selector: '[data-tour="profile"]',
+      title: "Your profile",
+      description:
+        "Review your account details and update your password here. Keeping individual accounts current makes administrative activity safer and easier to manage.",
+    },
+    {
+      selector: '[data-tour="view-site"]',
+      title: "Check the public website",
+      description:
+        "Open the public site after making changes to confirm that products, locations, and services appear as expected to visitors.",
+    },
+    {
+      selector: '[data-tour="help"]',
+      title: "Return to this guide",
+      description:
+        "Select this help button whenever you want to take the tour again. The guide remains available even after the first-time walkthrough is finished.",
+    },
+  ];
 
   
 
@@ -306,6 +390,7 @@ export default function AdminLayout() {
               <Link
                 key={to}
                 to={to}
+                data-tour={label.toLowerCase()}
                 onClick={() => setSidebarOpen(false)}
                 style={{
                   display: "flex",
@@ -356,6 +441,7 @@ export default function AdminLayout() {
         >
           
           <button
+            data-tour="profile"
             onClick={() => {
               navigate("/admin/profile");
               setSidebarOpen(false);
@@ -501,7 +587,29 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              data-tour="help"
+              onClick={startTour}
+              title="Open admin guide"
+              aria-label="Open admin guide"
+              style={{
+                width: "34px",
+                height: "34px",
+                border: "1px solid rgba(45,80,22,0.22)",
+                backgroundColor: "#FAF6EE",
+                color: "#2D5016",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                borderRadius: "8px",
+              }}
+            >
+              <CircleHelp size={17} />
+            </button>
             <a
+              data-tour="view-site"
               href="/"
               target="_blank"
               rel="noreferrer"
@@ -542,6 +650,7 @@ export default function AdminLayout() {
           100% { transform: rotate(360deg); }
         }
       `}</style>
+      <AdminTour open={tourOpen} steps={tourSteps} onClose={closeTour} />
     </div>
   );
 }
