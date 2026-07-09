@@ -1,5 +1,14 @@
 import { Link } from "react-router";
-import { Leaf, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import {
+  Leaf,
+  Phone,
+  Mail,
+  MapPin,
+  Facebook,
+  Instagram,
+  Twitter,
+  ExternalLink,
+} from "lucide-react";
 import Logo from "./Logo";
 
 export function Footer() {
@@ -197,6 +206,28 @@ export function Footer() {
           <p style={{ color: "#618C3A", fontSize: "0.8rem", margin: 0 }}>
             {informationText[0].copyright}
           </p>
+          <a
+            href="https://www.kryvazent.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Visit Kryvazent website"
+            style={{
+              color: "#FAF6EE",
+              backgroundColor: "rgba(212,160,23,0.14)",
+              border: "1px solid rgba(212,160,23,0.55)",
+              borderRadius: "6px",
+              padding: "9px 14px",
+              textDecoration: "none",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+            }}
+          >
+            Developed by <span style={{ color: "#D4A017" }}>Kryvazent</span>
+            <ExternalLink size={14} />
+          </a>
           <div className="flex gap-6">
             {["Privacy Policy", "Terms of Use", "Quality Guarantee"].map((item) => (
               <span
