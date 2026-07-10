@@ -16,15 +16,16 @@ import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
 import Logo from "../components/Logo";
 import AdminTour, { AdminTourStep } from "./AdminTour";
+import { adminPath } from "./adminPaths";
 
 const ADMIN_TOUR_STORAGE_KEY = "rajapuraAdminTourCompleted";
 
 const navItems = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/stores", label: "Stores", icon: Store },
-  { to: "/admin/services", label: "Services", icon: Sparkles },
-  { to: "/admin/users", label: "Users", icon: User },
+  { to: adminPath("dashboard"), label: "Dashboard", icon: LayoutDashboard },
+  { to: adminPath("products"), label: "Products", icon: Package },
+  { to: adminPath("stores"), label: "Stores", icon: Store },
+  { to: adminPath("services"), label: "Services", icon: Sparkles },
+  { to: adminPath("users"), label: "Users", icon: User },
 ];
 
 interface CurrentUser {
@@ -63,7 +64,7 @@ export default function AdminLayout() {
           setMustChangePassword(true);
           localStorage.setItem("mustChangePassword", "true");
           setIsLoading(false);
-          navigate("/admin");
+          navigate(adminPath());
         } else if (res.data.authenticated) {
           setRole(res.data.role);
           setIsLoading(false);
@@ -86,13 +87,13 @@ export default function AdminLayout() {
         } else {
           setIsLoading(false);
           localStorage.removeItem("adminAuth");
-          navigate("/admin");
+          navigate(adminPath());
         }
       } catch (error) {
         console.error("Auth check error:", error);
         setIsLoading(false);
         localStorage.removeItem("adminAuth");
-        navigate("/admin");
+        navigate(adminPath());
       }
     };
 
@@ -130,7 +131,7 @@ export default function AdminLayout() {
       console.error("Logout error:", err);
     } finally {
       localStorage.removeItem("adminAuth");
-      navigate("/admin");
+      navigate(adminPath());
     }
   };
 
@@ -194,7 +195,7 @@ export default function AdminLayout() {
   const isActive = (to: string) => location.pathname === to;
 
   const currentPage =
-    location.pathname === "/admin/profile"
+    location.pathname === adminPath("profile")
       ? "My Profile"
       : (navItems.find((n) => isActive(n.to))?.label ?? "Admin");
 
@@ -212,7 +213,7 @@ export default function AdminLayout() {
 
   
   const visibleNavItems = navItems.filter(({ to }) => {
-    if (to === "/admin/users" && role === "STAFF") return false;
+    if (to === adminPath("users") && role === "STAFF") return false;
     return true;
   });
 
@@ -443,17 +444,17 @@ export default function AdminLayout() {
           <button
             data-tour="profile"
             onClick={() => {
-              navigate("/admin/profile");
+              navigate(adminPath("profile"));
               setSidebarOpen(false);
             }}
             style={{
               width: "100%",
               backgroundColor:
-                location.pathname === "/admin/profile"
+                location.pathname === adminPath("profile")
                   ? "rgba(139,195,74,0.15)"
                   : "rgba(139,195,74,0.07)",
               border:
-                location.pathname === "/admin/profile"
+                location.pathname === adminPath("profile")
                   ? "1px solid rgba(139,195,74,0.3)"
                   : "1px solid transparent",
               borderRadius: "12px",

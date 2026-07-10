@@ -102,6 +102,14 @@ export const productValidators = [
     .withMessage("How to use must be an array"),
 ];
 
+export const deleteProductValidators = [
+  body("id")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .isMongoId()
+    .withMessage("Invalid product ID format"),
+];
+
 
 export const provinceValidators = [
   body("province")

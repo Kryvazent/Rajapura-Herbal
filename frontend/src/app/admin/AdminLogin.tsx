@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Leaf, Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react";
 import axios from "axios";
+import { adminPath } from "./adminPaths";
 
 interface FieldErrors {
   username?: string;
@@ -21,7 +22,7 @@ export default function AdminLogin() {
   useEffect(() => {
     const loggedin = localStorage.getItem("adminAuth");
     if (loggedin) {
-      navigate("/admin/dashboard");
+      navigate(adminPath("dashboard"));
     } else {
       setIsChecking(false);
     }
@@ -75,7 +76,7 @@ export default function AdminLogin() {
         } else {
           localStorage.removeItem("mustChangePassword");
         }
-        navigate("/admin/dashboard");
+        navigate(adminPath("dashboard"));
       }
     } catch (err: any) {
       if (err.response?.status === 401) {

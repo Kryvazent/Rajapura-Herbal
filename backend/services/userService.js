@@ -1,5 +1,8 @@
 import User from "../models/User.js";
 
+const escapeRegExp = (value) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const getAllStaff = async () => {
   return await User.find({ role: { $in: ["ADMIN", "STAFF"] } })
     .select("-password")
@@ -55,7 +58,8 @@ export const toggleUserStatus = async (id) => {
 };
 
 export const searchUsers = async (query) => {
-  const regex = new RegExp(query, "i");
+  const safeQuery = escapeRegExp(query.slice(0, 100));
+  const regex = new RegExp(safeQuery, "i");
   return await User.find({
     role: { $in: ["ADMIN", "STAFF"] },
     $or: [

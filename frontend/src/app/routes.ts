@@ -14,6 +14,7 @@ import AdminStores from "./admin/AdminStores";
 import AdminServices from "./admin/AdminServices";
 import AdminUsers from "./admin/AdminUsers";
 import AdminProfile from "./admin/AdminProfile";
+import { ADMIN_BASE_PATH } from "./admin/adminPaths";
 
 export const router = createBrowserRouter([
   {
@@ -28,9 +29,9 @@ export const router = createBrowserRouter([
       { path: "*", Component: NotFound },
     ],
   },
-  { path: "/admin", Component: AdminLogin },
+  { path: ADMIN_BASE_PATH, Component: AdminLogin },
   {
-    path: "/admin",
+    path: ADMIN_BASE_PATH,
     Component: AdminLayout,
     children: [
       { path: "dashboard", Component: AdminDashboard },
