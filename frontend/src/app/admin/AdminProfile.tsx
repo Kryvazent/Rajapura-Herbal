@@ -17,6 +17,7 @@ import {
   Calendar,
 } from "lucide-react";
 import axios from "axios";
+import { adminPath } from "./adminPaths";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
@@ -367,7 +368,7 @@ export default function AdminProfile() {
         });
       } catch (err: any) {
         if (err.response?.status === 401) {
-          navigate("/admin");
+          navigate(adminPath());
         } else {
           showToast("Failed to load profile.", "error");
         }

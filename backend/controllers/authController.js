@@ -1,5 +1,11 @@
-
 import * as authService from "../services/authService.js";
+import User from "../models/User.js";
+
+const destroySession = (req) => {
+  req.session?.destroy((err) => {
+    if (err) console.error("Session destroy error:", err);
+  });
+};
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -25,27 +31,40 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!["ADMIN", "STAFF"].includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+      });
+    }
+
     const isMatch = await user.comparePassword(password);
     // const isMatch = true; // For testing purposes, bypass password check. Remove this line in production.
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    req.session.role = user.role;
-    req.session.userId = user._id;
-    
-    req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
-
-    req.session.save((err) => {
-      if (err) {
-        console.error("Session save error:", err);
-        return res.status(500).json({ success: false, message: "Session save failed" });
+    req.session.regenerate((regenErr) => {
+      if (regenErr) {
+        console.error("Session regenerate error:", regenErr);
+        return res.status(500).json({ success: false, message: "Session setup failed" });
       }
-      res.status(200).json({
-        success: true,
-        message: "Logged in successfully",
-        role: user.role,
-        mustChangePassword: user.flags?.mustChangePassword ?? false, 
+
+      req.session.role = user.role;
+      req.session.userId = user._id;
+      req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
+
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ success: false, message: "Session save failed" });
+        }
+        res.status(200).json({
+          success: true,
+          message: "Logged in successfully",
+          role: user.role,
+          mustChangePassword: user.flags?.mustChangePassword ?? false,
+        });
       });
     });
   } catch (error) {
@@ -76,22 +95,30 @@ export const logout = (req, res) => {
   });
 };
 
-export const status = (req, res) => {
+export const status = async (req, res) => {
   if (req.session && req.session.userId) {
+    try {
+      const user = await User.findById(req.session.userId).select("role status flags");
+      const isAllowed =
+        user && user.status === "ACTIVE" && ["ADMIN", "STAFF"].includes(user.role);
 
-    console.log("Session data:", {
-      userId: req.session.userId,
-      role: req.session.role,
-      mustChangePassword: req.session.mustChangePassword,
-    });
+      if (!isAllowed) {
+        destroySession(req);
+        return res.status(401).json({ success: false, authenticated: false });
+      }
 
-    console.log(req.session)
-    return res.status(200).json({
-      success: true,
-      authenticated: true,
-      role: req.session.role,
-      mustChangePassword: req.session.mustChangePassword ?? false, 
-    });
+      req.session.role = user.role;
+      req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
+      return res.status(200).json({
+        success: true,
+        authenticated: true,
+        role: user.role,
+        mustChangePassword: user.flags?.mustChangePassword ?? false,
+      });
+    } catch (error) {
+      console.error("status error:", error);
+      return res.status(500).json({ success: false, authenticated: false });
+    }
   }
   res.status(401).json({ success: false, authenticated: false });
 };
@@ -121,11 +148,14 @@ export const changePassword = async (req, res) => {
   }
 
   try {
-    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
+    }
+    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
+      destroySession(req);
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     const isMatch = await user.comparePassword(currentPassword);
@@ -159,12 +189,15 @@ export const getMe = async (req, res) => {
     return res.status(401).json({ success: false, message: "Not logged in" });
   }
   try {
-    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    req.session.role = user.role; 
+    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
+      destroySession(req);
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+    req.session.role = user.role;
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error("getMe error:", error);
@@ -218,10 +251,13 @@ export const updateMe = async (req, res) => {
   }
 
   try {
-    const User = (await import("../models/User.js")).default;
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
+    }
+    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
+      destroySession(req);
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     if (firstName !== undefined) user.firstName = firstName.trim();

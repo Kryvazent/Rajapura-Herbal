@@ -9,6 +9,7 @@ import { deleteUploadThingFile } from "./uploadthing.js";
 import {
   handleValidationErrors,
   productValidators,
+  deleteProductValidators,
   provinceValidators,
   updateProvinceValidators,
   deleteProvinceValidators,
@@ -46,6 +47,7 @@ router.post(
 );
 router.delete(
   "/delete-product",
+  deleteProductValidators,
   handleValidationErrors,
   productController.deleteProduct
 );

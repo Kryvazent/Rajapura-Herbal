@@ -1,7 +1,9 @@
 // backend/controllers/userController.js
+import crypto from "crypto";
 import * as userService from "../services/userService.js";
 
-const DEFAULT_TEMP_PASSWORD = "Welcome@123";
+const generateTempPassword = () =>
+  `${crypto.randomBytes(9).toString("base64url")}aA1!`;
 
 const formatMongooseError = (error) => {
   if (error.name === "ValidationError") {
@@ -52,10 +54,9 @@ export const createUser = async (req, res) => {
   if (!email?.trim()) return res.status(422).json({ success: false, message: "Email is required" });
   if (!["ADMIN", "STAFF"].includes(role)) return res.status(422).json({ success: false, message: "Role must be ADMIN or STAFF" });
 
-  // Use provided password or fall back to default temp password
   const finalPassword = (password && password.trim().length >= 6)
     ? password.trim()
-    : DEFAULT_TEMP_PASSWORD;
+    : generateTempPassword();
 
   // If no custom password was provided, user must change on first login
   const mustChangePassword = !password || password.trim().length < 6;
@@ -80,7 +81,7 @@ export const createUser = async (req, res) => {
       success: true,
       data: safeUser,
       // Tell the frontend what temp password was set so admin can share it
-      tempPassword: mustChangePassword ? DEFAULT_TEMP_PASSWORD : undefined,
+      tempPassword: mustChangePassword ? finalPassword : undefined,
     });
   } catch (error) {
     console.error("createUser error:", error);

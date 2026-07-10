@@ -1,5 +1,44 @@
 import User from "../models/User.js";
 
+export const verifyActiveAdminOrStaff = async (req, res, next) => {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = await User.findById(req.session.userId).select("role status");
+
+    if (!user) {
+      req.session.destroy((err) => {
+        if (err) console.error("Session destroy error:", err);
+      });
+
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (user.status === "DISABLED") {
+      req.session.destroy((err) => {
+        if (err) console.error("Session destroy error:", err);
+      });
+
+      return res.status(403).json({
+        message: "Your account has been disabled. Please contact support.",
+      });
+    }
+
+    req.session.role = user.role;
+
+    if (!["ADMIN", "STAFF"].includes(user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("verifyActiveAdminOrStaff error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const verifyCurrentRole = async (req, res, next) => {
   try {
     if (!req.session?.userId) {

@@ -3,6 +3,7 @@ import { Package, Store, MapPin, ChevronRight, TrendingUp, Leaf } from "lucide-r
 import { useEffect, useState } from "react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
+import { adminPath } from "./adminPaths";
 
 const getProductPriceLabel = (price?: string) =>
   price?.trim() ? price : "Contact for price";
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
       icon: Package,
       color: "#2D5016",
       bg: "rgba(45,80,22,0.08)",
-      link: "/admin/products",
+      link: adminPath("products"),
     },
     {
       label: "Provinces",
@@ -93,7 +94,7 @@ export default function AdminDashboard() {
       icon: MapPin,
       color: "#4A7C23",
       bg: "rgba(74,124,35,0.08)",
-      link: "/admin/stores",
+      link: adminPath("stores"),
     },
     {
       label: "Districts",
@@ -102,7 +103,7 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       color: "#8B5E3C",
       bg: "rgba(139,94,60,0.08)",
-      link: "/admin/stores",
+      link: adminPath("stores"),
     },
     {
       label: "Authorized Stores",
@@ -111,7 +112,7 @@ export default function AdminDashboard() {
       icon: Store,
       color: "#D4A017",
       bg: "rgba(212,160,23,0.1)",
-      link: "/admin/stores",
+      link: adminPath("stores"),
     },
   ];
 
@@ -260,7 +261,7 @@ export default function AdminDashboard() {
               Products
             </h3>
             <Link
-              to="/admin/products"
+              to={adminPath("products")}
               style={{
                 color: "#4A7C23",
                 fontSize: "0.8rem",
@@ -373,7 +374,7 @@ export default function AdminDashboard() {
               Store Coverage
             </h3>
             <Link
-              to="/admin/stores"
+              to={adminPath("stores")}
               style={{
                 color: "#4A7C23",
                 fontSize: "0.8rem",
