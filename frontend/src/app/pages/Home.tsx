@@ -348,7 +348,7 @@ export default function Home() {
           <div>
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1771576774943-3433ed2239f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxheXVydmVkaWMlMjBoZXJiYWwlMjBwcm9kdWN0cyUyMGJvdHRsZXMlMjBuYXR1cmFsfGVufDF8fHx8MTc3MjAzNTE2N3ww&ixlib=rb-4.1.0&q=80&w=1080"
+                src="/rajapura-product-collection.jpg"
                 alt="Herbal products"
                 style={{
                   width: "100%",
