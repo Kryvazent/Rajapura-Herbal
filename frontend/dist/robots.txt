@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /rh-admin-7q4m9x
+
+Sitemap: https://www.rajapuraherbal.lk/sitemap.xml
