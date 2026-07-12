@@ -4,6 +4,7 @@ export interface ServiceItem {
   description: string;
   duration: string;
   icon: string;
+  imageUrl?: string;
 }
 
 export interface Service {
@@ -19,5 +20,7 @@ export interface Service {
   lightColor: string;
   borderColor: string;
   description: string;
+  imageUrl?: string;
+  videoUrl?: string;
   services: ServiceItem[];
 }

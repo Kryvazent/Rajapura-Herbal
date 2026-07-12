@@ -5,7 +5,8 @@ const serviceItem = new mongoose.Schema({
   name: { type: String, required: true },
   description: String,
   duration: String,
-  icon: String
+  icon: String,
+  imageUrl: String
 });
 
 const service = new mongoose.Schema(
@@ -25,6 +26,8 @@ const service = new mongoose.Schema(
     lightColor: String,
     borderColor: String,
     description: String,
+    imageUrl: String,
+    videoUrl: String,
     
     services: [serviceItem]
   },

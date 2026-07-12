@@ -12,6 +12,7 @@ const sampleImages = [
   "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=85",
   "https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=1200&q=85",
 ];
+const sampleHeroImage = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=2200&q=90";
 // Public CC0 sample video. Replace with the final Rajapura treatment video later.
 const experienceVideo = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
@@ -21,7 +22,7 @@ const sampleLocations: Service[] = [
     address: "Colombo, Sri Lanka", mobile: "+94 77 000 0000", altMobile: "",
     mapLabel: "Colombo centre", icon: "🌿", color: "#173b2a",
     lightColor: "#eef4ed", borderColor: "#d7e2d5",
-    description: "A peaceful setting for personalised Ayurvedic therapies, restorative treatments and practical wellness guidance.",
+    description: "A peaceful setting for personalised Ayurvedic therapies, restorative treatments and practical wellness guidance.", imageUrl: "", videoUrl: "",
     services: [
       { id: -11, name: "Abhyanga Herbal Oil Massage", description: "A rhythmic full-body treatment using warm herbal oils to encourage deep relaxation.", duration: "60 minutes", icon: "🪷" },
       { id: -12, name: "Shirodhara", description: "A gentle stream of warm herbal oil traditionally used to calm and settle the mind.", duration: "45 minutes", icon: "💧" },
@@ -33,7 +34,7 @@ const sampleLocations: Service[] = [
     address: "Sri Lanka", mobile: "+94 77 000 0000", altMobile: "",
     mapLabel: "Retreat centre", icon: "✨", color: "#315a3d",
     lightColor: "#f1f5ed", borderColor: "#dce5d8",
-    description: "An unhurried Ayurvedic experience combining traditional care, natural preparations and attentive consultation.",
+    description: "An unhurried Ayurvedic experience combining traditional care, natural preparations and attentive consultation.", imageUrl: "", videoUrl: "",
     services: [
       { id: -21, name: "Ayurvedic Consultation", description: "A thoughtful conversation about your constitution, routines and current wellness needs.", duration: "30 minutes", icon: "🌿" },
       { id: -22, name: "Herbal Facial Ritual", description: "A gentle botanical facial treatment prepared with traditional herbal ingredients.", duration: "45 minutes", icon: "🌼" },
@@ -66,10 +67,12 @@ export default function Services() {
 
   const featuredServices = useMemo(() => locations.flatMap((location) =>
     location.services.map((service) => ({ ...service, location }))).slice(0, 6), [locations]);
+  const uploadedCentreImage = locations.find((location) => location.imageUrl)?.imageUrl;
+  const uploadedExperienceVideo = locations.find((location) => location.videoUrl)?.videoUrl;
   const scrollToLocations = () => document.getElementById("wellness-centres")?.scrollIntoView({ behavior: "smooth" });
 
   return <main className="services-page">
-    <section className="services-hero">
+    <section className="services-hero" style={{ backgroundImage: `url("${uploadedCentreImage || sampleHeroImage}")` }}>
       <div className="services-hero__shade" />
       <div className="services-hero__content">
         <span className="services-eyebrow"><Leaf size={15} /> Authentic Ayurvedic care</span>
@@ -92,13 +95,13 @@ export default function Services() {
 
     {!loading && featuredServices.length > 0 && <section className="treatment-showcase" aria-label="Featured treatments">
       <div className="treatment-grid">{featuredServices.map((service, index) => <article className="treatment-card" key={`${service.location.id}-${service.id}`}>
-        <img src={sampleImages[index % sampleImages.length]} alt={`${service.name} Ayurvedic treatment`} />
+        <img src={service.imageUrl || sampleImages[index % sampleImages.length]} alt={`${service.name} Ayurvedic treatment`} />
         <div className="treatment-card__overlay" /><div className="treatment-card__content"><span className="treatment-card__icon">{service.icon || "✦"}</span><div><h3>{service.name}</h3><p>{service.description}</p><span className="treatment-card__meta"><Clock3 size={13} /> {service.duration}</span></div></div>
       </article>)}</div>
     </section>}
 
     <section className="experience-section">
-      <div className="experience-video"><video controls playsInline preload="metadata" poster={sampleImages[3]}><source src={experienceVideo} type="video/mp4" /></video><div className="experience-video__label"><Play size={14} fill="currentColor" /> A glimpse inside our wellness experience</div></div>
+      <div className="experience-video"><video key={uploadedExperienceVideo || experienceVideo} controls playsInline preload="metadata" poster={uploadedCentreImage || sampleImages[3]}><source src={uploadedExperienceVideo || experienceVideo} /></video><div className="experience-video__label"><Play size={14} fill="currentColor" /> A glimpse inside our wellness experience</div></div>
       <div className="experience-copy"><span className="services-kicker services-kicker--light">The Rajapura experience</span><h2>Slow down. Breathe deeply. Let nature restore you.</h2><p>From the aroma of freshly prepared herbal oils to the calm attention of your therapist, every detail is designed to help you feel at ease.</p><ul><li><Check size={16} /> Short dosha and wellness assessment</li><li><Check size={16} /> Treatment tailored to your present needs</li><li><Check size={16} /> Simple aftercare guidance to take home</li></ul></div>
     </section>
 
@@ -107,7 +110,7 @@ export default function Services() {
       {loading && <div className="services-loader" aria-label="Loading services" />}
       {!loading && locations.length === 0 && <div className="services-empty"><Leaf size={42} /><h3>Our treatment menu is being refreshed</h3><p>Please check back soon or contact us for current availability.</p></div>}
       {!loading && locations.length > 0 && <div className="location-grid">{locations.map((location, locationIndex) => <article className="location-card" key={location.id}>
-        <div className="location-card__image"><img src={sampleImages[(locationIndex + 2) % sampleImages.length]} alt={`${location.area} Ayurvedic wellness centre`} /><span>{location.mapLabel || `${location.area} centre`}</span></div>
+        <div className="location-card__image"><img src={location.imageUrl || sampleImages[(locationIndex + 2) % sampleImages.length]} alt={`${location.area} Ayurvedic wellness centre`} /><span>{location.mapLabel || `${location.area} centre`}</span></div>
         <div className="location-card__body">
           <div className="location-card__title"><span>{location.icon}</span><div><small>Rajapura wellness centre</small><h3>{location.name}</h3></div></div>
           <p className="location-description">{location.description}</p><div className="location-address"><MapPin size={17} /><span>{location.address}</span></div>

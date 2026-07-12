@@ -17,6 +17,8 @@ export const addNewService = async (serviceData) => {
         lightColor: serviceData.lightColor || 'rgba(45,80,22,0.08)',
         borderColor: serviceData.borderColor || 'rgba(45,80,22,0.2)',
         description: serviceData.description || '',
+        imageUrl: serviceData.imageUrl || '',
+        videoUrl: serviceData.videoUrl || '',
         services: []
     });
 
