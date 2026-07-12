@@ -5,12 +5,36 @@ import CompanyLogo from "/CompanyLogo.jpg";
 import axios from "axios";
 
 const milestones = [
-  { year: "1826", title: "Founded in Nuwara Eliya", desc: "Vaidya Rajapura Senanayake establishes the first herbal preparation centre in the highlands of Sri Lanka." },
-  { year: "1912", title: "Royal Recognition", desc: "Awarded the Ceylon Governor's Certificate of Excellence for outstanding contributions to traditional medicine." },
-  { year: "1965", title: "National Expansion", desc: "Rajapura products become available across all provinces of Sri Lanka through authorized distributors." },
-  { year: "2001", title: "Ayurveda Board Certification", desc: "Certified by the Department of Ayurveda, Government of Sri Lanka, for GMP-compliant manufacturing." },
-  { year: "2015", title: "Organic Certification", desc: "Achieved ISO organic certification for all product lines, confirming zero artificial additives." },
-  { year: "2024", title: "Digital Reach", desc: "Launching our digital presence to connect more Sri Lankans with authentic Ayurvedic heritage." },
+  {
+    year: "300+ Years",
+    title: "Ancient Ola Leaf Manuscript",
+    desc: "A 300-year-old Ola leaf manuscript in the possession of Dr. Sumith Rajapura's family contains treatments for asthma, gastritis, and arthritis."
+  },
+  {
+    year: "100+ Years",
+    title: "Family Heritage of Ayurveda Practice",
+    desc: "The traditional herbal treatment system developed with experiences, knowledge, and practice from Dr. Sumith Rajapura's family history of more than 100 years."
+  },
+  {
+    year: "1977",
+    title: "Rajapura Herbal Drugs Co. (Pvt) Ltd Founded",
+    desc: "Rajapura Herbal Drugs Co. (Pvt) Ltd established as the leading manufacturing and distributing company of herbal medical products, registered as a legal limited company under the law of the Government of Sri Lanka."
+  },
+  {
+    year: "7+ Years",
+    title: "Over 10,000 Patients Treated",
+    desc: "Dr. Sumith Rajapura has successfully practiced for 7 years, treating over 10,000 patients for asthma, gastritis, and arthritis with herbal treatments that have no side effects."
+  },
+  {
+    year: "Present",
+    title: "Factory in Sirigala, Monaragala",
+    desc: "The primary facility is located in Sirigala, Monaragala District, Uva Province, covering approximately 05 acres with around 200 skilled workers, producing 123 locally certified products."
+  },
+  {
+    year: "Present",
+    title: "ISO Certified & Regulatory Compliance",
+    desc: "The factory holds ISO certification and operates under the oversight of the Monaragala District Ayurvedic Commission, guaranteeing compliance with regulatory standards."
+  },
 ];
 
 const productCertifications = [
