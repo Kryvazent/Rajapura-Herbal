@@ -78,7 +78,7 @@ export default function Home() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      
+
       <section
         style={{
           background:
@@ -88,7 +88,7 @@ export default function Home() {
         }}
         className="min-h-screen flex items-center"
       >
-        
+
         <div
           className="hidden sm:block"
           style={{
@@ -117,7 +117,7 @@ export default function Home() {
         />
 
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-16 sm:py-20 lg:py-24 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
-          
+
           <div>
             <div
               style={{
@@ -217,7 +217,7 @@ export default function Home() {
             </div>
           </div>
 
-          
+
           <div className="relative hidden lg:block">
             <div
               style={{
@@ -236,7 +236,7 @@ export default function Home() {
               />
             </div>
 
-            
+
             <div
               style={{
                 position: "absolute",
@@ -275,7 +275,7 @@ export default function Home() {
               </div>
             </div>
 
-            
+
             <div
               style={{
                 position: "absolute",
@@ -311,7 +311,7 @@ export default function Home() {
         </div>
       </section>
 
-      
+
       <section style={{ backgroundColor: "#2D5016" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-8 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat) => (
@@ -342,7 +342,7 @@ export default function Home() {
         </div>
       </section>
 
-      
+
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div>
@@ -359,7 +359,7 @@ export default function Home() {
                   display: "block",
                 }}
               />
-              
+
               <div
                 style={{
                   position: "absolute",
@@ -410,10 +410,10 @@ export default function Home() {
                 lineHeight: 1.2,
               }}
             >
-              Two Centuries of
+              A Legacy of
               <br />
               <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>
-                Ayurvedic Wisdom
+                Ayurvedic Excellence
               </span>
             </h2>
             <p
@@ -424,9 +424,7 @@ export default function Home() {
                 fontSize: "0.95rem",
               }}
             >
-              Founded in the highlands of Nuwara Eliya in 1826, Rajapura Herbal
-              Company has been the guardian of traditional Sri Lankan herbal
-              medicine for nearly two centuries.
+              Rajapura Herbal Drugs Co. (Pvt) Ltd is one of Sri Lanka’s leading manufacturers and distributors of high-quality herbal medical products. The company operates as a legally registered limited liability company under the laws and regulations of the Government of Sri Lanka.
             </p>
             <p
               style={{
@@ -460,7 +458,7 @@ export default function Home() {
         </div>
       </section>
 
-      
+
       <section style={{ backgroundColor: "#F0EAD6" }} className="py-14 sm:py-16">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16">
           <div className="text-center mb-10 sm:mb-12">
@@ -539,7 +537,7 @@ export default function Home() {
         </div>
       </section>
 
-      
+
       <section className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-16 py-14 sm:py-20">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-10 sm:mb-12">
           <div>
@@ -583,7 +581,7 @@ export default function Home() {
           </Link>
         </div>
 
-        
+
         {loading && (
           <div className="flex justify-center items-center py-16">
             <div
@@ -600,7 +598,7 @@ export default function Home() {
           </div>
         )}
 
-        
+
         {!loading && products.length === 0 && (
           <div className="text-center py-16">
             <Leaf
@@ -622,7 +620,7 @@ export default function Home() {
           </div>
         )}
 
-        
+
         {!loading && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {products.map((product) => (
@@ -734,7 +732,7 @@ export default function Home() {
         )}
       </section>
 
-      
+
       <section
         style={{
           background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -753,7 +751,7 @@ export default function Home() {
           }}
         />
         <div className="flex flex-col items-center" style={{ position: "relative", maxWidth: "600px", margin: "0 auto" }}>
-          
+
 
           <img
             src="/logo2.png"

@@ -191,8 +191,7 @@ export default function About() {
             About Rajapura
           </h1>
           <p style={{ color: "#A8C580", marginTop: "12px", maxWidth: "480px", margin: "12px auto 0", lineHeight: 1.7, fontSize: "0.9rem" }}>
-            Nearly two centuries of healing wisdom, passed down through seven generations of dedicated Ayurvedic physicians.
-          </p>
+            Rajapura Herbal Drugs Co. (Pvt) Ltd is one of Sri Lanka’s leading manufacturers and distributors of high-quality herbal medical products. The company operates as a legally registered limited liability company under the laws and regulations of the Government of Sri Lanka.          </p>
         </div>
       </div>
       <div style={{ height: "4px", background: "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)" }} />
@@ -231,7 +230,7 @@ export default function About() {
           <div className="order-2 lg:order-2">
             {/* <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>About The Company</span> */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
-              About The 
+              About The
               <span style={{ fontStyle: "italic", color: "#8B5E3C" }}> Company</span>
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
