@@ -77,7 +77,7 @@ export default function Services() {
         <p>Personalised therapies rooted in generations of Ayurvedic knowledge, delivered by experienced practitioners in a calm, restorative setting.</p>
         <div className="services-hero__actions">
           <button className="service-button service-button--gold" onClick={scrollToLocations}>Explore treatments <ArrowRight size={17} /></button>
-          {locations[0]?.mobile && <a className="service-button service-button--glass" href={`tel:${locations[0].mobile}`}><Phone size={16} /> Book a consultation</a>}
+          <button className="service-button service-button--glass" onClick={scrollToLocations}><Phone size={16} /> Book a consultation</button>
         </div>
       </div>
       <div className="services-hero__trust">
