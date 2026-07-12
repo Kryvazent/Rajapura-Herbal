@@ -383,7 +383,7 @@ export default function Home() {
                   Est. 1973 
                 </p>
                 <p style={{ color: "#8B5E3C", fontSize: "0.75rem", margin: 0 }}>
-                  A Century of Trust
+                  Five Decades of Trust
                 </p>
               </div>
             </div>
