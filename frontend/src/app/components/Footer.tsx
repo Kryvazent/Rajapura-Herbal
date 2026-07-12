@@ -10,13 +10,27 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Logo from "./Logo";
+import axios from "axios";
+import { useEffect, useState } from "react";
+
+interface FooterCentre { _id?: string; id?: string | number; area: string; address: string; mobile: string; altMobile?: string }
 
 export function Footer() {
+  const [centres, setCentres] = useState<FooterCentre[]>([]);
+
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/services`)
+      .then((response) => {
+        const data = response.data;
+        const list = Array.isArray(data) ? data : data?.services ?? data?.data ?? data?.items ?? [];
+        setCentres(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setCentres([]));
+  }, []);
 
   const informationText = [
     {
       address: "Parliament Road, Pelawatta, Battaramulla",
-      phoneNumber: "+94 77 283 0878",
       email: "rajapurawedamedura@yahoo.com",
       copyright: "© 2026 Rajapura Herbal Company. All Rights Reserved."
     }
@@ -182,18 +196,12 @@ export function Footer() {
               Contact Us
             </h3>
             <div className="space-y-4">
-              {[
-                { Icon: MapPin, text: informationText[0].address },
-                { Icon: Phone, text: informationText[0].phoneNumber },
-                { Icon: Mail, text: informationText[0].email },
-              ].map(({ Icon, text }, i) => (
-                <div key={i} className="flex gap-3">
-                  <Icon size={16} style={{ color: "#8BC34A", marginTop: "2px", flexShrink: 0 }} />
-                  <span style={{ color: "#A8C580", fontSize: "0.85rem", lineHeight: 1.6, whiteSpace: "pre-line" }}>
-                    {text}
-                  </span>
-                </div>
-              ))}
+              <div className="flex gap-3"><MapPin size={16} style={{ color: "#8BC34A", marginTop: "2px", flexShrink: 0 }} /><span style={{ color: "#A8C580", fontSize: "0.85rem", lineHeight: 1.6 }}>{informationText[0].address}</span></div>
+              {centres.map((centre) => <div key={centre._id ?? centre.id ?? centre.area} className="flex gap-3">
+                <Phone size={16} style={{ color: "#8BC34A", marginTop: "2px", flexShrink: 0 }} />
+                <span style={{ color: "#A8C580", fontSize: "0.85rem", lineHeight: 1.6 }}><span style={{ display: "block", color: "#D4A017", fontSize: ".7rem" }}>{centre.area}</span><a href={`tel:${centre.mobile}`} style={{ color: "inherit", textDecoration: "none" }}>{centre.mobile}</a>{centre.altMobile?.trim() && <a href={`tel:${centre.altMobile}`} style={{ display: "block", color: "#8EAB72", textDecoration: "none", fontSize: ".78rem" }}>Alt: {centre.altMobile}</a>}</span>
+              </div>)}
+              <div className="flex gap-3"><Mail size={16} style={{ color: "#8BC34A", marginTop: "2px", flexShrink: 0 }} /><a href={`mailto:${informationText[0].email}`} style={{ color: "#A8C580", fontSize: "0.85rem", lineHeight: 1.6, textDecoration: "none" }}>{informationText[0].email}</a></div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import * as productController from "../controllers/productController.js";
 import * as storeController from "../controllers/storeController.js";
 import * as serviceController from "../controllers/serviceController.js";
 import * as userController from "../controllers/userController.js";
+import * as teamController from "../controllers/teamController.js";
 import * as authMiddleware from "../middleware/auth.js";
 import * as roleMiddleware from "../middleware/roleMiddleware.js";
 import { deleteUploadThingFile } from "./uploadthing.js";
@@ -37,6 +38,11 @@ router.use(authMiddleware.verifyLoggin);
 
 
 router.delete("/uploadthing-file", deleteUploadThingFile);
+
+router.get("/team", roleMiddleware.verifyCurrentRole, teamController.getTeam);
+router.post("/team", roleMiddleware.verifyCurrentRole, teamController.createTeamMember);
+router.put("/team/:id", roleMiddleware.verifyCurrentRole, teamController.updateTeamMember);
+router.delete("/team/:id", roleMiddleware.verifyCurrentRole, teamController.deleteTeamMember);
 
 
 router.post(

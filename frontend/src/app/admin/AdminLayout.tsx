@@ -11,6 +11,7 @@ import {
   User,
   Leaf,
   CircleHelp,
+  UsersRound,
 } from "lucide-react";
 import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
@@ -25,6 +26,7 @@ const navItems = [
   { to: adminPath("products"), label: "Products", icon: Package },
   { to: adminPath("stores"), label: "Stores", icon: Store },
   { to: adminPath("services"), label: "Services", icon: Sparkles },
+  { to: adminPath("team"), label: "Team", icon: UsersRound },
   { to: adminPath("users"), label: "Users", icon: User },
 ];
 
@@ -214,6 +216,7 @@ export default function AdminLayout() {
   
   const visibleNavItems = navItems.filter(({ to }) => {
     if (to === adminPath("users") && role === "STAFF") return false;
+    if (to === adminPath("team") && role === "STAFF") return false;
     return true;
   });
 
