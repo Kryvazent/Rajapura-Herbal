@@ -1,548 +1,125 @@
-import { Phone, MapPin, Leaf, Clock, Star } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Service } from "../interfaces/serviceInterface";
 import axios from "axios";
+import { ArrowRight, Check, Clock3, Leaf, MapPin, Phone, Play, ShieldCheck, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Service } from "../interfaces/serviceInterface";
+import "./Services.css";
+
+const sampleImages = [
+  "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=1200&q=85",
+  "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=85",
+  "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=85",
+  "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=85",
+  "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=85",
+  "https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=1200&q=85",
+];
+const sampleHeroImage = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=2200&q=90";
+// Public CC0 sample video. Replace with the final Rajapura treatment video later.
+const experienceVideo = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
+const sampleLocations: Service[] = [
+  {
+    id: -1, name: "Rajapura Ayurvedic Wellness Centre", area: "Colombo",
+    address: "Colombo, Sri Lanka", mobile: "+94 77 000 0000", altMobile: "",
+    mapLabel: "Colombo centre", icon: "🌿", color: "#173b2a",
+    lightColor: "#eef4ed", borderColor: "#d7e2d5",
+    description: "A peaceful setting for personalised Ayurvedic therapies, restorative treatments and practical wellness guidance.", imageUrl: "", videoUrl: "",
+    services: [
+      { id: -11, name: "Abhyanga Herbal Oil Massage", description: "A rhythmic full-body treatment using warm herbal oils to encourage deep relaxation.", duration: "60 minutes", icon: "🪷" },
+      { id: -12, name: "Shirodhara", description: "A gentle stream of warm herbal oil traditionally used to calm and settle the mind.", duration: "45 minutes", icon: "💧" },
+      { id: -13, name: "Herbal Steam Therapy", description: "A soothing herbal steam ritual designed to complement your personalised treatment.", duration: "30 minutes", icon: "🌱" },
+    ],
+  },
+  {
+    id: -2, name: "Rajapura Ayurveda Retreat", area: "Wellness Retreat",
+    address: "Sri Lanka", mobile: "+94 77 000 0000", altMobile: "",
+    mapLabel: "Retreat centre", icon: "✨", color: "#315a3d",
+    lightColor: "#f1f5ed", borderColor: "#dce5d8",
+    description: "An unhurried Ayurvedic experience combining traditional care, natural preparations and attentive consultation.", imageUrl: "", videoUrl: "",
+    services: [
+      { id: -21, name: "Ayurvedic Consultation", description: "A thoughtful conversation about your constitution, routines and current wellness needs.", duration: "30 minutes", icon: "🌿" },
+      { id: -22, name: "Herbal Facial Ritual", description: "A gentle botanical facial treatment prepared with traditional herbal ingredients.", duration: "45 minutes", icon: "🌼" },
+      { id: -23, name: "Foot & Head Therapy", description: "A calming focused therapy created to help release everyday tension and fatigue.", duration: "40 minutes", icon: "🫶" },
+    ],
+  },
+];
 
 export default function Services() {
-  const [service, setService] = useState<Service[]>([]);
+  const [locations, setLocations] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/services");
+        const data = response.data;
+        const list = Array.isArray(data) ? data : data?.services ?? data?.data ?? data?.items ?? [];
+        setLocations(Array.isArray(list) ? list : []);
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        // Keep the page useful during local development when the API is offline.
+        setLocations(sampleLocations);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
   }, []);
 
-  async function loadData() {
-    try {
-      const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/services"
-      );
+  const featuredServices = useMemo(() => locations.flatMap((location) =>
+    location.services.map((service) => ({ ...service, location }))).slice(0, 6), [locations]);
+  const uploadedCentreImage = locations.find((location) => location.imageUrl)?.imageUrl;
+  const uploadedExperienceVideo = locations.find((location) => location.videoUrl)?.videoUrl;
+  const scrollToLocations = () => document.getElementById("wellness-centres")?.scrollIntoView({ behavior: "smooth" });
 
-      console.log("API response:", res.data);
-
-      const data = res.data;
-
-      if (Array.isArray(data)) {
-        setService(data);
-      } else if (Array.isArray(data?.services)) {
-        setService(data.services);
-      } else if (Array.isArray(data?.data)) {
-        setService(data.data);
-      } else if (Array.isArray(data?.items)) {
-        setService(data.items);
-      } else {
-        console.error("Unexpected response shape:", data);
-        setService([]);
-      }
-    } catch (err) {
-      console.error("Error fetching services:", err);
-      setService([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      
-      <div
-        style={{
-          background: "linear-gradient(135deg, #1A3009, #2D5016)",
-          padding: "clamp(40px, 8vw, 60px) 24px",
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "radial-gradient(circle at 20% 50%, rgba(139,195,74,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(212,160,23,0.06) 0%, transparent 50%)",
-          }}
-        />
-        <div style={{ position: "relative" }}>
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Leaf size={14} style={{ color: "#D4A017" }} />
-            <span
-              style={{
-                color: "#D4A017",
-                fontSize: "0.72rem",
-                letterSpacing: "0.2em",
-              }}
-            >
-              AYURVEDIC WELLNESS SERVICES
-            </span>
-            <Leaf size={14} style={{ color: "#D4A017" }} />
-          </div>
-          <h1
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              color: "#FAF6EE",
-              fontSize: "clamp(1.8rem, 5vw, 3rem)",
-              margin: 0,
-            }}
-          >
-            Healing Therapies & Treatments
-          </h1>
-          <p
-            style={{
-              color: "#A8C580",
-              marginTop: "12px",
-              maxWidth: "560px",
-              margin: "12px auto 0",
-              lineHeight: 1.7,
-              fontSize: "0.9rem",
-            }}
-          >
-            Experience authentic Ayurvedic healing at our dedicated wellness
-            centres. All treatments are performed by certified therapists using
-            our own natural herbal preparations.
-          </p>
+  return <main className="services-page">
+    <section className="services-hero" style={{ backgroundImage: `url("${uploadedCentreImage || sampleHeroImage}")` }}>
+      <div className="services-hero__shade" />
+      <div className="services-hero__content">
+        <span className="services-eyebrow"><Leaf size={15} /> Authentic Ayurvedic care</span>
+        <h1>Return to balance,<br /><em>naturally.</em></h1>
+        <p>Personalised therapies rooted in generations of Ayurvedic knowledge, delivered by experienced practitioners in a calm, restorative setting.</p>
+        <div className="services-hero__actions">
+          <button className="service-button service-button--gold" onClick={scrollToLocations}>Explore treatments <ArrowRight size={17} /></button>
+          <button className="service-button service-button--glass" onClick={scrollToLocations}><Phone size={16} /> Book a consultation</button>
         </div>
       </div>
-
-      
-      <div
-        style={{
-          height: "4px",
-          background:
-            "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)",
-        }}
-      />
-
-      
-      <div
-        style={{
-          backgroundColor: "rgba(212,160,23,0.1)",
-          borderBottom: "1px solid rgba(212,160,23,0.25)",
-          padding: "12px 20px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ color: "#6B4A00", fontSize: "0.85rem", margin: 0 }}>
-          <strong>📞 Appointments are required.</strong> Please call your
-          preferred centre directly to book a session. Walk-ins are subject to
-          availability.
-        </p>
+      <div className="services-hero__trust">
+        <span><ShieldCheck size={18} /> Certified therapists</span><span><Leaf size={18} /> Natural preparations</span><span><Sparkles size={18} /> Personalised care</span>
       </div>
+    </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-10 sm:py-14">
+    <section className="services-intro">
+      <div><span className="services-kicker">Our approach</span><h2>Wellness that treats the whole person</h2></div>
+      <p>Every visit begins with understanding you. We combine time-honoured therapies, herbal preparations and attentive guidance to create an experience that feels deeply personal—not one-size-fits-all.</p>
+    </section>
 
-        
-        {loading && (
-          <div className="flex justify-center items-center py-20">
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                border: "4px solid rgba(45,80,22,0.15)",
-                borderTop: "4px solid #2D5016",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        )}
+    {!loading && featuredServices.length > 0 && <section className="treatment-showcase" aria-label="Featured treatments">
+      <div className="treatment-grid">{featuredServices.map((service, index) => <article className="treatment-card" key={`${service.location.id}-${service.id}`}>
+        <img src={service.imageUrl || sampleImages[index % sampleImages.length]} alt={`${service.name} Ayurvedic treatment`} />
+        <div className="treatment-card__overlay" /><div className="treatment-card__content"><span className="treatment-card__icon">{service.icon || "✦"}</span><div><h3>{service.name}</h3><p>{service.description}</p><span className="treatment-card__meta"><Clock3 size={13} /> {service.duration}</span></div></div>
+      </article>)}</div>
+    </section>}
 
-        
-        {!loading && service.length === 0 && (
-          <div className="text-center py-20">
-            <Leaf
-              size={48}
-              style={{
-                color: "#A8C580",
-                margin: "0 auto 16px",
-                display: "block",
-              }}
-            />
-            <p
-              style={{
-                color: "#5C4033",
-                fontSize: "1rem",
-                fontFamily: "'Playfair Display', serif",
-              }}
-            >
-              No services available at the moment.
-            </p>
-            <p
-              style={{
-                color: "#8B5E3C",
-                fontSize: "0.85rem",
-                marginTop: "6px",
-              }}
-            >
-              Please check back soon or call us directly.
-            </p>
-          </div>
-        )}
+    <section className="experience-section">
+      <div className="experience-video"><video key={uploadedExperienceVideo || experienceVideo} controls playsInline preload="metadata" poster={uploadedCentreImage || sampleImages[3]}><source src={uploadedExperienceVideo || experienceVideo} /></video><div className="experience-video__label"><Play size={14} fill="currentColor" /> A glimpse inside our wellness experience</div></div>
+      <div className="experience-copy"><span className="services-kicker services-kicker--light">The Rajapura experience</span><h2>Slow down. Breathe deeply. Let nature restore you.</h2><p>From the aroma of freshly prepared herbal oils to the calm attention of your therapist, every detail is designed to help you feel at ease.</p><ul><li><Check size={16} /> Short dosha and wellness assessment</li><li><Check size={16} /> Treatment tailored to your present needs</li><li><Check size={16} /> Simple aftercare guidance to take home</li></ul></div>
+    </section>
 
-        
-        {!loading && service.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-            {service.map((location) => (
-              <div
-                key={location.id}
-                style={{
-                  backgroundColor: "#FAF6EE",
-                  borderRadius: "24px",
-                  overflow: "hidden",
-                  border: `1px solid ${location.borderColor}`,
-                  boxShadow: "0 6px 28px rgba(45,80,22,0.08)",
-                }}
-              >
-                
-                <div
-                  style={{
-                    background: `linear-gradient(135deg, ${location.color}, ${location.color}CC)`,
-                    padding: "clamp(20px, 4vw, 28px) clamp(20px, 4vw, 32px)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "-20px",
-                      right: "-20px",
-                      fontSize: "5rem",
-                      opacity: 0.12,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {location.icon}
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <span
-                      style={{
-                        backgroundColor: "rgba(255,255,255,0.15)",
-                        color: "rgba(255,255,255,0.9)",
-                        fontSize: "0.65rem",
-                        letterSpacing: "0.15em",
-                        padding: "3px 10px",
-                        borderRadius: "50px",
-                        display: "inline-block",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      {location.mapLabel}
-                    </span>
-                    <h2
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        color: "#FAF6EE",
-                        fontSize: "clamp(1.1rem, 3vw, 1.4rem)",
-                        margin: "0 0 12px",
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {location.name}
-                    </h2>
-                    <div
-                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <MapPin
-                          size={13}
-                          style={{
-                            color: "rgba(255,255,255,0.75)",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <span
-                          style={{
-                            color: "rgba(255,255,255,0.85)",
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          {location.address}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Phone
-                          size={13}
-                          style={{
-                            color: "rgba(255,255,255,0.75)",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <a
-                          href={`tel:${location.mobile}`}
-                          style={{
-                            color: "#FAF6EE",
-                            fontSize: "0.95rem",
-                            fontWeight: 700,
-                            textDecoration: "none",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {location.mobile}
-                        </a>
-                        {location.altMobile && (
-                          <span
-                            style={{
-                              color: "rgba(255,255,255,0.5)",
-                              fontSize: "0.78rem",
-                            }}
-                          >
-                            · {location.altMobile}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <a
-                      href={`tel:${location.mobile}`}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "7px",
-                        marginTop: "16px",
-                        backgroundColor: "#D4A017",
-                        color: "#1A3009",
-                        padding: "9px 22px",
-                        borderRadius: "50px",
-                        textDecoration: "none",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      <Phone size={14} /> Call to Book
-                    </a>
-                  </div>
-                </div>
+    <section className="locations-section" id="wellness-centres">
+      <div className="section-heading"><span className="services-kicker">Visit us</span><h2>Choose your wellness centre</h2><p>Appointments are recommended. Call your preferred centre and our team will help you select the right therapy.</p></div>
+      {loading && <div className="services-loader" aria-label="Loading services" />}
+      {!loading && locations.length === 0 && <div className="services-empty"><Leaf size={42} /><h3>Our treatment menu is being refreshed</h3><p>Please check back soon or contact us for current availability.</p></div>}
+      {!loading && locations.length > 0 && <div className="location-grid">{locations.map((location, locationIndex) => <article className="location-card" key={location.id}>
+        <div className="location-card__image"><img src={location.imageUrl || sampleImages[(locationIndex + 2) % sampleImages.length]} alt={`${location.area} Ayurvedic wellness centre`} /><span>{location.mapLabel || `${location.area} centre`}</span></div>
+        <div className="location-card__body">
+          <div className="location-card__title"><span>{location.icon}</span><div><small>Rajapura wellness centre</small><h3>{location.name}</h3></div></div>
+          <p className="location-description">{location.description}</p><div className="location-address"><MapPin size={17} /><span>{location.address}</span></div>
+          <div className="location-services"><span>Available here</span>{location.services.slice(0, 4).map((service) => <div key={service.id}><p>{service.name}</p><small><Clock3 size={12} /> {service.duration}</small></div>)}{location.services.length > 4 && <em>+{location.services.length - 4} more treatments</em>}</div>
+          <div className="location-card__actions"><a className="service-button service-button--green" href={`tel:${location.mobile}`}><Phone size={16} /> Call {location.mobile}</a>{location.altMobile && <a className="alternate-phone" href={`tel:${location.altMobile}`}>Alternate: {location.altMobile}</a>}</div>
+        </div>
+      </article>)}</div>}
+    </section>
 
-                
-                <div
-                  style={{
-                    padding: "16px 22px",
-                    borderBottom: `1px solid ${location.borderColor}`,
-                    backgroundColor: location.lightColor,
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#5C4033",
-                      fontSize: "0.87rem",
-                      lineHeight: 1.7,
-                      margin: 0,
-                    }}
-                  >
-                    {location.description}
-                  </p>
-                </div>
-
-                
-                <div style={{ padding: "14px 20px 4px" }}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Star size={13} style={{ color: "#D4A017" }} />
-                    <p
-                      style={{
-                        color: "#2D5016",
-                        fontSize: "0.75rem",
-                        letterSpacing: "0.1em",
-                        margin: 0,
-                      }}
-                    >
-                      AVAILABLE SERVICES
-                    </p>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: "1px",
-                        backgroundColor: "rgba(45,80,22,0.12)",
-                      }}
-                    />
-                    <span
-                      style={{
-                        backgroundColor: "rgba(212,160,23,0.12)",
-                        color: "#7A5C00",
-                        fontSize: "0.65rem",
-                        padding: "2px 8px",
-                        borderRadius: "50px",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Prices on enquiry
-                    </span>
-                  </div>
-                </div>
-
-                
-                <div
-                  style={{
-                    padding: "0 16px 20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {location.services.map((svc) => (
-                    <div
-                      key={svc.id}
-                      style={{
-                        backgroundColor: "white",
-                        borderRadius: "14px",
-                        padding: "12px 16px",
-                        border: `1px solid ${location.borderColor}`,
-                        display: "flex",
-                        gap: "12px",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "38px",
-                          height: "38px",
-                          borderRadius: "11px",
-                          backgroundColor: location.lightColor,
-                          border: `1px solid ${location.borderColor}`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "1.1rem",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {svc.icon}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <h3
-                            style={{
-                              fontFamily: "'Playfair Display', serif",
-                              color: location.color,
-                              fontSize: "0.92rem",
-                              margin: "0 0 4px",
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {svc.name}
-                          </h3>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              backgroundColor: location.lightColor,
-                              padding: "2px 8px",
-                              borderRadius: "50px",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <Clock
-                              size={10}
-                              style={{ color: location.color }}
-                            />
-                            <span
-                              style={{
-                                color: location.color,
-                                fontSize: "0.66rem",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {svc.duration}
-                            </span>
-                          </div>
-                        </div>
-                        <p
-                          style={{
-                            color: "#5C4033",
-                            fontSize: "0.78rem",
-                            lineHeight: 1.55,
-                            margin: 0,
-                          }}
-                        >
-                          {svc.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        
-        {!loading && service.length > 0 && (
-          <div
-            style={{
-              marginTop: "40px",
-              backgroundColor: "rgba(45,80,22,0.06)",
-              border: "1px solid rgba(45,80,22,0.15)",
-              borderRadius: "20px",
-              padding: "clamp(20px, 4vw, 28px) clamp(20px, 4vw, 36px)",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "24px",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ flex: 1, minWidth: "220px" }}>
-              <h3
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  color: "#2D5016",
-                  fontSize: "1.05rem",
-                  margin: "0 0 6px",
-                }}
-              >
-                What to Expect
-              </h3>
-              <p
-                style={{
-                  color: "#5C4033",
-                  fontSize: "0.84rem",
-                  lineHeight: 1.7,
-                  margin: 0,
-                }}
-              >
-                All sessions begin with a short Ayurvedic constitution (dosha)
-                assessment. Please arrive 10 minutes early and avoid heavy meals
-                for at least one hour before your session.
-              </p>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                minWidth: "180px",
-              }}
-            >
-              {service.map((loc) => (
-                <div key={loc.id}>
-                  <p
-                    style={{
-                      color: "#8B5E3C",
-                      fontSize: "0.68rem",
-                      margin: "0 0 2px",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    {loc.area.toUpperCase()} CENTRE
-                  </p>
-                  <a
-                    href={`tel:${loc.mobile}`}
-                    style={{
-                      color: "#2D5016",
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                      textDecoration: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    <Phone size={13} /> {loc.mobile}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    {!loading && locations.length > 0 && <section className="booking-banner"><div><span className="services-kicker services-kicker--light">Begin your journey</span><h2>Not sure which treatment is right for you?</h2><p>Speak with our team for friendly guidance before you book.</p></div><a className="service-button service-button--gold" href={`tel:${locations[0].mobile}`}><Phone size={17} /> Talk to our team</a></section>}
+  </main>;
 }

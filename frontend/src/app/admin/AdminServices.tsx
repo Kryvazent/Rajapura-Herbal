@@ -13,8 +13,11 @@ import {
   Clock,
   AlertCircle,
   Check,
+  UploadCloud,
+  LoaderCircle,
 } from "lucide-react";
 import axios from "axios";
+import { useUploadThing } from "../lib/uploadthing";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -26,6 +29,7 @@ interface ServiceItem {
   description: string;
   duration: string;
   icon: string;
+  imageUrl?: string;
 }
 
 interface ServiceLocation {
@@ -42,6 +46,8 @@ interface ServiceLocation {
   lightColor: string;
   borderColor: string;
   description: string;
+  imageUrl?: string;
+  videoUrl?: string;
   services: ServiceItem[];
 }
 
@@ -486,6 +492,8 @@ const blankLocation = (): Omit<ServiceLocation, "id"> => ({
   lightColor: "rgba(45,80,22,0.08)",
   borderColor: "rgba(45,80,22,0.2)",
   description: "",
+  imageUrl: "",
+  videoUrl: "",
   services: [],
 });
 
@@ -494,6 +502,7 @@ const blankService = (): Omit<ServiceItem, "id"> => ({
   description: "",
   duration: "",
   icon: "🌿",
+  imageUrl: "",
 });
 
 
@@ -503,6 +512,7 @@ export default function AdminServices() {
   const [pageLoading, setPageLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [delLoading, setDelLoading]   = useState(false);
+  const [mediaUploading, setMediaUploading] = useState<"centre-image" | "centre-video" | "service-image" | null>(null);
   const [toast, setToast]             = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   
@@ -531,6 +541,39 @@ export default function AdminServices() {
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const { startUpload: startImageUpload } = useUploadThing("serviceImage");
+  const { startUpload: startVideoUpload } = useUploadThing("serviceVideo");
+  const uploadedUrl = (result: any[] | undefined) =>
+    result?.[0]?.ufsUrl ?? result?.[0]?.url ?? result?.[0]?.serverData?.url ?? "";
+
+  const uploadCentreMedia = async (file: File, kind: "image" | "video") => {
+    if (!locModal) return;
+    setMediaUploading(kind === "image" ? "centre-image" : "centre-video");
+    try {
+      const result = await (kind === "image" ? startImageUpload([file]) : startVideoUpload([file]));
+      const url = uploadedUrl(result);
+      if (!url) throw new Error("The upload completed without a file URL.");
+      setLocModal((current) => current ? { ...current, data: { ...current.data, [kind === "image" ? "imageUrl" : "videoUrl"]: url } } : current);
+      showToast(`${kind === "image" ? "Image" : "Video"} uploaded. Save the centre to apply it.`, "success");
+    } catch (error: any) {
+      showToast(error?.message ?? `Failed to upload ${kind}.`, "error");
+    } finally { setMediaUploading(null); }
+  };
+
+  const uploadServiceImage = async (file: File) => {
+    if (!svcModal) return;
+    setMediaUploading("service-image");
+    try {
+      const result = await startImageUpload([file]);
+      const url = uploadedUrl(result);
+      if (!url) throw new Error("The upload completed without a file URL.");
+      setSvcModal((current) => current ? { ...current, data: { ...current.data, imageUrl: url } } : current);
+      showToast("Treatment image uploaded. Save the service to apply it.", "success");
+    } catch (error: any) {
+      showToast(error?.message ?? "Failed to upload treatment image.", "error");
+    } finally { setMediaUploading(null); }
   };
 
   
@@ -1148,7 +1191,7 @@ export default function AdminServices() {
           onClose={() => setLocModal(null)}
           onSave={saveLocation}
           wide
-          loading={saveLoading}
+          loading={saveLoading || mediaUploading === "centre-image" || mediaUploading === "centre-video"}
         >
           
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "12px", alignItems: "start" }}>
@@ -1286,6 +1329,11 @@ export default function AdminServices() {
             error={locModal.errors.description}
           />
 
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
+            <MediaUpload label="Centre showcase image" url={locModal.data.imageUrl} accept="image/*" uploading={mediaUploading === "centre-image"} onSelect={(file) => uploadCentreMedia(file, "image")} onRemove={() => setLocModal({ ...locModal, data: { ...locModal.data, imageUrl: "" } })} />
+            <MediaUpload label="Experience video (optional)" url={locModal.data.videoUrl} accept="video/*" uploading={mediaUploading === "centre-video"} onSelect={(file) => uploadCentreMedia(file, "video")} onRemove={() => setLocModal({ ...locModal, data: { ...locModal.data, videoUrl: "" } })} />
+          </div>
+
           
           <div>
             <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "8px" }}>
@@ -1339,7 +1387,7 @@ export default function AdminServices() {
           title={svcModal.mode === "add" ? "Add Service" : "Edit Service"}
           onClose={() => setSvcModal(null)}
           onSave={saveService}
-          loading={saveLoading}
+          loading={saveLoading || mediaUploading === "service-image"}
         >
           
           <div>
@@ -1373,6 +1421,8 @@ export default function AdminServices() {
               ))}
             </div>
           </div>
+
+          <MediaUpload label="Treatment showcase image" url={svcModal.data.imageUrl} accept="image/*" uploading={mediaUploading === "service-image"} onSelect={uploadServiceImage} onRemove={() => setSvcModal({ ...svcModal, data: { ...svcModal.data, imageUrl: "" } })} />
 
           <FieldRow
             label="Service Name"
@@ -1432,7 +1482,27 @@ export default function AdminServices() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        .service-upload-spinner { animation: spin .8s linear infinite; }
       `}</style>
     </div>
   );
+}
+
+function MediaUpload({ label, url, accept, uploading, onSelect, onRemove }: {
+  label: string; url?: string; accept: "image/*" | "video/*"; uploading: boolean;
+  onSelect: (file: File) => void; onRemove: () => void;
+}) {
+  const isVideo = accept === "video/*";
+  return <div style={{ padding: "14px", border: "1px solid rgba(45,80,22,0.16)", borderRadius: "12px", background: "#fff" }}>
+    <label style={{ display: "block", color: "#2D5016", fontSize: ".8rem", marginBottom: "8px", fontWeight: 700 }}>{label}</label>
+    {url && <div style={{ position: "relative", marginBottom: "10px" }}>
+      {isVideo ? <video src={url} controls style={{ width: "100%", maxHeight: "180px", borderRadius: "9px", background: "#14281d" }} /> : <img src={url} alt="Uploaded preview" style={{ width: "100%", height: "150px", objectFit: "cover", borderRadius: "9px" }} />}
+      <button type="button" onClick={onRemove} aria-label={`Remove ${label}`} style={{ position: "absolute", top: 7, right: 7, border: 0, borderRadius: "50%", width: 28, height: 28, display: "grid", placeItems: "center", cursor: "pointer", color: "white", background: "rgba(140,20,35,.88)" }}><X size={14} /></button>
+    </div>}
+    <label style={{ minHeight: "42px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1px dashed rgba(45,80,22,.35)", borderRadius: 9, color: "#2D5016", background: "rgba(45,80,22,.04)", cursor: uploading ? "wait" : "pointer", fontSize: ".78rem" }}>
+      {uploading ? <><LoaderCircle size={16} className="service-upload-spinner" /> Uploading...</> : <><UploadCloud size={16} /> {url ? "Replace file" : `Upload ${isVideo ? "video" : "image"}`}</>}
+      <input type="file" accept={accept} disabled={uploading} hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) onSelect(file); event.target.value = ""; }} />
+    </label>
+    <small style={{ display: "block", color: "#7b877f", marginTop: 6 }}>{isVideo ? "MP4/WebM, up to 64 MB" : "JPG, PNG or WebP, up to 8 MB"}</small>
+  </div>;
 }

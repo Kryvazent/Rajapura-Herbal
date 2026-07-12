@@ -47,6 +47,30 @@ export const uploadRouter = {
         url: file.ufsUrl ?? file.url,
       };
     }),
+  serviceImage: f(
+    { image: { maxFileSize: "8MB", maxFileCount: 1 } },
+    { awaitServerData: false }
+  )
+    .middleware(({ req }) => {
+      const allowed = req.session?.role === "ADMIN" || req.session?.role === "STAFF";
+      if (!req.session?.userId || !allowed) {
+        throw new UploadThingError({ code: "UNAUTHORIZED", message: "You must be logged in to upload service images." });
+      }
+      return { userId: req.session.userId, role: req.session.role };
+    })
+    .onUploadComplete(({ file, metadata }) => ({ uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url })),
+  serviceVideo: f(
+    { video: { maxFileSize: "64MB", maxFileCount: 1 } },
+    { awaitServerData: false }
+  )
+    .middleware(({ req }) => {
+      const allowed = req.session?.role === "ADMIN" || req.session?.role === "STAFF";
+      if (!req.session?.userId || !allowed) {
+        throw new UploadThingError({ code: "UNAUTHORIZED", message: "You must be logged in to upload service videos." });
+      }
+      return { userId: req.session.userId, role: req.session.role };
+    })
+    .onUploadComplete(({ file, metadata }) => ({ uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url })),
 };
 
 export const uploadThingRouter = createRouteHandler({
