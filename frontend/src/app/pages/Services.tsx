@@ -65,10 +65,15 @@ export default function Services() {
     loadData();
   }, []);
 
-  const featuredServices = useMemo(() => locations.flatMap((location) =>
-    location.services.map((service) => ({ ...service, location }))).slice(0, 6), [locations]);
+  const featuredServices = useMemo(() => {
+    const allServices = locations.flatMap((location) =>
+      location.services.map((service) => ({ ...service, location })));
+    const selectedServices = allServices.filter((service) => service.showInShowcase);
+    return (selectedServices.length > 0 ? selectedServices : allServices).slice(0, 6);
+  }, [locations]);
   const uploadedCentreImage = locations.find((location) => location.imageUrl)?.imageUrl;
   const uploadedExperienceVideo = locations.find((location) => location.videoUrl)?.videoUrl;
+  const bookingPhone = (location: Service) => location.altMobile?.trim() || location.mobile;
   const scrollToLocations = () => document.getElementById("wellness-centres")?.scrollIntoView({ behavior: "smooth" });
 
   return <main className="services-page">
@@ -114,12 +119,12 @@ export default function Services() {
         <div className="location-card__body">
           <div className="location-card__title"><span>{location.icon}</span><div><small>Rajapura wellness centre</small><h3>{location.name}</h3></div></div>
           <p className="location-description">{location.description}</p><div className="location-address"><MapPin size={17} /><span>{location.address}</span></div>
-          <div className="location-services"><span>Available here</span>{location.services.slice(0, 4).map((service) => <div key={service.id}><p>{service.name}</p><small><Clock3 size={12} /> {service.duration}</small></div>)}{location.services.length > 4 && <em>+{location.services.length - 4} more treatments</em>}</div>
-          <div className="location-card__actions"><a className="service-button service-button--green" href={`tel:${location.mobile}`}><Phone size={16} /> Call {location.mobile}</a>{location.altMobile && <a className="alternate-phone" href={`tel:${location.altMobile}`}>Alternate: {location.altMobile}</a>}</div>
+          <div className="location-services"><span>Available here</span>{location.services.map((service) => <div key={service.id}><p>{service.name}</p><small><Clock3 size={12} /> {service.duration}</small></div>)}</div>
+          <div className="location-card__actions"><a className="service-button service-button--green" href={`tel:${bookingPhone(location)}`}><Phone size={16} /> Call {bookingPhone(location)}</a></div>
         </div>
       </article>)}</div>}
     </section>
 
-    {!loading && locations.length > 0 && <section className="booking-banner"><div><span className="services-kicker services-kicker--light">Begin your journey</span><h2>Not sure which treatment is right for you?</h2><p>Speak with our team for friendly guidance before you book.</p></div><a className="service-button service-button--gold" href={`tel:${locations[0].mobile}`}><Phone size={17} /> Talk to our team</a></section>}
+    {!loading && locations.length > 0 && <section className="booking-banner"><div><span className="services-kicker services-kicker--light">Begin your journey</span><h2>Not sure which treatment is right for you?</h2><p>Speak with our team for friendly guidance before you book.</p></div><a className="service-button service-button--gold" href={`tel:${bookingPhone(locations[0])}`}><Phone size={17} /> Talk to our team</a></section>}
   </main>;
 }

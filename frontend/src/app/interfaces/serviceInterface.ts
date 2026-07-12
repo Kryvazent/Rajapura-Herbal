@@ -5,6 +5,7 @@ export interface ServiceItem {
   duration: string;
   icon: string;
   imageUrl?: string;
+  showInShowcase?: boolean;
 }
 
 export interface Service {
