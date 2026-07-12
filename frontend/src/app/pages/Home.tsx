@@ -304,7 +304,7 @@ export default function Home() {
                   textAlign: "center",
                 }}
               >
-                Trusted Since 1826
+                Trusted Since 1973 
               </p>
             </div>
           </div>
@@ -380,10 +380,10 @@ export default function Home() {
                     margin: 0,
                   }}
                 >
-                  Est. 1826
+                  Est. 1973 
                 </p>
                 <p style={{ color: "#8B5E3C", fontSize: "0.75rem", margin: 0 }}>
-                  Rajapura, Nuwara Eliya
+                  A Century of Trust
                 </p>
               </div>
             </div>
