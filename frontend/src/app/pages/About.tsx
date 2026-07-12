@@ -1,7 +1,8 @@
-import { useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Leaf, Award, Globe, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router";
 import CompanyLogo from "/CompanyLogo.jpg";
+import axios from "axios";
 
 const milestones = [
   { year: "1826", title: "Founded in Nuwara Eliya", desc: "Vaidya Rajapura Senanayake establishes the first herbal preparation centre in the highlands of Sri Lanka." },
@@ -55,11 +56,7 @@ const productCertifications = [
   },
 ];
 
-const team = [
-  { name: "Dr. Arjuna Rajapura", title: "Chief Ayurvedic Physician", desc: "7th generation heir to the Rajapura lineage, with a PhD in Ayurvedic Medicine from Kelaniya University." },
-  { name: "Ms. Nilmini Perera", title: "Head of Formulations", desc: "25 years experience in botanical extraction and standardization of herbal active compounds." },
-  { name: "Mr. Chaminda Silva", title: "Quality Assurance Director", desc: "Ensures every batch meets the highest standards of purity, potency, and safety." },
-];
+interface TeamMember { _id: string; name: string; title: string; description: string; imageUrl?: string }
 
 const branches = [
   {
@@ -130,10 +127,17 @@ function getMapPosition(lat: number, lon: number) {
 }
 
 export default function About() {
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const [selectedBranch, setSelectedBranch] = useState(branches[0]);
   const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
   const [isMapDragging, setIsMapDragging] = useState(false);
   const dragStartRef = useRef({ pointerId: 0, x: 0, y: 0, panX: 0, panY: 0 });
+
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/team`)
+      .then((response) => setTeam(Array.isArray(response.data?.data) ? response.data.data : []))
+      .catch(() => setTeam([]));
+  }, []);
 
   function handleMapPointerDown(event: PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -383,7 +387,7 @@ export default function About() {
         </div>
 
 
-        <div>
+        {team.length > 0 && <div>
           <div className="text-center mb-10 sm:mb-12">
             <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our People</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
@@ -393,7 +397,7 @@ export default function About() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
             {team.map((member) => (
               <div
-                key={member.name}
+                key={member._id}
                 style={{
                   backgroundColor: "#FAF6EE",
                   border: "1px solid rgba(139,195,74,0.25)",
@@ -403,16 +407,14 @@ export default function About() {
                   boxShadow: "0 4px 20px rgba(45,80,22,0.07)",
                 }}
               >
-                <div style={{ width: "68px", height: "68px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "1.8rem", color: "#8BC34A" }}>
-                  {member.name.charAt(member.name.indexOf(" ") + 1)}
-                </div>
+                {member.imageUrl ? <img src={member.imageUrl} alt={member.name} style={{ width: "86px", height: "86px", borderRadius: "50%", objectFit: "cover", display: "block", margin: "0 auto 14px" }} /> : <div style={{ width: "68px", height: "68px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "1.8rem", color: "#8BC34A" }}>{member.name.trim().charAt(0)}</div>}
                 <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", marginBottom: "4px", fontSize: "1rem" }}>{member.name}</h3>
                 <p style={{ color: "#D4A017", fontSize: "0.78rem", marginBottom: "10px", letterSpacing: "0.05em" }}>{member.title}</p>
-                <p style={{ color: "#5C4033", fontSize: "0.84rem", lineHeight: 1.7, margin: 0 }}>{member.desc}</p>
+                <p style={{ color: "#5C4033", fontSize: "0.84rem", lineHeight: 1.7, margin: 0 }}>{member.description}</p>
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         <div className="mt-14 sm:mt-20">
           <div className="text-center mb-10 sm:mb-12">
