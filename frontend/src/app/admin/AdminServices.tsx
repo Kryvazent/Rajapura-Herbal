@@ -30,6 +30,7 @@ interface ServiceItem {
   duration: string;
   icon: string;
   imageUrl?: string;
+  showInShowcase?: boolean;
 }
 
 interface ServiceLocation {
@@ -503,6 +504,7 @@ const blankService = (): Omit<ServiceItem, "id"> => ({
   duration: "",
   icon: "🌿",
   imageUrl: "",
+  showInShowcase: false,
 });
 
 
@@ -1117,6 +1119,11 @@ export default function AdminServices() {
                                     <Clock size={9} /> {svc.duration}
                                   </span>
                                 )}
+                                {svc.showInShowcase && (
+                                  <span style={{ backgroundColor: "rgba(212,160,23,.13)", color: "#866300", fontSize: ".64rem", padding: "2px 8px", borderRadius: "50px", display: "flex", alignItems: "center", gap: 3 }}>
+                                    <Check size={9} /> Public gallery
+                                  </span>
+                                )}
                               </div>
                               {svc.description && (
                                 <p
@@ -1423,6 +1430,11 @@ export default function AdminServices() {
           </div>
 
           <MediaUpload label="Treatment showcase image" url={svcModal.data.imageUrl} accept="image/*" uploading={mediaUploading === "service-image"} onSelect={uploadServiceImage} onRemove={() => setSvcModal({ ...svcModal, data: { ...svcModal.data, imageUrl: "" } })} />
+
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "13px 14px", borderRadius: "11px", border: `1px solid ${svcModal.data.showInShowcase ? "rgba(45,80,22,.45)" : "rgba(45,80,22,.16)"}`, background: svcModal.data.showInShowcase ? "rgba(45,80,22,.07)" : "#fff", cursor: "pointer" }}>
+            <input type="checkbox" checked={Boolean(svcModal.data.showInShowcase)} onChange={(event) => setSvcModal({ ...svcModal, data: { ...svcModal.data, showInShowcase: event.target.checked } })} style={{ marginTop: 3, accentColor: "#2D5016" }} />
+            <span><strong style={{ display: "block", color: "#2D5016", fontSize: ".82rem" }}>Show in public treatment gallery</strong><small style={{ display: "block", color: "#758078", fontSize: ".7rem", marginTop: 3, lineHeight: 1.45 }}>Select this when this centre's image should represent the treatment on the public Services page. A maximum of six selected treatments are shown.</small></span>
+          </label>
 
           <FieldRow
             label="Service Name"

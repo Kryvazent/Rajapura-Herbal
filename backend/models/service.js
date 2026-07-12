@@ -6,7 +6,8 @@ const serviceItem = new mongoose.Schema({
   description: String,
   duration: String,
   icon: String,
-  imageUrl: String
+  imageUrl: String,
+  showInShowcase: { type: Boolean, default: false }
 });
 
 const service = new mongoose.Schema(
