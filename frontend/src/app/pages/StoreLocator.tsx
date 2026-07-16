@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, ChevronRight, ChevronDown, Leaf, Store } from "lucide-react";
 import { District, PanelProps, Province, Shop, Town } from "../interfaces/storeInterface";
 import axios from "axios";
+import { localized, useLanguage } from "../i18n/LanguageContext";
+import { storeCopy } from "../i18n/translations/stores";
 
 const typeColors: Record<Shop["type"], { bg: string; text: string; icon: string }> = {
   "Ayurvedic Store": { bg: "rgba(45,80,22,0.1)", text: "#2D5016", icon: "🌿" },
@@ -9,6 +11,7 @@ const typeColors: Record<Shop["type"], { bg: string; text: string; icon: string 
   "Health Center": { bg: "rgba(130,50,200,0.1)", text: "#823200", icon: "🏥" },
   Supermarket: { bg: "rgba(212,160,23,0.15)", text: "#7A5C00", icon: "🛒" },
 };
+
 
 function EmptyState({ icon, message }: { icon: React.ReactNode; message: string }) {
   return (
@@ -84,6 +87,10 @@ function SelectionButton({ isSelected, activeColor, onClick, children }: {
 }
 
 export default function StoreLocator() {
+  const { language, t } = useLanguage();
+  const c = storeCopy[language];
+  const nameOf = (item: { name: string; translations?: { name?: any } } | null | undefined) => item ? localized(item.translations?.name, language, item.name) : "";
+  const typeLabel = (type: string) => type === "All" ? c.all : c.types[type as keyof typeof c.types] ?? type;
 
   const [provinces, setProvinces] = useState([]);
 
@@ -98,11 +105,14 @@ export default function StoreLocator() {
 
   useEffect(() => {
     loadData();
-  }, [])
+  }, [language])
 
   const loadData = async () => {
-
-    await axios.get(import.meta.env.VITE_BACKEND_URL + "/user/shops")
+    setProvinces([]);
+    setSelectedProvince(null);
+    setSelectedDistrict(null);
+    setSelectedTown(null);
+    await axios.get(import.meta.env.VITE_BACKEND_URL + `/user/shops?lang=${language}`)
       .then(res => {
         setProvinces(res.data);
       })
@@ -148,10 +158,10 @@ export default function StoreLocator() {
   const districtShopCount = (district: District) => district.towns.reduce((a, t) => a + t.shops.length, 0);
 
   const steps = [
-    { n: 1, label: "Province", color: "#2D5016", done: !!selectedProvince, value: selectedProvince?.name },
-    { n: 2, label: "District", color: "#4A7C23", done: !!selectedDistrict, value: selectedDistrict?.name },
-    { n: 3, label: "Town", color: "#8B5E3C", done: !!selectedTown, value: selectedTown?.name },
-    { n: 4, label: "Stores", color: "#D4A017", done: false, value: selectedTown ? `${filteredShops.length} found` : undefined },
+    { n: 1, label: c.province, color: "#2D5016", done: !!selectedProvince, value: nameOf(selectedProvince) },
+    { n: 2, label: c.district, color: "#4A7C23", done: !!selectedDistrict, value: nameOf(selectedDistrict) },
+    { n: 3, label: c.town, color: "#8B5E3C", done: !!selectedTown, value: nameOf(selectedTown) },
+    { n: 4, label: c.stores, color: "#D4A017", done: false, value: selectedTown ? `${filteredShops.length} ${c.found}` : undefined },
   ];
 
   return (
@@ -170,13 +180,13 @@ export default function StoreLocator() {
         <div style={{ position: "relative" }}>
           <div className="flex items-center justify-center gap-2 mb-3">
             <MapPin size={14} style={{ color: "#D4A017" }} />
-            <span style={{ color: "#D4A017", fontSize: "0.72rem", letterSpacing: "0.2em" }}>STORE LOCATOR</span>
+            <span style={{ color: "#D4A017", fontSize: "0.72rem", letterSpacing: "0.2em" }}>{c.eyebrow.toUpperCase()}</span>
           </div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", color: "#FAF6EE", fontSize: "clamp(1.8rem, 4vw, 3rem)", margin: 0 }}>
-            Find a Store Near You
+            {t("storeTitle")}
           </h1>
           <p style={{ color: "#A8C580", marginTop: "12px", maxWidth: "520px", margin: "12px auto 0", lineHeight: 1.7, fontSize: "0.9rem" }}>
-            Rajapura products are available at over {totalShops} authorized stores across all 9 provinces of Sri Lanka.
+            {t("storeDescription")} ({totalShops})
           </p>
         </div>
       </div>
@@ -244,7 +254,7 @@ export default function StoreLocator() {
           style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", height: "calc(100vh - 300px)", minHeight: "440px" }}
         >
           
-          <Panel active color="#2D5016" icon={<Leaf size={14} />} title="Select Province">
+          <Panel active color="#2D5016" icon={<Leaf size={14} />} title={c.selectProvince}>
             {provinces.map((province) => {
               const isSelected = selectedProvince?.name === province.name;
               const totalInProv = province.districts.reduce((a, d) => a + d.towns.reduce((b, t) => b + t.shops.length, 0), 0);
@@ -253,8 +263,8 @@ export default function StoreLocator() {
                   <div className="flex items-center gap-2">
                     <span style={{ fontSize: "1.05rem" }}>{province.icon}</span>
                     <div>
-                      <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{province.name}</p>
-                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{province.districts.length} dist · {totalInProv} stores</p>
+                      <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(province)}</p>
+                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{province.districts.length} {c.districts} · {totalInProv} {c.storesLower}</p>
                     </div>
                   </div>
                   <ChevronRight size={13} style={{ color: isSelected ? "#2D5016" : "#A8C580", transform: isSelected ? "rotate(90deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
@@ -264,9 +274,9 @@ export default function StoreLocator() {
           </Panel>
 
           
-          <Panel active={!!selectedProvince} color="#4A7C23" icon={<MapPin size={14} />} title={selectedProvince ? selectedProvince.name : "Select Province First"}>
+          <Panel active={!!selectedProvince} color="#4A7C23" icon={<MapPin size={14} />} title={selectedProvince ? nameOf(selectedProvince) : c.selectProvinceFirst}>
             {!selectedProvince ? (
-              <EmptyState icon={<MapPin size={28} />} message="Select a province to see districts." />
+              <EmptyState icon={<MapPin size={28} />} message={c.selectProvinceHint} />
             ) : (
               selectedProvince.districts.map((district) => {
                 const isSelected = selectedDistrict?.name === district.name;
@@ -276,8 +286,8 @@ export default function StoreLocator() {
                     <div className="flex items-center gap-2">
                       <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: isSelected ? "#4A7C23" : "#C8D8B0", flexShrink: 0 }} />
                       <div>
-                        <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{district.name}</p>
-                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{district.towns.length} towns · {sc} stores</p>
+                        <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(district)}</p>
+                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{district.towns.length} {c.towns} · {sc} {c.storesLower}</p>
                       </div>
                     </div>
                     <ChevronRight size={13} style={{ color: isSelected ? "#4A7C23" : "#A8C580", transform: isSelected ? "rotate(90deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
@@ -288,9 +298,9 @@ export default function StoreLocator() {
           </Panel>
 
           
-          <Panel active={!!selectedDistrict} color="#8B5E3C" icon={<MapPin size={14} />} title={selectedDistrict ? `${selectedDistrict.name} Towns` : "Select District First"}>
+          <Panel active={!!selectedDistrict} color="#8B5E3C" icon={<MapPin size={14} />} title={selectedDistrict ? `${nameOf(selectedDistrict)} — ${c.towns}` : c.selectDistrictFirst}>
             {!selectedDistrict ? (
-              <EmptyState icon={<MapPin size={28} />} message="Select a district to see towns." />
+              <EmptyState icon={<MapPin size={28} />} message={c.selectDistrictHint} />
             ) : (
               selectedDistrict.towns.map((town) => {
                 const isSelected = selectedTown?.name === town.name;
@@ -299,8 +309,8 @@ export default function StoreLocator() {
                     <div className="flex items-center gap-2">
                       <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: isSelected ? "#8B5E3C" : "#C8D8B0", flexShrink: 0 }} />
                       <div>
-                        <p style={{ color: isSelected ? "#5C3D20" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{town.name}</p>
-                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{town.shops.length} store{town.shops.length !== 1 ? "s" : ""}</p>
+                        <p style={{ color: isSelected ? "#5C3D20" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(town)}</p>
+                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.64rem" }}>{town.shops.length} {town.shops.length === 1 ? c.store : c.storesLower}</p>
                       </div>
                     </div>
                     <ChevronRight size={13} style={{ color: isSelected ? "#8B5E3C" : "#A8C580", transform: isSelected ? "rotate(90deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
@@ -311,21 +321,21 @@ export default function StoreLocator() {
           </Panel>
 
           
-          <Panel active={!!selectedTown} color="#D4A017" icon={<Store size={14} />} title={selectedTown ? `Stores in ${selectedTown.name}` : "Select Town First"}>
+          <Panel active={!!selectedTown} color="#D4A017" icon={<Store size={14} />} title={selectedTown ? `${c.storesIn} ${nameOf(selectedTown)}` : c.selectTownFirst}>
             {!selectedTown ? (
-              <EmptyState icon={<Store size={28} />} message="Select a town to view stores." />
+              <EmptyState icon={<Store size={28} />} message={c.selectTownHint} />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                 <div style={{ padding: "6px 4px 0", display: "flex", gap: "4px", flexWrap: "wrap", flexShrink: 0 }}>
                   {["All", "Ayurvedic Store", "Pharmacy", "Health Center", "Supermarket"].map((f) => (
                     <button key={f} onClick={() => setActiveFilter(f)} style={{ backgroundColor: activeFilter === f ? "#2D5016" : "transparent", color: activeFilter === f ? "#FAF6EE" : "#6B4423", border: `1px solid ${activeFilter === f ? "#2D5016" : "rgba(45,80,22,0.2)"}`, padding: "2px 7px", borderRadius: "50px", fontSize: "0.6rem", cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {f}
+                      {typeLabel(f)}
                     </button>
                   ))}
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", padding: "4px" }}>
                   {filteredShops.length === 0 ? (
-                    <p style={{ color: "#A8C580", fontSize: "0.8rem", padding: "16px", textAlign: "center" }}>No stores match this filter.</p>
+                    <p style={{ color: "#A8C580", fontSize: "0.8rem", padding: "16px", textAlign: "center" }}>{c.noMatch}</p>
                   ) : (
                     filteredShops.map((shop) => <ShopCard key={shop.id} shop={shop} />)
                   )}
@@ -341,8 +351,8 @@ export default function StoreLocator() {
           
           <MobileAccordion
             step={1}
-            title="Province"
-            subtitle={selectedProvince?.name ?? "Select a province"}
+            title={c.province}
+            subtitle={selectedProvince ? nameOf(selectedProvince) : c.selectProvince}
             color="#2D5016"
             active={mobileStep === 1}
             complete={!!selectedProvince}
@@ -371,8 +381,8 @@ export default function StoreLocator() {
                   >
                     <span style={{ fontSize: "1.3rem" }}>{province.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.85rem", fontWeight: isSelected ? 700 : 400 }}>{province.name}</p>
-                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.68rem" }}>{province.districts.length} districts · {totalInProv} stores</p>
+                      <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.85rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(province)}</p>
+                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.68rem" }}>{province.districts.length} {c.districts} · {totalInProv} {c.storesLower}</p>
                     </div>
                     {isSelected && <ChevronRight size={14} style={{ color: "#2D5016", flexShrink: 0 }} />}
                   </button>
@@ -385,8 +395,8 @@ export default function StoreLocator() {
           {selectedProvince && (
             <MobileAccordion
               step={2}
-              title="District"
-              subtitle={selectedDistrict?.name ?? `Choose a district in ${selectedProvince.name}`}
+              title={c.district}
+              subtitle={selectedDistrict ? nameOf(selectedDistrict) : `${c.chooseDistrict} ${nameOf(selectedProvince)}`}
               color="#4A7C23"
               active={mobileStep === 2}
               complete={!!selectedDistrict}
@@ -415,8 +425,8 @@ export default function StoreLocator() {
                     >
                       <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: isSelected ? "#4A7C23" : "#C8D8B0", flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
-                        <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.85rem", fontWeight: isSelected ? 700 : 400 }}>{district.name}</p>
-                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.68rem" }}>{district.towns.length} towns · {sc} stores</p>
+                        <p style={{ color: isSelected ? "#2D5016" : "#3B2314", margin: 0, fontSize: "0.85rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(district)}</p>
+                        <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.68rem" }}>{district.towns.length} {c.towns} · {sc} {c.storesLower}</p>
                       </div>
                     </button>
                   );
@@ -429,8 +439,8 @@ export default function StoreLocator() {
           {selectedDistrict && (
             <MobileAccordion
               step={3}
-              title="Town"
-              subtitle={selectedTown?.name ?? `Choose a town in ${selectedDistrict.name}`}
+              title={c.town}
+              subtitle={selectedTown ? nameOf(selectedTown) : `${c.chooseTown} ${nameOf(selectedDistrict)}`}
               color="#8B5E3C"
               active={mobileStep === 3}
               complete={!!selectedTown}
@@ -452,8 +462,8 @@ export default function StoreLocator() {
                         textAlign: "left",
                       }}
                     >
-                      <p style={{ color: isSelected ? "#5C3D20" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{town.name}</p>
-                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.66rem" }}>{town.shops.length} store{town.shops.length !== 1 ? "s" : ""}</p>
+                      <p style={{ color: isSelected ? "#5C3D20" : "#3B2314", margin: 0, fontSize: "0.82rem", fontWeight: isSelected ? 700 : 400 }}>{nameOf(town)}</p>
+                      <p style={{ color: "#8B5E3C", margin: 0, fontSize: "0.66rem" }}>{town.shops.length} {town.shops.length === 1 ? c.store : c.storesLower}</p>
                     </button>
                   );
                 })}
@@ -465,8 +475,8 @@ export default function StoreLocator() {
           {selectedTown && (
             <MobileAccordion
               step={4}
-              title={`Stores in ${selectedTown.name}`}
-              subtitle={`${filteredShops.length} store${filteredShops.length !== 1 ? "s" : ""} found`}
+              title={`${c.storesIn} ${nameOf(selectedTown)}`}
+              subtitle={`${filteredShops.length} ${filteredShops.length === 1 ? c.store : c.storesLower} ${c.found}`}
               color="#D4A017"
               active={mobileStep === 4}
               complete={false}
@@ -477,12 +487,12 @@ export default function StoreLocator() {
                 <div className="flex flex-wrap gap-2 mb-3">
                   {["All", "Ayurvedic Store", "Pharmacy", "Health Center", "Supermarket"].map((f) => (
                     <button key={f} onClick={() => setActiveFilter(f)} style={{ backgroundColor: activeFilter === f ? "#2D5016" : "transparent", color: activeFilter === f ? "#FAF6EE" : "#6B4423", border: `1px solid ${activeFilter === f ? "#2D5016" : "rgba(45,80,22,0.2)"}`, padding: "4px 10px", borderRadius: "50px", fontSize: "0.72rem", cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {f}
+                      {typeLabel(f)}
                     </button>
                   ))}
                 </div>
                 {filteredShops.length === 0 ? (
-                  <p style={{ color: "#A8C580", fontSize: "0.82rem", textAlign: "center", padding: "16px" }}>No stores match this filter.</p>
+                  <p style={{ color: "#A8C580", fontSize: "0.82rem", textAlign: "center", padding: "16px" }}>{c.noMatch}</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {filteredShops.map((shop) => <ShopCard key={shop.id} shop={shop} />)}
@@ -511,11 +521,11 @@ export default function StoreLocator() {
           >
             <div>
               <p style={{ color: "#2D5016", margin: 0, fontSize: "0.84rem" }}>
-                <strong>{filteredShops.length} store{filteredShops.length !== 1 ? "s" : ""}</strong> in{" "}
-                <strong>{selectedTown.name}, {selectedDistrict?.name}, {selectedProvince?.name}</strong>
+                <strong>{filteredShops.length} {filteredShops.length === 1 ? c.store : c.storesLower}</strong>{" "}
+                <strong>{nameOf(selectedTown)}, {nameOf(selectedDistrict)}, {nameOf(selectedProvince)}</strong>
               </p>
               <p style={{ color: "#8B5E3C", margin: "2px 0 0", fontSize: "0.72rem" }}>
-                All authorized stores carry the full Rajapura range.
+                {c.allCarry}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -524,7 +534,7 @@ export default function StoreLocator() {
                 if (count === 0) return null;
                 return (
                   <div key={type} style={{ backgroundColor: style.bg, color: style.text, padding: "3px 10px", borderRadius: "50px", fontSize: "0.7rem" }}>
-                    {style.icon} {count} {type}{count !== 1 ? "s" : ""}
+                    {style.icon} {count} {typeLabel(type)}
                   </div>
                 );
               })}
@@ -538,21 +548,23 @@ export default function StoreLocator() {
 
 
 function ShopCard({ shop }: { shop: Shop }) {
+  const { language } = useLanguage();
+  const c = storeCopy[language];
   const typeStyle = typeColors[shop.type];
   return (
     <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "12px 14px", border: "1px solid rgba(45,80,22,0.1)", boxShadow: "0 2px 6px rgba(45,80,22,0.05)" }}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "0.88rem", margin: 0, lineHeight: 1.3 }}>
-          {shop.name}
+          {localized(shop.translations?.name, language, shop.name)}
         </h3>
         <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, fontSize: "0.62rem", padding: "2px 7px", borderRadius: "50px", whiteSpace: "nowrap", flexShrink: 0 }}>
-          {typeStyle.icon} {shop.type}
+          {typeStyle.icon} {c.types[shop.type]}
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         <div className="flex gap-2">
           <MapPin size={11} style={{ color: "#8B5E3C", marginTop: "2px", flexShrink: 0 }} />
-          <span style={{ color: "#5C4033", fontSize: "0.74rem", lineHeight: 1.4 }}>{shop.address}</span>
+          <span style={{ color: "#5C4033", fontSize: "0.74rem", lineHeight: 1.4 }}>{localized(shop.translations?.address, language, shop.address)}</span>
         </div>
         <div className="flex gap-2">
           <Phone size={11} style={{ color: "#8B5E3C", flexShrink: 0, marginTop: "2px" }} />
@@ -560,7 +572,7 @@ function ShopCard({ shop }: { shop: Shop }) {
         </div>
         <div className="flex gap-2">
           <Clock size={11} style={{ color: "#8B5E3C", flexShrink: 0, marginTop: "2px" }} />
-          <span style={{ color: "#5C4033", fontSize: "0.74rem" }}>{shop.hours}</span>
+          <span style={{ color: "#5C4033", fontSize: "0.74rem" }}>{localized(shop.translations?.hours, language, shop.hours)}</span>
         </div>
       </div>
     </div>

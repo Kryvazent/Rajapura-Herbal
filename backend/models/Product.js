@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+const textTranslations = { en: { type: String, trim: true }, si: { type: String, trim: true }, ta: { type: String, trim: true } };
+const listTranslations = { en: [{ type: String, trim: true }], si: [{ type: String, trim: true }], ta: [{ type: String, trim: true }] };
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -35,6 +38,15 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+    tamilName: { type: String, trim: true, maxlength: [100, "Tamil name too long"] },
+    translations: {
+      name: textTranslations,
+      category: textTranslations,
+      description: textTranslations,
+      benefits: listTranslations,
+      ingredients: listTranslations,
+      howToUse: listTranslations,
     },
     image: {
       type: String,

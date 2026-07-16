@@ -3,53 +3,32 @@ import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucid
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Product } from "../interfaces/productInterface";
+import { localized, useLanguage } from "../i18n/LanguageContext";
 import Logo from "../components/Logo";
+import { homeCopy, homeEstablished } from "../i18n/translations/home";
 
-const getProductPriceLabel = (price?: string) =>
-  price?.trim() ? price : "Contact for price";
-
-const stats = [
-  { value: "200+", label: "Years of Heritage" },
-  { value: "48", label: "Herbal Ingredients" },
-  { value: "9", label: "Provinces Served" },
-  { value: "100%", label: "Natural & Pure" },
-];
-
-const values = [
-  {
-    icon: Leaf,
-    title: "Sustainably Sourced",
-    desc: "Every herb is ethically harvested from certified organic farms and pristine Sri Lankan wilderness.",
-  },
-  {
-    icon: Shield,
-    title: "Ayurvedic Certified",
-    desc: "All formulations are approved by Sri Lanka's Department of Ayurveda and traditional physicians.",
-  },
-  {
-    icon: Heart,
-    title: "Holistic Wellness",
-    desc: "Our products nurture body, mind and spirit following the tridosha principles of Ayurveda.",
-  },
-  {
-    icon: Flower,
-    title: "Zero Chemicals",
-    desc: "No artificial preservatives, colours, or additives — just pure nature in every product.",
-  },
-];
+const statValues = ["200+", "48", "9", "100%"];
+const valueIcons = [Leaf, Shield, Heart, Flower];
 
 export default function Home() {
+  const { language, t } = useLanguage();
+  const c = homeCopy[language];
+  const stats = statValues.map((value, index) => ({ value, label: c.stats[index] }));
+  const values = valueIcons.map((icon, index) => ({ icon, ...c.values[index] }));
+  const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
+  const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [language]);
 
   async function loadData() {
+    setLoading(true);
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/product-count/3"
+        import.meta.env.VITE_BACKEND_URL + `/user/product-count/3?lang=${language}`
       );
 
       console.log("API response:", res.data);
@@ -139,7 +118,7 @@ export default function Home() {
                   letterSpacing: "0.1em",
                 }}
               >
-                AUTHENTIC AYURVEDIC HERITAGE
+                {t("heroEyebrow").toUpperCase()}
               </span>
             </div>
 
@@ -152,14 +131,7 @@ export default function Home() {
                 marginBottom: "18px",
               }}
             >
-              Nature's Wisdom,
-              <br />
-              <span style={{ color: "#8BC34A", fontStyle: "italic" }}>
-                Rajapura
-              </span>
-              's
-              <br />
-              Pure Heritage
+              {t("heroTitle")}
             </h1>
 
             <p
@@ -171,9 +143,7 @@ export default function Home() {
                 maxWidth: "480px",
               }}
             >
-              Discover the healing power of authentic Sri Lankan herbs, crafted
-              with two centuries of Ayurvedic wisdom. Pure, potent, and prepared
-              with reverence for ancient traditions.
+              {t("heroDescription")}
             </p>
 
             <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -193,7 +163,7 @@ export default function Home() {
                   whiteSpace: "nowrap",
                 }}
               >
-                Explore Products <ChevronRight size={16} />
+                {t("exploreProducts")} <ChevronRight size={16} />
               </Link>
               <Link
                 to="/store-locator"
@@ -212,7 +182,7 @@ export default function Home() {
                   whiteSpace: "nowrap",
                 }}
               >
-                Find a Store <ChevronRight size={16} />
+                {t("stores")} <ChevronRight size={16} />
               </Link>
             </div>
           </div>
@@ -231,7 +201,7 @@ export default function Home() {
             >
               <img
                 src="https://images.unsplash.com/photo-1708667027894-6e9481ae1baf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBtZWRpY2luZSUyMGdyZWVuJTIwbGVhdmVzJTIwb3JnYW5pY3xlbnwxfHx8fDE3NzIwMzUxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Herbal medicine"
+                alt={c.imageAlt}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
             </div>
@@ -267,10 +237,10 @@ export default function Home() {
               </div>
               <div>
                 <p style={{ color: "#2D5016", margin: 0, lineHeight: 1.3 }}>
-                  <strong>100% Pure</strong>
+                  <strong>{c.pure}</strong>
                 </p>
                 <p style={{ color: "#8B5E3C", fontSize: "0.8rem", margin: 0 }}>
-                  No additives or preservatives
+                  {c.noAdditives}
                 </p>
               </div>
             </div>
@@ -304,7 +274,7 @@ export default function Home() {
                   textAlign: "center",
                 }}
               >
-                Trusted Since 1973 
+                {c.trusted}
               </p>
             </div>
           </div>
@@ -349,7 +319,7 @@ export default function Home() {
             <div className="relative">
               <img
                 src="/rajapura-product-collection.jpg"
-                alt="Herbal products"
+                alt={c.collectionAlt}
                 style={{
                   width: "100%",
                   height: "clamp(280px, 40vw, 420px)",
@@ -380,10 +350,10 @@ export default function Home() {
                     margin: 0,
                   }}
                 >
-                  Est. 1973 
+                  {homeEstablished[language]}
                 </p>
                 <p style={{ color: "#8B5E3C", fontSize: "0.75rem", margin: 0 }}>
-                  Five Decades of Trust
+                  {c.trust}
                 </p>
               </div>
             </div>
@@ -398,7 +368,7 @@ export default function Home() {
                 textTransform: "uppercase",
               }}
             >
-              Our Heritage
+              {c.heritage}
             </span>
             <h2
               style={{
@@ -410,11 +380,7 @@ export default function Home() {
                 lineHeight: 1.2,
               }}
             >
-              A Legacy of
-              <br />
-              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>
-                Ayurvedic Excellence
-              </span>
+              {c.legacy}
             </h2>
             <p
               style={{
@@ -424,7 +390,7 @@ export default function Home() {
                 fontSize: "0.95rem",
               }}
             >
-              Rajapura Herbal Drugs Co. (Pvt) Ltd is one of Sri Lanka’s leading manufacturers and distributors of high-quality herbal medical products. The company operates as a legally registered limited liability company under the laws and regulations of the Government of Sri Lanka.
+              {c.heritageOne}
             </p>
             <p
               style={{
@@ -434,9 +400,7 @@ export default function Home() {
                 fontSize: "0.95rem",
               }}
             >
-              Today, we blend this ancient wisdom with modern quality standards,
-              bringing the healing gifts of nature to households across Sri Lanka
-              — always pure, always authentic.
+              {c.heritageTwo}
             </p>
             <Link
               to="/about"
@@ -452,7 +416,7 @@ export default function Home() {
                 gap: "8px",
               }}
             >
-              Learn Our Story <ChevronRight size={16} />
+              {c.story} <ChevronRight size={16} />
             </Link>
           </div>
         </div>
@@ -470,7 +434,7 @@ export default function Home() {
                 textTransform: "uppercase",
               }}
             >
-              Why Choose Us
+              {c.why}
             </span>
             <h2
               style={{
@@ -480,7 +444,7 @@ export default function Home() {
                 marginTop: "8px",
               }}
             >
-              The Rajapura Difference
+              {c.difference}
             </h2>
           </div>
 
@@ -549,7 +513,7 @@ export default function Home() {
                 textTransform: "uppercase",
               }}
             >
-              Our Collection
+              {c.collection}
             </span>
             <h2
               style={{
@@ -559,7 +523,7 @@ export default function Home() {
                 marginTop: "8px",
               }}
             >
-              Featured Products
+              {c.featured}
             </h2>
           </div>
           <Link
@@ -577,7 +541,7 @@ export default function Home() {
               whiteSpace: "nowrap",
             }}
           >
-            View All <ChevronRight size={16} />
+            {c.viewAll} <ChevronRight size={16} />
           </Link>
         </div>
 
@@ -612,10 +576,10 @@ export default function Home() {
                 fontFamily: "'Playfair Display', serif",
               }}
             >
-              No products available at the moment.
+              {c.none}
             </p>
             <p style={{ color: "#8B5E3C", fontSize: "0.85rem", marginTop: "6px" }}>
-              Please check back soon.
+              {c.checkBack}
             </p>
           </div>
         )}
@@ -641,7 +605,7 @@ export default function Home() {
                 >
                   <img
                     src={product.image}
-                    alt={product.name}
+                    alt={localized(product.translations?.name, language, product.name)}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -665,7 +629,7 @@ export default function Home() {
                         letterSpacing: "0.05em",
                       }}
                     >
-                      {product.badge}
+                      {badgeLabel(product.badge)}
                     </div>
                   )}
                 </div>
@@ -679,7 +643,7 @@ export default function Home() {
                       marginBottom: "4px",
                     }}
                   >
-                    {product.category.toUpperCase()}
+                    {localized(product.translations?.category, language, product.category).toUpperCase()}
                   </p>
                   <h3
                     style={{
@@ -689,7 +653,7 @@ export default function Home() {
                       marginBottom: "8px",
                     }}
                   >
-                    {product.name}
+                    {localized(product.translations?.name, language, product.name)}
                   </h3>
                   <p
                     style={{
@@ -699,7 +663,7 @@ export default function Home() {
                       marginBottom: "16px",
                     }}
                   >
-                    {product.description.substring(0, 90)}...
+                    {localized(product.translations?.description, language, product.description).substring(0, 90)}...
                   </p>
                   <div className="flex items-center justify-between">
                     <span
@@ -709,7 +673,7 @@ export default function Home() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {getProductPriceLabel(product.price)}
+                      {priceLabel(product.price)}
                     </span>
                     <Link
                       to="/store-locator"
@@ -722,7 +686,7 @@ export default function Home() {
                         fontSize: "0.8rem",
                       }}
                     >
-                      Find Store
+                      {c.findStore}
                     </Link>
                   </div>
                 </div>
@@ -755,6 +719,7 @@ export default function Home() {
 
           <img
             src="/logo2.png"
+            alt="Rajapura"
             style={{
               objectFit: 'contain',
               display: 'block',
@@ -770,9 +735,7 @@ export default function Home() {
               marginBottom: "14px",
             }}
           >
-            Find Rajapura Products
-            <br />
-            <span style={{ fontStyle: "italic", color: "#D4A017" }}>Near You</span>
+            {c.findProducts}
           </h2>
           <p
             style={{
@@ -782,8 +745,7 @@ export default function Home() {
               fontSize: "0.95rem",
             }}
           >
-            Available at pharmacies, Ayurvedic stores, and health centres across all 9
-            provinces of Sri Lanka.
+            {c.available}
           </p>
           <Link
             to="/store-locator"
@@ -799,7 +761,7 @@ export default function Home() {
               gap: "8px",
             }}
           >
-            Use Store Locator <ChevronRight size={16} />
+            {c.locator} <ChevronRight size={16} />
           </Link>
         </div>
       </section>

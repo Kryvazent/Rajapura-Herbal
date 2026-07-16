@@ -19,6 +19,8 @@ import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
+import LanguageTabs from "./LanguageTabs";
+import { Language } from "../i18n/LanguageContext";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -165,6 +167,7 @@ function FieldError({ message }: { message?: string }) {
 const emptyForm = (): Omit<Product, "_id"> => ({
   name: "",
   sinhalaName: "",
+  tamilName: "",
   category: CATEGORIES[0],
   description: "",
   benefits: [""],
@@ -173,6 +176,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   price: "",
   image: "",
   badge: "",
+  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], si: "", ta: "" }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
 });
 
 
@@ -332,6 +336,7 @@ export default function AdminProducts() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [formData, setFormData] = useState<Omit<Product, "_id">>(emptyForm());
+  const [formLanguage, setFormLanguage] = useState<Language>("en");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [editingId, setEditingId] = useState<Schema.Types.ObjectId | string>("");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -560,6 +565,7 @@ export default function AdminProducts() {
 
   
   const openAdd = () => {
+    setFormLanguage("en");
     setFormData(emptyForm());
     setFormErrors({});
     setUploadProgress(0);
@@ -583,7 +589,16 @@ export default function AdminProducts() {
       ingredients: [...rest.ingredients],
       howToUse: [...(rest.howToUse ?? [])],
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
+      translations: {
+        name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
+        category: { en: rest.category, ...rest.translations?.category },
+        description: { en: rest.description, ...rest.translations?.description },
+        benefits: { en: [...rest.benefits], ...rest.translations?.benefits },
+        ingredients: { en: [...rest.ingredients], ...rest.translations?.ingredients },
+        howToUse: { en: [...(rest.howToUse ?? [])], ...rest.translations?.howToUse },
+      },
     });
+    setFormLanguage("en");
     setFormErrors({});
     setUploadProgress(0);
     setImageUploading(false);
@@ -715,6 +730,13 @@ export default function AdminProducts() {
       });
     }
   };
+
+  const translatedText = (field: "name" | "category" | "description") => formData.translations?.[field]?.[formLanguage] ?? "";
+  const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
+    setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
+  };
+  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => formData.translations?.[field]?.[formLanguage] ?? [""];
+  const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
   return (
     <div>
@@ -1124,22 +1146,15 @@ export default function AdminProducts() {
               }}
             >
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
+              <div>
                 <InputField
-                  label="Product Name"
-                  value={formData.name}
-                  onChange={(v) => set("name", v)}
+                  label={`Product Name (${formLanguage.toUpperCase()})`}
+                  value={translatedText("name")}
+                  onChange={(v) => setTranslatedText("name", v)}
                   placeholder="e.g. Rajapura Herbal Tea"
-                  required
-                  error={formErrors.name}
-                />
-                <InputField
-                  label="Sinhala Name"
-                  value={formData.sinhalaName}
-                  onChange={(v) => set("sinhalaName", v)}
-                  placeholder="e.g. රාජපුර ඖෂධ තේ"
-                  required
-                  error={formErrors.sinhalaName}
+                  required={formLanguage === "en"}
+                  error={formLanguage === "en" ? formErrors.name : undefined}
                 />
               </div>
 
@@ -1154,12 +1169,12 @@ export default function AdminProducts() {
                       marginBottom: "6px",
                     }}
                   >
-                    Category <span style={{ color: "#D4183D" }}>*</span>
+                    Category {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                   </label>
                   <div style={{ position: "relative" }}>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => set("category", e.target.value)}
+                    {formLanguage === "en" ? <select
+                      value={translatedText("category")}
+                      onChange={(e) => setTranslatedText("category", e.target.value)}
                       style={{
                         width: "100%",
                         padding: "10px 36px 10px 14px",
@@ -1176,7 +1191,7 @@ export default function AdminProducts() {
                       {CATEGORIES.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
-                    </select>
+                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />}
                     <ChevronDown
                       size={14}
                       style={{
@@ -1265,11 +1280,11 @@ export default function AdminProducts() {
                     marginBottom: "6px",
                   }}
                 >
-                  Description <span style={{ color: "#D4183D" }}>*</span>
+                  Description {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                 </label>
                 <textarea
-                  value={formData.description}
-                  onChange={(e) => set("description", e.target.value)}
+                  value={translatedText("description")}
+                  onChange={(e) => setTranslatedText("description", e.target.value)}
                   placeholder="Product description..."
                   rows={3}
                   style={{
@@ -1619,20 +1634,20 @@ export default function AdminProducts() {
               
               <TagsField
                 label="Benefits"
-                values={formData.benefits}
-                onChange={(v) => set("benefits", v)}
+                values={translatedList("benefits")}
+                onChange={(v) => setTranslatedList("benefits", v)}
                 placeholder="e.g. Improves digestion"
               />
               <TagsField
                 label="Ingredients"
-                values={formData.ingredients}
-                onChange={(v) => set("ingredients", v)}
+                values={translatedList("ingredients")}
+                onChange={(v) => setTranslatedList("ingredients", v)}
                 placeholder="e.g. Ginger"
               />
               <TagsField
                 label="How to Use Steps"
-                values={formData.howToUse ?? [""]}
-                onChange={(v) => set("howToUse", v)}
+                values={translatedList("howToUse")}
+                onChange={(v) => setTranslatedList("howToUse", v)}
                 placeholder="e.g. Mix 1 teaspoon in warm water..."
               />
             </div>

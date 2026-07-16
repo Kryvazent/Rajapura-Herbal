@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Search, Leaf, ChevronRight, X } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
+import { localized, localizedList, useLanguage } from "../i18n/LanguageContext";
+import { productsCopy } from "../i18n/translations/products";
 import axios from "axios";
 
-const getProductPriceLabel = (price?: string) =>
-  price?.trim() ? price : "Contact for price";
 
 export default function Products() {
+  const { language, t } = useLanguage();
+  const c = productsCopy[language];
+  const categoryLabel = (category: string) => category === "All" ? c.all : c.categories[category as keyof typeof c.categories] ?? category;
+  const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
+  const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -16,12 +21,14 @@ export default function Products() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [language]);
 
   async function loadData() {
+    setLoading(true);
+    setSelectedProduct(null);
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+        import.meta.env.VITE_BACKEND_URL + `/user/products-all?lang=${language}`
       );
 
       console.log("API response:", res.data);
@@ -93,7 +100,7 @@ export default function Products() {
                 letterSpacing: "0.2em",
               }}
             >
-              PURE · NATURAL · POTENT
+              {c.eyebrow.toUpperCase()}
             </span>
             <Leaf size={14} style={{ color: "#D4A017" }} />
           </div>
@@ -105,7 +112,7 @@ export default function Products() {
               margin: 0,
             }}
           >
-            Our Herbal Products
+            {t("products")}
           </h1>
           <p
             style={{
@@ -117,8 +124,7 @@ export default function Products() {
               fontSize: "0.9rem",
             }}
           >
-            Each product is crafted with reverence for ancient Ayurvedic
-            traditions, using only the finest sustainably sourced herbs.
+            {t("productsIntro")}
           </p>
         </div>
       </div>
@@ -149,7 +155,7 @@ export default function Products() {
             />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={c.search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -189,7 +195,7 @@ export default function Products() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {cat}
+                {categoryLabel(cat)}
               </button>
             ))}
           </div>
@@ -221,8 +227,7 @@ export default function Products() {
               marginBottom: "20px",
             }}
           >
-            Showing {filtered.length} product
-            {filtered.length !== 1 ? "s" : ""}
+            {c.showing} {filtered.length} {filtered.length === 1 ? c.product : c.products}
           </p>
         )}
 
@@ -257,7 +262,7 @@ export default function Products() {
                 >
                   <img
                     src={product.image}
-                    alt={product.name}
+                    alt={localized(product.translations?.name, language, product.name)}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -289,7 +294,7 @@ export default function Products() {
                         letterSpacing: "0.05em",
                       }}
                     >
-                      {product.badge}
+                      {badgeLabel(product.badge)}
                     </div>
                   )}
                   <div
@@ -303,7 +308,7 @@ export default function Products() {
                         margin: 0,
                       }}
                     >
-                      {product.category.toUpperCase()}
+                      {localized(product.translations?.category, language, product.category).toUpperCase()}
                     </p>
                   </div>
                 </div>
@@ -327,7 +332,7 @@ export default function Products() {
                       lineHeight: 1.3,
                     }}
                   >
-                    {product.name}
+                    {localized(product.translations?.name, language, product.name)}
                   </h3>
                   <p
                     style={{
@@ -338,7 +343,7 @@ export default function Products() {
                       marginTop: 0,
                     }}
                   >
-                    {product.sinhalaName}
+                    {language === "si" ? localized(product.translations?.name, language, product.sinhalaName) : language === "ta" ? localized(product.translations?.name, language, product.tamilName || product.name) : localized(product.translations?.name, language, product.name)}
                   </p>
                   <p
                     style={{
@@ -350,12 +355,12 @@ export default function Products() {
                       flex: 1,
                     }}
                   >
-                    {product.description.substring(0, 90)}...
+                    {localized(product.translations?.description, language, product.description).substring(0, 90)}...
                   </p>
 
                   
                   <div className="flex flex-wrap gap-1" style={{ marginBottom: "12px" }}>
-                    {product.ingredients.slice(0, 3).map((ing) => (
+                    {localizedList(product.translations?.ingredients, language).length ? localizedList(product.translations?.ingredients, language).slice(0, 3).map((ing) => (
                       <span
                         key={ing}
                         style={{
@@ -369,8 +374,8 @@ export default function Products() {
                       >
                         {ing}
                       </span>
-                    ))}
-                    {product.ingredients.length > 3 && (
+                    )) : product.ingredients.slice(0, 3).map((ing) => <span key={ing}>{ing}</span>)}
+                    {(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) > 3 && (
                       <span
                         style={{
                           color: "#8B5E3C",
@@ -378,7 +383,7 @@ export default function Products() {
                           padding: "3px 5px",
                         }}
                       >
-                        +{product.ingredients.length - 3} more
+                        +{(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) - 3} {c.more}
                       </span>
                     )}
                   </div>
@@ -394,7 +399,7 @@ export default function Products() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {getProductPriceLabel(product.price)}
+                      {priceLabel(product.price)}
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -412,7 +417,7 @@ export default function Products() {
                           cursor: "pointer",
                         }}
                       >
-                        Details
+                        {c.details}
                       </button>
                       <Link
                         to="/store-locator"
@@ -426,7 +431,7 @@ export default function Products() {
                           fontSize: "0.76rem",
                         }}
                       >
-                        Buy Now
+                        {c.buy}
                       </Link>
                     </div>
                   </div>
@@ -449,8 +454,8 @@ export default function Products() {
             />
             <p style={{ color: "#8B5E3C", fontSize: "1rem" }}>
               {products.length === 0
-                ? "No products available at the moment."
-                : "No products found matching your search."}
+                ? c.none
+                : c.noMatch}
             </p>
           </div>
         )}
@@ -499,7 +504,7 @@ export default function Products() {
                   lineHeight: 1.2,
                 }}
               >
-                {selectedProduct.name}
+                {localized(selectedProduct.translations?.name, language, selectedProduct.name)}
               </h2>
               <button
                 onClick={() => setSelectedProduct(null)}
@@ -529,7 +534,7 @@ export default function Products() {
                 <div className="hidden sm:block absolute inset-0">
                   <img
                     src={selectedProduct.image}
-                    alt={selectedProduct.name}
+                    alt={localized(selectedProduct.translations?.name, language, selectedProduct.name)}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -559,7 +564,7 @@ export default function Products() {
                         borderRadius: "50px",
                       }}
                     >
-                      {selectedProduct.badge}
+                      {badgeLabel(selectedProduct.badge)}
                     </span>
                   )}
                   <div
@@ -577,7 +582,7 @@ export default function Products() {
                         margin: 0,
                       }}
                     >
-                      {selectedProduct.category.toUpperCase()}
+                      {localized(selectedProduct.translations?.category, language, selectedProduct.category).toUpperCase()}
                     </p>
                     <p
                       style={{
@@ -587,14 +592,14 @@ export default function Products() {
                         margin: "2px 0 0",
                       }}
                     >
-                      {selectedProduct.sinhalaName}
+                      {localized(selectedProduct.translations?.name, language, selectedProduct.name)}
                     </p>
                   </div>
                 </div>
                 <img
                   className="block sm:hidden"
                   src={selectedProduct.image}
-                  alt={selectedProduct.name}
+                  alt={localized(selectedProduct.translations?.name, language, selectedProduct.name)}
                   style={{
                     width: "100%",
                     height: "100%",
@@ -631,7 +636,7 @@ export default function Products() {
                       lineHeight: 1.2,
                     }}
                   >
-                    {selectedProduct.name}
+                    {localized(selectedProduct.translations?.name, language, selectedProduct.name)}
                   </h2>
                   <div className="flex items-center justify-between">
                     <span
@@ -641,7 +646,7 @@ export default function Products() {
                         fontSize: "1.15rem",
                       }}
                     >
-                      {getProductPriceLabel(selectedProduct.price)}
+                      {priceLabel(selectedProduct.price)}
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -656,7 +661,7 @@ export default function Products() {
                           cursor: "pointer",
                         }}
                       >
-                        Close
+                        {c.close}
                       </button>
                       <Link
                         to="/store-locator"
@@ -672,7 +677,7 @@ export default function Products() {
                           gap: "5px",
                         }}
                       >
-                        Find Store <ChevronRight size={13} />
+                        {c.find} <ChevronRight size={13} />
                       </Link>
                     </div>
                   </div>
@@ -696,7 +701,7 @@ export default function Products() {
                         margin: 0,
                       }}
                     >
-                      {selectedProduct.description}
+                      {localized(selectedProduct.translations?.description, language, selectedProduct.description)}
                     </p>
 
                     <div>
@@ -709,10 +714,10 @@ export default function Products() {
                           marginTop: 0,
                         }}
                       >
-                        Key Benefits
+                        {c.benefits}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {selectedProduct.benefits.map((b) => (
+                        {localizedList(selectedProduct.translations?.benefits, language).map((b) => (
                           <span
                             key={b}
                             style={{
@@ -739,7 +744,7 @@ export default function Products() {
                           marginTop: 0,
                         }}
                       >
-                        {selectedProduct.ingredients.length > 0 ? "Ingredients" : ""}
+                        {localizedList(selectedProduct.translations?.ingredients, language).length > 0 ? c.ingredients : ""}
                       </p>
                       <p
                         style={{
@@ -749,12 +754,11 @@ export default function Products() {
                           lineHeight: 1.6,
                         }}
                       >
-                        {selectedProduct.ingredients.join(" · ")}
+                        {localizedList(selectedProduct.translations?.ingredients, language).join(" · ")}
                       </p>
                     </div>
 
-                    {selectedProduct.howToUse &&
-                      selectedProduct.howToUse.length > 0 && (
+                    {localizedList(selectedProduct.translations?.howToUse, language).length > 0 && (
                         <div>
                           <p
                             style={{
@@ -768,7 +772,7 @@ export default function Products() {
                               gap: "6px",
                             }}
                           >
-                            <span>📖</span> How to Use
+                            <span>📖</span> {c.how}
                           </p>
                           <ol
                             style={{
@@ -780,7 +784,7 @@ export default function Products() {
                               gap: "8px",
                             }}
                           >
-                            {selectedProduct.howToUse.map((step, i) => (
+                            {localizedList(selectedProduct.translations?.howToUse, language).map((step, i) => (
                               <li
                                 key={i}
                                 style={{
@@ -837,7 +841,7 @@ export default function Products() {
                           cursor: "pointer",
                         }}
                       >
-                        Close
+                        {c.close}
                       </button>
                       <Link
                         to="/store-locator"
@@ -855,7 +859,7 @@ export default function Products() {
                           gap: "5px",
                         }}
                       >
-                        Find Store <ChevronRight size={13} />
+                        {c.find} <ChevronRight size={13} />
                       </Link>
                     </div>
 

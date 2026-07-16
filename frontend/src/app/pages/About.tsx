@@ -3,135 +3,10 @@ import { Leaf, Award, Globe, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router";
 import CompanyLogo from "/CompanyLogo.jpg";
 import axios from "axios";
+import { LocalizedText, localized, useLanguage } from "../i18n/LanguageContext";
+import { aboutCopy, branches, certificationNames, productCertifications } from "../i18n/translations/about";
 
-const milestones = [
-  {
-    year: "300+ Years",
-    title: "Ancient Ola Leaf Manuscript",
-    desc: "A 300-year-old Ola leaf manuscript in the possession of Dr. Sumith Rajapura's family contains treatments for asthma, gastritis, and arthritis."
-  },
-  {
-    year: "100+ Years",
-    title: "Family Heritage of Ayurveda Practice",
-    desc: "The traditional herbal treatment system developed with experiences, knowledge, and practice from Dr. Sumith Rajapura's family history of more than 100 years."
-  },
-  {
-    year: "1977",
-    title: "Rajapura Herbal Drugs Co. (Pvt) Ltd Founded",
-    desc: "Rajapura Herbal Drugs Co. (Pvt) Ltd established as the leading manufacturing and distributing company of herbal medical products, registered as a legal limited company under the law of the Government of Sri Lanka."
-  },
-  {
-    year: "7+ Years",
-    title: "Over 10,000 Patients Treated",
-    desc: "Dr. Sumith Rajapura has successfully practiced for 7 years, treating over 10,000 patients for asthma, gastritis, and arthritis with herbal treatments that have no side effects."
-  },
-  {
-    year: "Present",
-    title: "Factory in Sirigala, Monaragala",
-    desc: "The primary facility is located in Sirigala, Monaragala District, Uva Province, covering approximately 05 acres with around 200 skilled workers, producing 123 locally certified products."
-  },
-  {
-    year: "Present",
-    title: "ISO Certified & Regulatory Compliance",
-    desc: "The factory holds ISO certification and operates under the oversight of the Monaragala District Ayurvedic Commission, guaranteeing compliance with regulatory standards."
-  },
-];
-
-const productCertifications = [
-  {
-    name: "Industrial Technology Institute",
-    issuer: "Certification of Industrial Technology Institute",
-    image: "/certifications/industrial-technology-institute.jpg",
-  },
-  {
-    name: "ISO 9001 Certified",
-    issuer: "Quality management certification",
-    image: "/certifications/iso-9001.jpg",
-  },
-  {
-    name: "Department of Ayurveda",
-    issuer: "Department of Ayurveda, Sri Lanka",
-    image: "/certifications/department-ayurveda.jpg",
-  },
-  {
-    name: "GMP Certified",
-    issuer: "Good Manufacturing Practice",
-    image: "/certifications/gmp.jpg",
-  },
-  {
-    name: "Halalan Taiyiban",
-    issuer: "The Halal Chain",
-    image: "/certifications/halalan-taiyiban.jpg",
-  },
-  {
-    name: "Halal Certified",
-    issuer: "Halal food certification",
-    image: "/certifications/halal-certified.jpg",
-  },
-  {
-    name: "Ministry of Health Malaysia",
-    issuer: "Malaysia health authority recognition",
-    image: "/certifications/ministry-health-malaysia.jpg",
-  },
-  {
-    name: "Ministry of Health Indonesia",
-    issuer: "Kementerian Kesehatan Republik Indonesia",
-    image: "/certifications/ministry-health-indonesia.jpg",
-  },
-];
-
-interface TeamMember { _id: string; name: string; title: string; description: string; imageUrl?: string }
-
-const branches = [
-  {
-    country: "Sri Lanka",
-    company: "Rajapura Herbal Drugs co.(Pvt) ltd",
-    status: "Mother Company",
-    lat: 7.8731,
-    lon: 80.7718,
-    type: "active",
-  },
-  {
-    country: "Malaysia",
-    company: "Rajapura Herbal Malaya Sdn. Bhd.",
-    status: "Branch",
-    lat: 4.2105,
-    lon: 101.9758,
-    type: "active",
-  },
-  {
-    country: "Indonesia",
-    company: "Rajapura Herbal",
-    status: "Branch",
-    lat: -0.7893,
-    lon: 113.9213,
-    type: "active",
-  },
-  {
-    country: "Germany",
-    company: "Rajapura Herbal",
-    status: "Ongoing",
-    lat: 51.1657,
-    lon: 10.4515,
-    type: "ongoing",
-  },
-  {
-    country: "Russia",
-    company: "Rajapura Herbal",
-    status: "Ongoing",
-    lat: 61.524,
-    lon: 105.3188,
-    type: "ongoing",
-  },
-  {
-    country: "Singapore",
-    company: "Rajapura Herbal",
-    status: "Ongoing",
-    lat: 1.3521,
-    lon: 103.8198,
-    type: "ongoing",
-  },
-];
+interface TeamMember { _id: string; name: string; title: string; description: string; imageUrl?: string; translations?: { name?: LocalizedText; title?: LocalizedText; description?: LocalizedText } }
 
 const mapZoom = 2;
 const mapTiles = Array.from({ length: 4 }, (_, y) =>
@@ -151,6 +26,9 @@ function getMapPosition(lat: number, lon: number) {
 }
 
 export default function About() {
+  const { language, t } = useLanguage();
+  const c = aboutCopy[language];
+  const cards = [Leaf, Award, Globe].map((icon, index) => ({ icon, ...c.cards[index] }));
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [selectedBranch, setSelectedBranch] = useState(branches[0]);
   const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
@@ -158,10 +36,11 @@ export default function About() {
   const dragStartRef = useRef({ pointerId: 0, x: 0, y: 0, panX: 0, panY: 0 });
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/team`)
+    setTeam([]);
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/team?lang=${language}`)
       .then((response) => setTeam(Array.isArray(response.data?.data) ? response.data.data : []))
       .catch(() => setTeam([]));
-  }, []);
+  }, [language]);
 
   function handleMapPointerDown(event: PointerEvent<HTMLDivElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -208,14 +87,14 @@ export default function About() {
         <div style={{ position: "relative" }}>
           <div className="flex items-center justify-center gap-2 mb-3">
             <Leaf size={14} style={{ color: "#D4A017" }} />
-            <span style={{ color: "#D4A017", fontSize: "0.72rem", letterSpacing: "0.2em" }}>OUR HERITAGE</span>
+            <span style={{ color: "#D4A017", fontSize: "0.72rem", letterSpacing: "0.2em" }}>{c.eyebrow.toUpperCase()}</span>
             <Leaf size={14} style={{ color: "#D4A017" }} />
           </div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", color: "#FAF6EE", fontSize: "clamp(1.8rem, 5vw, 3rem)", margin: 0 }}>
-            About Rajapura
+            {t("aboutTitle")}
           </h1>
           <p style={{ color: "#A8C580", marginTop: "12px", maxWidth: "480px", margin: "12px auto 0", lineHeight: 1.7, fontSize: "0.9rem" }}>
-            Rajapura Herbal Drugs Co. (Pvt) Ltd is one of Sri Lanka’s leading manufacturers and distributors of high-quality herbal medical products. The company operates as a legally registered limited liability company under the laws and regulations of the Government of Sri Lanka.          </p>
+            {t("aboutDescription")}</p>
         </div>
       </div>
       <div style={{ height: "4px", background: "linear-gradient(to right, #2D5016, #8BC34A, #D4A017, #8BC34A, #2D5016)" }} />
@@ -224,11 +103,7 @@ export default function About() {
 
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8 mb-14 sm:mb-16">
-          {[
-            { icon: Leaf, title: "Our Mission", text: "To preserve and share the authentic healing traditions of Sri Lankan Ayurveda, making pure herbal wellness accessible to all." },
-            { icon: Award, title: "Our Vision", text: "To be the most trusted guardian of traditional herbal medicine, bridging ancient wisdom with modern wellness needs." },
-            { icon: Globe, title: "Our Values", text: "Purity, sustainability, authenticity, and deep respect for nature and the traditional knowledge of our ancestors." },
-          ].map(({ icon: Icon, title, text }) => (
+          {cards.map(({ icon: Icon, title, text }) => (
             <div
               key={title}
               style={{
@@ -252,40 +127,24 @@ export default function About() {
 
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
           <div className="order-2 lg:order-2">
-            {/* <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>About The Company</span> */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
-              About The
-              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}> Company</span>
+              {c.companyTitle}
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              RajapuraHerbal  Drugs co.(pvt)  ltd, is the  leading
-              manufacturing   and   distributing   of   herbal   medical
-              products  in  the  huge  of the  Sri Lankan market  and  the
-              registered  as  the   legal   limited  company  under  the  law of
-              government of Sri Lanka.
+              {c.company[0]}
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Dr. SumithRajapura is The founder of RajapuraHerbal Drugs co.(pvt) ltd,
-              and  also this  is the traditional  herbal  treatments  system develop  with
-              experiences, knowledge, graduated as Ayurveda treatments and practice from
-              his  family  history of  more  than 100 years  ago, many of  patients  of Sri Lanka.
-              Asthma, Gastritis and Arthritis use these treatments and 100% undergone only by
-              RajapuraHerbal Medical treatments.
+              {c.company[1]}
             </p>
             <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
-              Sri Lanka is a country rich of heritage, one of which is its indigenous system of Medicine,
-              which has been practiced by the people since time immemorial. The Ayurveda system of
-              medicine from North India, the Siddha system of medicine from South India and the Unani
-              system of medicine of Arabs enriched with contributions from the traditional system of
-              medicine called DESHEEYA CHIKITHSA is popularly known as the Indigenous system of
-              medicine in Sri Lanka.
+              {c.company[2]}
             </p>
           </div>
           <div className="order-1 lg:order-1">
             <img
               // src="https://images.unsplash.com/photo-1708667027894-6e9481ae1baf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBtZWRpY2luZSUyMGdyZWVuJTIwbGVhdmVzJTIwb3JnYW5pY3xlbnwxfHx8fDE3NzIwMzUxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080"
               src={CompanyLogo}
-              alt="Herbal leaves"
+              alt={c.leavesAlt}
               style={{ width: "100%", height: "clamp(280px, 40vw, 460px)", objectFit: "cover", borderRadius: "20px", boxShadow: "0 20px 60px rgba(45,80,22,0.15)", display: "block" }}
             />
           </div>
@@ -293,42 +152,32 @@ export default function About() {
 
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14 sm:mb-20">
           <div className="order-2 lg:order-1">
-            {/* <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Founder's Story</span> */}
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.7rem, 3vw, 2.4rem)", marginTop: "8px", marginBottom: "18px" }}>
-              Founder's Story<br />
-              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>The Story of Dr. Rajapura</span>
+              {c.founderTitle}<br />
+              <span style={{ fontStyle: "italic", color: "#8B5E3C" }}>{c.founderSubtitle}</span>
             </h2>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              Dr. Sumith Rajapura is The founder of Rajapura Herbel Drugs co.(pvt) Itd, and also this is
-              the traditional herbal treatments system develop with experiences, knowledge,
-              graduated as Ayurveda treatments and practice from his family history of more than
-              100 years ago, many of the patients of Sri Lanka Asthma, Gastritis, and Arthritis use
-              these treatments and 100% undergone only Rajapura Herbal Medical treatments.            </p>
+              {c.founder}</p>
             {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               He watched his grandfather heal villagers using nothing but nature and deep empathy. This sparked a lifelong calling to preserve Sri Lanka's authentic herbal heritage.
             </p> */}
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>The Vision</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>{c.vision}</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              To provide the quality treatments to
-              our esteemed customers with the
-              herb.
+              {c.visionText}
             </p>
             {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               Determined to offer a holistic alternative, he founded Rajapura Herbal. His mission was simple: make time-tested, premium Ayurvedic remedies accessible to the modern world without compromising on purity.
             </p> */}
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>The Mission</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>{c.mission}</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
-              By produce and introduce best herbal
-              medicine product and keep long-term
-              relationship with our customers.
+              {c.missionText}
             </p>
             {/* <p style={{ color: "#5C4033", lineHeight: 1.8, marginBottom: "14px", fontSize: "0.95rem" }}>
               He ensures that plants are harvested at their peak potency according to traditional lunar cycles. Every formulation blends ancient palm-leaf manuscript recipes with rigorous modern quality standards.
             </p> */}
-            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>Our Goals</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "1.1rem", marginTop: "22px", marginBottom: "8px" }}>{c.goals}</h3>
             <p style={{ color: "#5C4033", lineHeight: 1.8, fontSize: "0.95rem" }}>
-              Be a leader of the herbal medicine product
-              manufacturing and distributing.
+              {c.goalsText}
             </p>
           </div>
           <div className="order-1 lg:order-2">
@@ -343,13 +192,13 @@ export default function About() {
 
         <div className="mb-14 sm:mb-20">
           <div className="text-center mb-10 sm:mb-12">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our Journey</span>
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>{c.journey}</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
-              Key Milestones
+              {c.milestonesTitle}
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-            {milestones.map((m) => (
+            {c.milestones.map((m) => (
               <div
                 key={m.year}
                 style={{
@@ -372,16 +221,16 @@ export default function About() {
 
         <div className="mb-14 sm:mb-20">
           <div className="text-center mb-10 sm:mb-12">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Product Assurance</span>
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>{c.assurance}</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
-              Product Certifications
+              {c.certifications}
             </h2>
             <p style={{ color: "#5C4033", maxWidth: "620px", margin: "12px auto 0", lineHeight: 1.8, fontSize: "0.92rem" }}>
-              Recognitions and product quality marks that support our commitment to trusted herbal wellness.
+              {c.certificationText}
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {productCertifications.map((cert) => (
+            {productCertifications.map((cert, index) => (
               <div
                 key={cert.name}
                 style={{
@@ -398,13 +247,13 @@ export default function About() {
                 }}
               >
                 <div style={{ width: "104px", height: "104px", borderRadius: "14px", backgroundColor: "#FFFFFF", border: "1px solid rgba(45,80,22,0.12)", display: "flex", alignItems: "center", justifyContent: "center", padding: "10px", marginBottom: "14px" }}>
-                  <img src={cert.image} alt={cert.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
+                  <img src={cert.image} alt={certificationNames[language][index]} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
                 </div>
                 <div className="flex items-center justify-center gap-1.5" style={{ color: "#2D5016", marginBottom: "6px" }}>
                   <ShieldCheck size={15} />
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.98rem", margin: 0 }}>{cert.name}</h3>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "0.98rem", margin: 0 }}>{certificationNames[language][index]}</h3>
                 </div>
-                <p style={{ color: "#5C4033", fontSize: "0.78rem", lineHeight: 1.55, margin: 0 }}>{cert.issuer}</p>
+                <p style={{ color: "#5C4033", fontSize: "0.78rem", lineHeight: 1.55, margin: 0 }}>{c.issuers[index]}</p>
               </div>
             ))}
           </div>
@@ -413,9 +262,9 @@ export default function About() {
 
         {team.length > 0 && <div>
           <div className="text-center mb-10 sm:mb-12">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Our People</span>
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>{c.people}</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
-              Meet the Team
+              {c.team}
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
@@ -431,10 +280,10 @@ export default function About() {
                   boxShadow: "0 4px 20px rgba(45,80,22,0.07)",
                 }}
               >
-                {member.imageUrl ? <img src={member.imageUrl} alt={member.name} style={{ width: "86px", height: "86px", borderRadius: "50%", objectFit: "cover", display: "block", margin: "0 auto 14px" }} /> : <div style={{ width: "68px", height: "68px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "1.8rem", color: "#8BC34A" }}>{member.name.trim().charAt(0)}</div>}
-                <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", marginBottom: "4px", fontSize: "1rem" }}>{member.name}</h3>
-                <p style={{ color: "#D4A017", fontSize: "0.78rem", marginBottom: "10px", letterSpacing: "0.05em" }}>{member.title}</p>
-                <p style={{ color: "#5C4033", fontSize: "0.84rem", lineHeight: 1.7, margin: 0 }}>{member.description}</p>
+                {member.imageUrl ? <img src={member.imageUrl} alt={localized(member.translations?.name, language, member.name)} style={{ width: "86px", height: "86px", borderRadius: "50%", objectFit: "cover", display: "block", margin: "0 auto 14px" }} /> : <div style={{ width: "68px", height: "68px", borderRadius: "50%", backgroundColor: "#2D5016", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "1.8rem", color: "#8BC34A" }}>{localized(member.translations?.name, language, member.name).charAt(0)}</div>}
+                <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", marginBottom: "4px", fontSize: "1rem" }}>{localized(member.translations?.name, language, member.name)}</h3>
+                <p style={{ color: "#D4A017", fontSize: "0.78rem", marginBottom: "10px", letterSpacing: "0.05em" }}>{localized(member.translations?.title, language, member.title)}</p>
+                <p style={{ color: "#5C4033", fontSize: "0.84rem", lineHeight: 1.7, margin: 0 }}>{localized(member.translations?.description, language, member.description)}</p>
               </div>
             ))}
           </div>
@@ -442,9 +291,9 @@ export default function About() {
 
         <div className="mt-14 sm:mt-20">
           <div className="text-center mb-10 sm:mb-12">
-            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>Global Network</span>
+            <span style={{ color: "#8B5E3C", fontSize: "0.8rem", letterSpacing: "0.2em", textTransform: "uppercase" }}>{c.network}</span>
             <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginTop: "8px" }}>
-              Company Branches
+              {c.branches}
             </h2>
           </div>
 
@@ -460,7 +309,7 @@ export default function About() {
               }}
             >
               <div
-                aria-label="Interactive company branches map"
+                aria-label={c.map}
                 onPointerDown={handleMapPointerDown}
                 onPointerMove={handleMapPointerMove}
                 onPointerUp={handleMapPointerUp}
@@ -542,10 +391,10 @@ export default function About() {
                             }}
                           >
                             <span style={{ color: isActive ? "#D82920" : "#D4A017", fontSize: "0.64rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                              {branch.status}
+                              {c.statuses[branch.status as keyof typeof c.statuses]}
                             </span>
                             <strong style={{ display: "block", color: "#2D5016", fontFamily: "'Playfair Display', serif", fontSize: "0.98rem", marginTop: "3px", marginBottom: "2px" }}>
-                              {branch.country}
+                              {c.countries[branch.country as keyof typeof c.countries]}
                             </strong>
                             <span style={{ display: "block", color: "#5C4033", fontSize: "0.74rem", lineHeight: 1.35 }}>
                               {branch.company}
@@ -559,8 +408,8 @@ export default function About() {
                           onFocus={() => setSelectedBranch(branch)}
                           onPointerDown={(event) => event.stopPropagation()}
                           aria-pressed={isSelected}
-                          aria-label={`${branch.company}, ${branch.country}`}
-                          title={`${branch.company} - ${branch.country}`}
+                          aria-label={`${branch.company}, ${c.countries[branch.country as keyof typeof c.countries]}`}
+                          title={`${branch.company} - ${c.countries[branch.country as keyof typeof c.countries]}`}
                           style={{
                             width: isSelected ? "34px" : "28px",
                             height: isSelected ? "34px" : "28px",
@@ -612,17 +461,17 @@ export default function About() {
       <section style={{ backgroundColor: "#F0EAD6", padding: "clamp(40px, 8vw, 60px) 24px", textAlign: "center" }}>
         <Leaf size={32} style={{ color: "#2D5016", margin: "0 auto 16px", display: "block" }} />
         <h2 style={{ fontFamily: "'Playfair Display', serif", color: "#2D5016", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", marginBottom: "14px" }}>
-          Experience the Rajapura Difference
+          {c.cta}
         </h2>
         <p style={{ color: "#5C4033", maxWidth: "480px", margin: "0 auto 24px", lineHeight: 1.8, fontSize: "0.95rem" }}>
-          Explore our full range of authentic Ayurvedic products and find a store near you.
+          {c.ctaText}
         </p>
         <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
           <Link to="/products" style={{ backgroundColor: "#2D5016", color: "#FAF6EE", padding: "12px 28px", borderRadius: "50px", textDecoration: "none", fontSize: "0.9rem" }}>
-            View Our Products
+            {c.viewProducts}
           </Link>
           <Link to="/store-locator" style={{ backgroundColor: "transparent", color: "#2D5016", padding: "12px 28px", borderRadius: "50px", textDecoration: "none", fontSize: "0.9rem", border: "1px solid #2D5016" }}>
-            Find a Store
+            {c.findStore}
           </Link>
         </div>
       </section>

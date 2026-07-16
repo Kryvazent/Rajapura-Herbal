@@ -1,42 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
+import { useLanguage } from "../i18n/LanguageContext";
+import { localizedPages, pages, seoNotFound, SITE_NAME } from "../i18n/translations/seo";
 
-const SITE_NAME = "Rajapura Herbal Company";
-const DEFAULT_TITLE =
-  "Rajapura Herbal Company | Authentic Sri Lankan Ayurvedic Remedies";
-const DEFAULT_DESCRIPTION =
-  "Discover Rajapura Herbal Company, offering authentic Sri Lankan Ayurvedic remedies, herbal products, services, and authorized store locations.";
 const DEFAULT_IMAGE = "/rajapura-product-collection.jpg";
 const SITE_URL =
   (import.meta.env.VITE_SITE_URL || "").replace(/\/$/, "") || "";
-
-const pages: Record<string, { title: string; description: string }> = {
-  "/": {
-    title: DEFAULT_TITLE,
-    description:
-      "Explore authentic Sri Lankan herbal products crafted with Ayurvedic tradition, natural ingredients, and Rajapura family heritage.",
-  },
-  "/products": {
-    title: "Herbal Products | Rajapura Herbal Company",
-    description:
-      "Browse Rajapura Herbal products including Ayurvedic oils, tonics, teas, powders, and natural wellness remedies.",
-  },
-  "/services": {
-    title: "Ayurvedic Services | Rajapura Herbal Company",
-    description:
-      "Find Rajapura Herbal wellness services and Ayurvedic care locations for traditional herbal support.",
-  },
-  "/store-locator": {
-    title: "Store Locator | Find Rajapura Herbal Products",
-    description:
-      "Find authorized Rajapura Herbal stores across Sri Lanka and locate herbal products near you.",
-  },
-  "/about": {
-    title: "About Rajapura Herbal | Ayurvedic Heritage Since 1973",
-    description:
-      "Learn about Rajapura Herbal Company, its Sri Lankan Ayurvedic heritage, founder story, certifications, and commitment to natural wellness.",
-  },
-};
 
 const setMeta = (selector: string, attribute: "content" | "href", value: string) => {
   const element = document.head.querySelector(selector);
@@ -57,13 +26,11 @@ const ensureLink = (rel: string) => {
 
 export default function SEO() {
   const location = useLocation();
+  const { language } = useLanguage();
 
   useEffect(() => {
-    const metadata = pages[location.pathname] ?? {
-      title: "Page Not Found | Rajapura Herbal Company",
-      description:
-        "The requested Rajapura Herbal page could not be found. Return to the homepage to explore products, services, and store locations.",
-    };
+    const translated = language === "en" ? pages : localizedPages[language] as Record<string, { title: string; description: string }>;
+    const metadata = translated[location.pathname] ?? seoNotFound[language];
     const canonicalUrl = SITE_URL
       ? `${SITE_URL}${location.pathname === "/" ? "" : location.pathname}`
       : window.location.href.split("#")[0].split("?")[0];
@@ -83,7 +50,7 @@ export default function SEO() {
     setMeta('meta[name="twitter:image"]', "content", imageUrl);
 
     ensureLink("canonical").href = canonicalUrl;
-  }, [location.pathname]);
+  }, [location.pathname, language]);
 
   return null;
 }

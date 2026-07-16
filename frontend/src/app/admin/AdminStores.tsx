@@ -19,8 +19,10 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import type { Province, District, Town, Shop } from "../data/stores";
+import type { Province, District, Town, Shop } from "../interfaces/storeInterface";
 import axios from "axios";
+import LanguageTabs from "./LanguageTabs";
+import { Language } from "../i18n/LanguageContext";
 
 type ShopType = Shop["type"];
 const SHOP_TYPES: ShopType[] = [
@@ -393,13 +395,16 @@ interface WizardState {
   provMode: "existing" | "new";
   selectedProvId: string;
   newProvName: string;
+  newProvTranslations: Partial<Record<Language, string>>;
   newProvIcon: string;
   distMode: "existing" | "new";
   selectedDistId: string;
   newDistName: string;
+  newDistTranslations: Partial<Record<Language, string>>;
   townMode: "existing" | "new";
   selectedTownId: string;
   newTownName: string;
+  newTownTranslations: Partial<Record<Language, string>>;
   shopForm: Omit<Shop, "id">;
 }
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
@@ -480,16 +485,18 @@ export default function AdminStores() {
     action: () => void;
   } | null>(null);
   const [wizard, setWizard] = useState<WizardState | null>(null);
+  const [formLanguage, setFormLanguage] = useState<Language>("en");
 
-  const [provForm, setProvForm] = useState({ _id: "", name: "", icon: "🌿" });
-  const [distForm, setDistForm] = useState({ _id: "", name: "" });
-  const [townForm, setTownForm] = useState({ name: "" });
+  const [provForm, setProvForm] = useState({ _id: "", name: "", icon: "🌿", translations: { name: { en: "", si: "", ta: "" } } });
+  const [distForm, setDistForm] = useState({ _id: "", name: "", translations: { name: { en: "", si: "", ta: "" } } });
+  const [townForm, setTownForm] = useState({ name: "", translations: { name: { en: "", si: "", ta: "" } } });
   const [shopForm, setShopForm] = useState<Omit<Shop, "id">>({
     name: "",
     address: "",
     phone: "",
     hours: "",
     type: "Ayurvedic Store",
+    translations: { name: { en: "", si: "", ta: "" }, address: { en: "", si: "", ta: "" }, hours: { en: "", si: "", ta: "" } },
   });
 
   const showToast = (message: string, type: "error" | "success") => {
@@ -540,7 +547,8 @@ export default function AdminStores() {
     });
 
   const openAddProvince = () => {
-    setProvForm({ _id: "", name: "", icon: "🌿" });
+    setFormLanguage("en");
+    setProvForm({ _id: "", name: "", icon: "🌿", translations: { name: { en: "", si: "", ta: "" } } });
     setFormErrors({});
     setModal({ kind: "addProvince" });
   };
@@ -550,6 +558,7 @@ export default function AdminStores() {
       _id: provinces[i]._id,
       name: provinces[i].name,
       icon: provinces[i].icon,
+      translations: { name: { en: provinces[i].name, si: "", ta: "", ...provinces[i].translations?.name } },
     });
     setFormErrors({});
     setModal({ kind: "editProvince", index: i });
@@ -567,14 +576,14 @@ export default function AdminStores() {
       if (modal?.kind === "addProvince") {
         await axios.post(
           `${API_URL}/admin/add-province`,
-          { province: { name: provForm.name.trim(), icon: provForm.icon } },
+          { province: { name: provForm.name.trim(), icon: provForm.icon, translations: provForm.translations } },
           { withCredentials: true }
         );
         showToast("Province added successfully.", "success");
       } else if (modal?.kind === "editProvince") {
         await axios.put(
           `${API_URL}/admin/update-province`,
-          { _id: provForm._id, name: provForm.name.trim(), icon: provForm.icon },
+          { _id: provForm._id, name: provForm.name.trim(), icon: provForm.icon, translations: provForm.translations },
           { withCredentials: true }
         );
         showToast("Province updated successfully.", "success");
@@ -617,7 +626,8 @@ export default function AdminStores() {
   };
 
   const openAddDistrict = (pi: number) => {
-    setDistForm({ _id: "", name: "" });
+    setFormLanguage("en");
+    setDistForm({ _id: "", name: "", translations: { name: { en: "", si: "", ta: "" } } });
     setFormErrors({});
     setModal({ kind: "addDistrict", provinceIndex: pi });
   };
@@ -626,6 +636,7 @@ export default function AdminStores() {
     setDistForm({
       _id: provinces[pi].districts[di]._id,
       name: provinces[pi].districts[di].name,
+      translations: { name: { en: provinces[pi].districts[di].name, si: "", ta: "", ...provinces[pi].districts[di].translations?.name } },
     });
     setFormErrors({});
     setModal({ kind: "editDistrict", provinceIndex: pi, districtIndex: di });
@@ -646,6 +657,7 @@ export default function AdminStores() {
           {
             _id: provinces[modal.provinceIndex]._id,
             name: distForm.name.trim(),
+            translations: distForm.translations,
           },
           { withCredentials: true }
         );
@@ -658,6 +670,7 @@ export default function AdminStores() {
             district_id:
               provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
             name: distForm.name.trim(),
+            translations: distForm.translations,
           },
           { withCredentials: true }
         );
@@ -703,13 +716,15 @@ export default function AdminStores() {
   };
 
   const openAddTown = (pi: number, di: number) => {
-    setTownForm({ name: "" });
+    setFormLanguage("en");
+    setTownForm({ name: "", translations: { name: { en: "", si: "", ta: "" } } });
     setFormErrors({});
     setModal({ kind: "addTown", provinceIndex: pi, districtIndex: di });
   };
 
   const openEditTown = (pi: number, di: number, ti: number) => {
-    setTownForm({ name: provinces[pi].districts[di].towns[ti].name });
+    const town = provinces[pi].districts[di].towns[ti];
+    setTownForm({ name: town.name, translations: { name: { en: town.name, si: "", ta: "", ...town.translations?.name } } });
     setFormErrors({});
     setModal({ kind: "editTown", provinceIndex: pi, districtIndex: di, townIndex: ti });
   };
@@ -731,6 +746,7 @@ export default function AdminStores() {
             district_id:
               provinces[modal.provinceIndex].districts[modal.districtIndex]._id,
             name: townForm.name.trim(),
+            translations: townForm.translations,
           },
           { withCredentials: true }
         );
@@ -746,6 +762,7 @@ export default function AdminStores() {
               provinces[modal.provinceIndex].districts[modal.districtIndex]
                 .towns[modal.townIndex]._id,
             name: townForm.name.trim(),
+            translations: townForm.translations,
           },
           { withCredentials: true }
         );
@@ -792,7 +809,8 @@ export default function AdminStores() {
   };
 
   const openAddShop = (pi: number, di: number, ti: number) => {
-    setShopForm({ name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" });
+    setFormLanguage("en");
+    setShopForm({ name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store", translations: { name: { en: "", si: "", ta: "" }, address: { en: "", si: "", ta: "" }, hours: { en: "", si: "", ta: "" } } });
     setFormErrors({});
     setModal({ kind: "addShop", provinceIndex: pi, districtIndex: di, townIndex: ti });
   };
@@ -805,6 +823,7 @@ export default function AdminStores() {
       phone: shop.phone,
       hours: shop.hours,
       type: shop.type,
+      translations: { name: { en: shop.name, ...shop.translations?.name }, address: { en: shop.address, ...shop.translations?.address }, hours: { en: shop.hours, ...shop.translations?.hours } },
     });
     setFormErrors({});
     setModal({
@@ -815,6 +834,13 @@ export default function AdminStores() {
       shopIndex: si,
     });
   };
+
+  const shopText = (field: "name" | "address" | "hours") => shopForm.translations?.[field]?.[formLanguage] ?? "";
+  const setShopText = (field: "name" | "address" | "hours", value: string) => setShopForm((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
+  const translatedPlaceName = (form: { name: string; translations: { name: Partial<Record<Language, string>> } }) => form.translations.name[formLanguage] ?? "";
+  const setProvinceName = (value: string) => setProvForm((current) => ({ ...current, ...(formLanguage === "en" ? { name: value } : {}), translations: { name: { ...current.translations.name, [formLanguage]: value } } }));
+  const setDistrictName = (value: string) => setDistForm((current) => ({ ...current, ...(formLanguage === "en" ? { name: value } : {}), translations: { name: { ...current.translations.name, [formLanguage]: value } } }));
+  const setTownName = (value: string) => setTownForm((current) => ({ ...current, ...(formLanguage === "en" ? { name: value } : {}), translations: { name: { ...current.translations.name, [formLanguage]: value } } }));
 
   const saveShop = async () => {
     const errors = validateShop(shopForm);
@@ -901,20 +927,24 @@ export default function AdminStores() {
   };
 
   const openWizard = () => {
+    setFormLanguage("en");
     setWizardErrors({});
     setWizard({
       step: 1,
       provMode: provinces.length > 0 ? "existing" : "new",
       selectedProvId: provinces[0]?._id ?? "",
       newProvName: "",
+      newProvTranslations: { en: "", si: "", ta: "" },
       newProvIcon: "🌿",
       distMode: "existing",
       selectedDistId: "",
       newDistName: "",
+      newDistTranslations: { en: "", si: "", ta: "" },
       townMode: "existing",
       selectedTownId: "",
       newTownName: "",
-      shopForm: { name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store" },
+      newTownTranslations: { en: "", si: "", ta: "" },
+      shopForm: { name: "", address: "", phone: "", hours: "", type: "Ayurvedic Store", translations: { name: { en: "", si: "", ta: "" }, address: { en: "", si: "", ta: "" }, hours: { en: "", si: "", ta: "" } } },
     });
   };
 
@@ -1014,13 +1044,16 @@ export default function AdminStores() {
               provMode: wizard.provMode,
               selectedProvId: wizard.selectedProvId,
               newProvName: wizard.newProvName,
+              newProvTranslations: wizard.newProvTranslations,
               newProvIcon: wizard.newProvIcon,
               distMode: wizard.distMode,
               selectedDistId: wizard.selectedDistId,
               newDistName: wizard.newDistName,
+              newDistTranslations: wizard.newDistTranslations,
               townMode: wizard.townMode,
               selectedTownId: wizard.selectedTownId,
               newTownName: wizard.newTownName,
+              newTownTranslations: wizard.newTownTranslations,
               shopForm: wizard.shopForm,
             },
           },
@@ -1721,6 +1754,7 @@ export default function AdminStores() {
 
             
             <div style={{ padding: "24px 28px", flex: 1, minHeight: "220px" }}>
+              <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
 
               
               {wizard.step === 1 && (
@@ -1751,8 +1785,8 @@ export default function AdminStores() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         <div>
                           <input
-                            value={wizard.newProvName}
-                            onChange={(e) => setWizard({ ...wizard, newProvName: e.target.value })}
+                            value={wizard.newProvTranslations[formLanguage] ?? ""}
+                            onChange={(e) => setWizard({ ...wizard, ...(formLanguage === "en" ? { newProvName: e.target.value } : {}), newProvTranslations: { ...wizard.newProvTranslations, [formLanguage]: e.target.value } })}
                             placeholder="Province name"
                             style={wizardErrors.newProvName ? wizInputErrorStyle : wizInputStyle}
                           />
@@ -1814,8 +1848,8 @@ export default function AdminStores() {
                     {wizard.distMode === "new" && (
                       <div>
                         <input
-                          value={wizard.newDistName}
-                          onChange={(e) => setWizard({ ...wizard, newDistName: e.target.value })}
+                          value={wizard.newDistTranslations[formLanguage] ?? ""}
+                          onChange={(e) => setWizard({ ...wizard, ...(formLanguage === "en" ? { newDistName: e.target.value } : {}), newDistTranslations: { ...wizard.newDistTranslations, [formLanguage]: e.target.value } })}
                           placeholder="District name"
                           style={wizardErrors.newDistName ? wizInputErrorStyle : wizInputStyle}
                         />
@@ -1859,8 +1893,8 @@ export default function AdminStores() {
                     {wizard.townMode === "new" && (
                       <div>
                         <input
-                          value={wizard.newTownName}
-                          onChange={(e) => setWizard({ ...wizard, newTownName: e.target.value })}
+                          value={wizard.newTownTranslations[formLanguage] ?? ""}
+                          onChange={(e) => setWizard({ ...wizard, ...(formLanguage === "en" ? { newTownName: e.target.value } : {}), newTownTranslations: { ...wizard.newTownTranslations, [formLanguage]: e.target.value } })}
                           placeholder="Town name"
                           style={wizardErrors.newTownName ? wizInputErrorStyle : wizInputStyle}
                         />
@@ -1892,16 +1926,16 @@ export default function AdminStores() {
 
                   <InputRow
                     label="Shop Name"
-                    value={wizard.shopForm.name}
-                    onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, name: v } })}
+                    value={wizard.shopForm.translations?.name?.[formLanguage] ?? ""}
+                    onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, ...(formLanguage === "en" ? { name: v } : {}), translations: { ...wizard.shopForm.translations, name: { ...wizard.shopForm.translations?.name, [formLanguage]: v } } } })}
                     placeholder="e.g. Rajapura Herbal Centre – Colombo"
                     required
                     error={wizardErrors.name}
                   />
                   <InputRow
                     label="Address"
-                    value={wizard.shopForm.address}
-                    onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, address: v } })}
+                    value={wizard.shopForm.translations?.address?.[formLanguage] ?? ""}
+                    onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, ...(formLanguage === "en" ? { address: v } : {}), translations: { ...wizard.shopForm.translations, address: { ...wizard.shopForm.translations?.address, [formLanguage]: v } } } })}
                     placeholder="Full street address"
                     required
                     error={wizardErrors.address}
@@ -1916,8 +1950,8 @@ export default function AdminStores() {
                     />
                     <InputRow
                       label="Opening Hours"
-                      value={wizard.shopForm.hours}
-                      onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, hours: v } })}
+                      value={wizard.shopForm.translations?.hours?.[formLanguage] ?? ""}
+                      onChange={(v) => setWizard({ ...wizard, shopForm: { ...wizard.shopForm, ...(formLanguage === "en" ? { hours: v } : {}), translations: { ...wizard.shopForm.translations, hours: { ...wizard.shopForm.translations?.hours, [formLanguage]: v } } } })}
                       placeholder="Mon–Sat: 8AM–7PM"
                       error={wizardErrors.hours}
                     />
@@ -2019,16 +2053,17 @@ export default function AdminStores() {
         >
           {(modal.kind === "addProvince" || modal.kind === "editProvince") && (
             <>
+              <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
               <InputRow
                 label="Province Name"
-                value={provForm.name}
+                value={translatedPlaceName(provForm)}
                 onChange={(v) => {
-                  setProvForm((p) => ({ ...p, name: v }));
+                  setProvinceName(v);
                   if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined }));
                 }}
                 placeholder="e.g. Western Province"
-                required
-                error={formErrors.name}
+                required={formLanguage === "en"}
+                error={formLanguage === "en" ? formErrors.name : undefined}
               />
               <div>
                 <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "5px" }}>
@@ -2041,56 +2076,57 @@ export default function AdminStores() {
           )}
 
           {(modal.kind === "addDistrict" || modal.kind === "editDistrict") && (
-            <InputRow
+            <><LanguageTabs value={formLanguage} onChange={setFormLanguage} /><InputRow
               label="District Name"
-              value={distForm.name}
+              value={translatedPlaceName(distForm)}
               onChange={(v) => {
-                setDistForm((prev) => ({ ...prev, name: v }));
+                setDistrictName(v);
                 if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined }));
               }}
               placeholder="e.g. Colombo"
-              required
-              error={formErrors.name}
-            />
+              required={formLanguage === "en"}
+              error={formLanguage === "en" ? formErrors.name : undefined}
+            /></>
           )}
 
           {(modal.kind === "addTown" || modal.kind === "editTown") && (
-            <InputRow
+            <><LanguageTabs value={formLanguage} onChange={setFormLanguage} /><InputRow
               label="Town Name"
-              value={townForm.name}
+              value={translatedPlaceName(townForm)}
               onChange={(v) => {
-                setTownForm({ name: v });
+                setTownName(v);
                 if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined }));
               }}
               placeholder="e.g. Nugegoda"
-              required
-              error={formErrors.name}
-            />
+              required={formLanguage === "en"}
+              error={formLanguage === "en" ? formErrors.name : undefined}
+            /></>
           )}
 
           {(modal.kind === "addShop" || modal.kind === "editShop") && (
             <>
+              <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
               <InputRow
                 label="Shop Name"
-                value={shopForm.name}
+                value={shopText("name")}
                 onChange={(v) => {
-                  setShopForm((s) => ({ ...s, name: v }));
+                  setShopText("name", v);
                   if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined }));
                 }}
                 placeholder="e.g. Rajapura Herbal Centre"
-                required
-                error={formErrors.name}
+                required={formLanguage === "en"}
+                error={formLanguage === "en" ? formErrors.name : undefined}
               />
               <InputRow
                 label="Address"
-                value={shopForm.address}
+                value={shopText("address")}
                 onChange={(v) => {
-                  setShopForm((s) => ({ ...s, address: v }));
+                  setShopText("address", v);
                   if (formErrors.address) setFormErrors((e) => ({ ...e, address: undefined }));
                 }}
                 placeholder="No. 45, Main Street, Town"
-                required
-                error={formErrors.address}
+                required={formLanguage === "en"}
+                error={formLanguage === "en" ? formErrors.address : undefined}
               />
               <InputRow
                 label="Phone"
@@ -2104,9 +2140,9 @@ export default function AdminStores() {
               />
               <InputRow
                 label="Hours"
-                value={shopForm.hours}
+                value={shopText("hours")}
                 onChange={(v) => {
-                  setShopForm((s) => ({ ...s, hours: v }));
+                  setShopText("hours", v);
                   if (formErrors.hours) setFormErrors((e) => ({ ...e, hours: undefined }));
                 }}
                 placeholder="Mon–Sat: 8:00 AM – 8:00 PM"

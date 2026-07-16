@@ -201,13 +201,16 @@ export const addShopWizard = async (wizardData) => {
         provMode,
         selectedProvId,
         newProvName,
+        newProvTranslations,
         newProvIcon,
         distMode,
         selectedDistId,
         newDistName,
+        newDistTranslations,
         townMode,
         selectedTownId,
         newTownName,
+        newTownTranslations,
         shopForm
     } = wizardData;
 
@@ -218,6 +221,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         province = new Shop({
             name: newProvName,
+            translations: { name: newProvTranslations },
             icon: newProvIcon,
             districts: []
         });
@@ -229,6 +233,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         province.districts.push({
             name: newDistName,
+            translations: { name: newDistTranslations },
             towns: []
         });
         district = province.districts[province.districts.length - 1];
@@ -240,6 +245,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         district.towns.push({
             name: newTownName,
+            translations: { name: newTownTranslations },
             shops: []
         });
         town = district.towns[district.towns.length - 1];

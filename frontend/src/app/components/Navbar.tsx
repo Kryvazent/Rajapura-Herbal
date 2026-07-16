@@ -1,18 +1,117 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Menu, X, Leaf, ChevronRight } from "lucide-react";
+import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages } from "lucide-react";
 import Logo from "./Logo";
+import { LANGUAGES, LANGUAGE_LABELS, useLanguage } from "../i18n/LanguageContext";
+import { navAccessibility } from "../i18n/translations/navigation";
+
+type LanguageCode = (typeof LANGUAGES)[number];
+
+function LanguageSwitcher({ mobile = false }: { mobile?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+  const { language, setLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!switcherRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  const chooseLanguage = (code: LanguageCode) => {
+    setLanguage(code);
+    setOpen(false);
+  };
+
+  if (mobile) {
+    return (
+      <div>
+        <p className="rajapura-language-label">{t("language")}</p>
+        <div className="rajapura-language-grid" role="group" aria-label={t("language")}>
+          {LANGUAGES.map((code) => {
+            const selected = language === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                className={`rajapura-language-option rajapura-language-option--mobile${selected ? " is-selected" : ""}`}
+                onClick={() => chooseLanguage(code)}
+                aria-pressed={selected}
+              >
+                <span>{LANGUAGE_LABELS[code]}</span>
+                {selected && <Check size={14} strokeWidth={2.5} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={switcherRef} className="rajapura-language-switcher">
+      <button
+        type="button"
+        className="rajapura-language-trigger"
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Languages size={16} aria-hidden="true" />
+        <span>{LANGUAGE_LABELS[language]}</span>
+        <ChevronDown size={15} className={open ? "is-open" : ""} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div className="rajapura-language-menu" role="listbox" aria-label={t("language")}>
+          <p className="rajapura-language-menu__title">{t("language")}</p>
+          {LANGUAGES.map((code) => {
+            const selected = language === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                className={`rajapura-language-option${selected ? " is-selected" : ""}`}
+                onClick={() => chooseLanguage(code)}
+              >
+                <span className="rajapura-language-option__code">{code.toUpperCase()}</span>
+                <span>{LANGUAGE_LABELS[code]}</span>
+                {selected && <Check size={15} strokeWidth={2.5} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const { language, t } = useLanguage();
+  const a11y = navAccessibility[language];
 
   const links = [
-    { to: "/", label: "Home" },
-    { to: "/products", label: "Our Products" },
-    { to: "/services", label: "Services" },
-    { to: "/store-locator", label: "Find a Store" },
-    { to: "/about", label: "About Us" },
+    { to: "/", label: t("home") },
+    { to: "/products", label: t("products") },
+    { to: "/services", label: t("services") },
+    { to: "/store-locator", label: t("stores") },
+    { to: "/about", label: t("about") },
   ];
 
   const isActive = (to: string) =>
@@ -28,7 +127,7 @@ export function Navbar() {
           style={{ backgroundColor: "#2D5016" }}
           className="text-white text-center py-1.5 text-xs tracking-widest uppercase hidden sm:block"
         >
-          Pure · Natural · Authentic Ayurvedic Heritage
+          {t("tagline")}
         </div>
 
         
@@ -42,14 +141,14 @@ export function Navbar() {
               style={{ backgroundColor: "#2D5016" }}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0"
             >
-              <Logo width={50} height={50} alt="Rajapura Logo" />
+              <Logo width={50} height={50} alt={a11y.logo} />
             </div>
             <div>
               <p style={{ fontFamily: "'Cinzel', serif", color: "#2D5016", fontSize: "clamp(0.9rem, 2vw, 1.1rem)", margin: 0, lineHeight: 1.1 }}>
                 RAJAPURA
               </p>
               <p style={{ color: "#8B5E3C", fontSize: "0.6rem", letterSpacing: "0.18em", margin: 0 }}>
-                HERBAL COMPANY
+                {t("companyLabel").toUpperCase()}
               </p>
             </div>
           </Link>
@@ -78,7 +177,8 @@ export function Navbar() {
           </div>
 
           
-          <div className="rajapura-desktop-cta hidden md:block">
+          <div className="rajapura-desktop-cta hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
             <Link
               to="/store-locator"
               style={{
@@ -93,7 +193,7 @@ export function Navbar() {
                 whiteSpace: "nowrap",
               }}
             >
-              Find Nearest Store
+              {t("nearest")}
             </Link>
           </div>
 
@@ -102,7 +202,7 @@ export function Navbar() {
             className="rajapura-mobile-toggle md:hidden flex items-center justify-center"
             style={{ color: "#2D5016", background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px" }}
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
+            aria-label={a11y.menu}
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -153,7 +253,7 @@ export function Navbar() {
             </div>
             <div>
               <p style={{ fontFamily: "'Cinzel', serif", color: "#FAF6EE", fontSize: "0.85rem", margin: 0, lineHeight: 1.1 }}>RAJAPURA</p>
-              <p style={{ color: "#8BC34A", fontSize: "0.55rem", letterSpacing: "0.15em", margin: 0 }}>HERBAL COMPANY</p>
+              <p style={{ color: "#8BC34A", fontSize: "0.55rem", letterSpacing: "0.15em", margin: 0 }}>{t("companyLabel").toUpperCase()}</p>
             </div>
           </div>
           <button onClick={close} style={{ background: "none", border: "none", color: "rgba(250,246,238,0.7)", cursor: "pointer", display: "flex", padding: "4px" }}>
@@ -163,7 +263,7 @@ export function Navbar() {
 
         
         <nav style={{ flex: 1, overflowY: "auto", padding: "16px 12px" }}>
-          <p style={{ color: "#A8C580", fontSize: "0.62rem", letterSpacing: "0.15em", padding: "0 10px", marginBottom: "8px", marginTop: 0 }}>NAVIGATION</p>
+          <p style={{ color: "#A8C580", fontSize: "0.62rem", letterSpacing: "0.15em", padding: "0 10px", marginBottom: "8px", marginTop: 0 }}>{t("navigation").toUpperCase()}</p>
           {links.map((link) => {
             const active = isActive(link.to);
             return (
@@ -195,6 +295,7 @@ export function Navbar() {
 
         
         <div style={{ padding: "16px 16px 28px", borderTop: "1px solid rgba(45,80,22,0.1)" }}>
+          <LanguageSwitcher mobile />
           <Link
             to="/store-locator"
             onClick={close}
@@ -210,18 +311,160 @@ export function Navbar() {
               letterSpacing: "0.04em",
             }}
           >
-            Find Nearest Store
+            {t("nearest")}
           </Link>
         </div>
       </div>
       <style>{`
+        .rajapura-language-switcher {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .rajapura-language-trigger {
+          min-width: 126px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 9px;
+          padding: 0 13px;
+          border: 1px solid rgba(45, 80, 22, 0.22);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.78);
+          color: #2D5016;
+          font: 600 0.82rem/1 'Lato', sans-serif;
+          box-shadow: 0 2px 8px rgba(45, 80, 22, 0.06);
+          cursor: pointer;
+          transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .rajapura-language-trigger:hover,
+        .rajapura-language-trigger:focus-visible {
+          border-color: rgba(45, 80, 22, 0.5);
+          background: #fff;
+          box-shadow: 0 4px 14px rgba(45, 80, 22, 0.12);
+          outline: none;
+        }
+
+        .rajapura-language-trigger .lucide-chevron-down {
+          transition: transform 160ms ease;
+        }
+
+        .rajapura-language-trigger .lucide-chevron-down.is-open {
+          transform: rotate(180deg);
+        }
+
+        .rajapura-language-menu {
+          position: absolute;
+          top: calc(100% + 10px);
+          right: 0;
+          z-index: 70;
+          width: 210px;
+          padding: 8px;
+          border: 1px solid rgba(45, 80, 22, 0.14);
+          border-radius: 16px;
+          background: #fffdf8;
+          box-shadow: 0 18px 45px rgba(25, 48, 14, 0.18);
+          animation: rajapura-language-in 150ms ease-out;
+        }
+
+        .rajapura-language-menu::before {
+          content: "";
+          position: absolute;
+          top: -5px;
+          right: 22px;
+          width: 10px;
+          height: 10px;
+          border-left: 1px solid rgba(45, 80, 22, 0.14);
+          border-top: 1px solid rgba(45, 80, 22, 0.14);
+          background: #fffdf8;
+          transform: rotate(45deg);
+        }
+
+        .rajapura-language-menu__title,
+        .rajapura-language-label {
+          margin: 0;
+          color: #78915f;
+          font-size: 0.66rem;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .rajapura-language-menu__title {
+          padding: 7px 10px 8px;
+        }
+
+        .rajapura-language-option {
+          width: 100%;
+          min-height: 42px;
+          display: grid;
+          grid-template-columns: 32px 1fr 16px;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 10px;
+          border: 0;
+          border-radius: 10px;
+          background: transparent;
+          color: #4f3b2f;
+          font: 500 0.88rem/1.2 'Lato', sans-serif;
+          text-align: left;
+          cursor: pointer;
+          transition: background 140ms ease, color 140ms ease;
+        }
+
+        .rajapura-language-option:hover,
+        .rajapura-language-option:focus-visible {
+          background: rgba(139, 195, 74, 0.11);
+          color: #2D5016;
+          outline: none;
+        }
+
+        .rajapura-language-option.is-selected {
+          background: #edf4e7;
+          color: #2D5016;
+          font-weight: 700;
+        }
+
+        .rajapura-language-option__code {
+          color: #8b9d78;
+          font-size: 0.62rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+        }
+
+        .rajapura-language-label {
+          margin-bottom: 9px;
+        }
+
+        .rajapura-language-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+
+        .rajapura-language-option--mobile {
+          grid-template-columns: 1fr 16px;
+          min-height: 44px;
+          padding: 10px 12px;
+          border: 1px solid rgba(45, 80, 22, 0.12);
+          background: rgba(255, 255, 255, 0.66);
+        }
+
+        @keyframes rajapura-language-in {
+          from { opacity: 0; transform: translateY(-5px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         @media (min-width: 768px) {
           .rajapura-desktop-nav {
             display: flex !important;
           }
 
           .rajapura-desktop-cta {
-            display: block !important;
+            display: flex !important;
           }
 
           .rajapura-mobile-toggle,
