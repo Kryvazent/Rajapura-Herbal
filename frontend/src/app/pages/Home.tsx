@@ -341,7 +341,7 @@ export default function Home() {
                   padding: "12px 18px",
                   boxShadow: "0 8px 30px rgba(45,80,22,0.15)",
                 }}
-              >
+              > 
                 <p
                   style={{
                     fontFamily: "'Playfair Display', serif",
