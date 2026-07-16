@@ -1,5 +1,23 @@
 User-agent: *
-Allow: /
-Disallow: /rh-admin-7q4m9x
+Disallow: /
+
+# Public pages
+Allow: /$
+Allow: /products$
+Allow: /services$
+Allow: /store-locator$
+Allow: /about$
+
+# Files required to render and preview public pages
+Allow: /assets/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.webp$
+Allow: /*.svg$
+Allow: /*.woff$
+Allow: /*.woff2$
 
 Sitemap: https://www.rajapuraherbal.lk/sitemap.xml
