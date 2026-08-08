@@ -741,8 +741,39 @@ export default function AdminProducts() {
       setModalMode(null);
       setFormErrors({});
     } catch (err: any) {
+      console.error("Product save failed", {
+        message: err.message,
+        status: err.response?.status,
+        response: err.response?.data,
+        error: err,
+      });
+      const responseErrors = err.response?.data?.errors;
+      const errorDetails = Array.isArray(responseErrors)
+        ? responseErrors
+            .map((error) =>
+              typeof error === "string" ? error : error?.message ?? error?.msg
+            )
+            .filter(Boolean)
+            .join(" ")
+        : "";
+      const fieldErrors = Array.isArray(responseErrors)
+        ? responseErrors.reduce((errors, error) => {
+            if (error?.field && error?.message) {
+              errors[error.field.replace(/^product\./, "")] = error.message;
+            }
+            return errors;
+          }, {} as FormErrors)
+        : {};
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setFormErrors(fieldErrors);
+      }
+
       const msg =
-        err.response?.data?.message ?? "Failed to save product.";
+        errorDetails ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to save product.";
       showToast(msg, "error");
     } finally {
       setSaveLoading(false);
