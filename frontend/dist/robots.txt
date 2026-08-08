@@ -7,6 +7,7 @@ Allow: /products$
 Allow: /services$
 Allow: /store-locator$
 Allow: /about$
+Allow: /full-text.txt$
 
 # Files required to render and preview public pages
 Allow: /assets/

@@ -25,6 +25,7 @@
   "rewrites": [
     { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/full-text.txt", "destination": "/full-text.txt" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
