@@ -21,12 +21,6 @@ export default function AdminLogin() {
 
   useEffect(() => {
     const checkExistingSession = async () => {
-      const loggedin = localStorage.getItem("adminAuth");
-      if (!loggedin) {
-        setIsChecking(false);
-        return;
-      }
-
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/auth/status`,
@@ -35,7 +29,8 @@ export default function AdminLogin() {
 
         if (res.data?.authenticated) {
           localStorage.setItem("adminRole", res.data.role ?? localStorage.getItem("adminRole") ?? "");
-          navigate(adminPath("dashboard"));
+          localStorage.setItem("adminAuth", "true");
+          navigate(adminPath("dashboard"), { replace: true });
           return;
         }
       } catch (err: any) {
