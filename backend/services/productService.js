@@ -40,5 +40,9 @@ export const updateProduct = async (id, productData) => {
         existingProduct.markModified("translations");
     }
 
-    return await existingProduct.save();
+    // Save and then re-query to ensure we return a fresh document
+    // (avoids any Mongoose transform/virtuals issues and guarantees
+    // nested `translations` are present in the returned object).
+    await existingProduct.save();
+    return await product.findById(id);
 };
