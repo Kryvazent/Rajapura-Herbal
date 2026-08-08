@@ -186,7 +186,7 @@ export default function StoreLocator() {
             {t("storeTitle")}
           </h1>
           <p style={{ color: "#A8C580", marginTop: "12px", maxWidth: "520px", margin: "12px auto 0", lineHeight: 1.7, fontSize: "0.9rem" }}>
-            {t("storeDescription")} ({totalShops})
+            {t("storeDescription")} {totalShops == 0 ? "" : `(${totalShops})`}
           </p>
         </div>
       </div>
