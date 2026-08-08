@@ -44,7 +44,7 @@ export default function AdminLayout() {
   const [isLoading, setIsLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser>({});
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(() => localStorage.getItem("adminRole") ?? "");
   const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
@@ -52,6 +52,13 @@ export default function AdminLayout() {
     if (localFlag) {
       setMustChangePassword(true);
       setIsLoading(false);
+      return;
+    }
+
+    if (localStorage.getItem("adminAuth") !== "true") {
+      localStorage.removeItem("adminRole");
+      setIsLoading(false);
+      navigate(adminPath());
       return;
     }
 
@@ -67,34 +74,44 @@ export default function AdminLayout() {
           localStorage.setItem("mustChangePassword", "true");
           setIsLoading(false);
           navigate(adminPath());
-        } else if (res.data.authenticated) {
-          setRole(res.data.role);
-          setIsLoading(false);
-          if (!localStorage.getItem(ADMIN_TOUR_STORAGE_KEY)) {
-            setTourOpen(true);
-            setSidebarOpen(true);
-          }
-
-          try {
-            const profileRes = await axios.get(
-              import.meta.env.VITE_BACKEND_URL + "/auth/me",
-              { withCredentials: true }
-            );
-            if (profileRes.data?.data) {
-              setCurrentUser(profileRes.data.data);
-            }
-          } catch (err) {
-            console.error("Failed to fetch user profile:", err);
-          }
-        } else {
-          setIsLoading(false);
-          localStorage.removeItem("adminAuth");
-          navigate(adminPath());
+          return;
         }
-      } catch (error) {
-        console.error("Auth check error:", error);
+
+        if (!res.data?.authenticated) {
+          localStorage.removeItem("adminAuth");
+          localStorage.removeItem("adminRole");
+          setIsLoading(false);
+          navigate(adminPath());
+          return;
+        }
+
+        const nextRole = res.data.role ?? localStorage.getItem("adminRole") ?? "";
+        setRole(nextRole);
+        localStorage.setItem("adminRole", nextRole);
         setIsLoading(false);
+        if (!localStorage.getItem(ADMIN_TOUR_STORAGE_KEY)) {
+          setTourOpen(true);
+          setSidebarOpen(true);
+        }
+
+        try {
+          const profileRes = await axios.get(
+            import.meta.env.VITE_BACKEND_URL + "/auth/me",
+            { withCredentials: true }
+          );
+          if (profileRes.data?.data) {
+            setCurrentUser(profileRes.data.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
+        }
+      } catch (error: any) {
+        if (error?.response?.status !== 401) {
+          console.error("Auth check error:", error);
+        }
         localStorage.removeItem("adminAuth");
+        localStorage.removeItem("adminRole");
+        setIsLoading(false);
         navigate(adminPath());
       }
     };
@@ -133,6 +150,7 @@ export default function AdminLayout() {
       console.error("Logout error:", err);
     } finally {
       localStorage.removeItem("adminAuth");
+      localStorage.removeItem("adminRole");
       navigate(adminPath());
     }
   };

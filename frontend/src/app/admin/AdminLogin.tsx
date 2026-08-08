@@ -20,13 +20,38 @@ export default function AdminLogin() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
-    const loggedin = localStorage.getItem("adminAuth");
-    if (loggedin) {
-      navigate(adminPath("dashboard"));
-    } else {
+    const checkExistingSession = async () => {
+      const loggedin = localStorage.getItem("adminAuth");
+      if (!loggedin) {
+        setIsChecking(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/auth/status`,
+          { withCredentials: true }
+        );
+
+        if (res.data?.authenticated) {
+          localStorage.setItem("adminRole", res.data.role ?? localStorage.getItem("adminRole") ?? "");
+          navigate(adminPath("dashboard"));
+          return;
+        }
+      } catch (err: any) {
+        if (err?.response?.status !== 401) {
+          console.error("Login session check error:", err);
+        }
+      }
+
+      localStorage.removeItem("adminAuth");
+      localStorage.removeItem("adminRole");
+      localStorage.removeItem("mustChangePassword");
       setIsChecking(false);
-    }
-  }, []);
+    };
+
+    checkExistingSession();
+  }, [navigate]);
 
   if (isChecking) return null;
 
@@ -70,6 +95,7 @@ export default function AdminLogin() {
       
       if (res.status === 200) {
         localStorage.setItem("adminAuth", "true");
+        localStorage.setItem("adminRole", res.data.role ?? "");
         
         if (res.data.mustChangePassword) {
           localStorage.setItem("mustChangePassword", "true");

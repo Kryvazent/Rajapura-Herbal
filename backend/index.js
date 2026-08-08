@@ -29,6 +29,9 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+const hasLocalFrontendOrigin = allowedOrigins.some((origin) =>
+    /localhost|127\.0\.0\.1/i.test(origin)
+);
 const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
 const apiRateLimitMax = Number(process.env.RATE_LIMIT_MAX) || 300;
 const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX) || 10;
@@ -187,9 +190,9 @@ const sessionConfig = {
     saveUninitialized: false,
     proxy: isProduction,
     cookie: {
-        secure: isProduction,
+        secure: isProduction && !hasLocalFrontendOrigin,
         maxAge: 60 * 60 * 1000,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: isProduction && !hasLocalFrontendOrigin ? 'none' : 'lax',
         httpOnly: true
     }
 };
