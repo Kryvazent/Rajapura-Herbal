@@ -583,19 +583,28 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
+      const translated = rest.translations?.[field]?.en;
+      if (Array.isArray(translated) && translated.length > 0) {
+        return [...translated];
+      }
+      const fallback = rest[field];
+      return Array.isArray(fallback) ? [...fallback] : [""];
+    };
+
     setFormData({
       ...rest,
-      benefits: [...rest.benefits],
-      ingredients: [...rest.ingredients],
-      howToUse: [...(rest.howToUse ?? [])],
+      benefits: englishList("benefits"),
+      ingredients: englishList("ingredients"),
+      howToUse: englishList("howToUse"),
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
       translations: {
         name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
         category: { en: rest.category, ...rest.translations?.category },
         description: { en: rest.description, ...rest.translations?.description },
-        benefits: { en: [...rest.benefits], ...rest.translations?.benefits },
-        ingredients: { en: [...rest.ingredients], ...rest.translations?.ingredients },
-        howToUse: { en: [...(rest.howToUse ?? [])], ...rest.translations?.howToUse },
+        benefits: { en: englishList("benefits"), ...rest.translations?.benefits },
+        ingredients: { en: englishList("ingredients"), ...rest.translations?.ingredients },
+        howToUse: { en: englishList("howToUse"), ...rest.translations?.howToUse },
       },
     });
     setFormLanguage("en");
@@ -735,7 +744,15 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
-  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => formData.translations?.[field]?.[formLanguage] ?? [""];
+  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
+    const translated = formData.translations?.[field]?.[formLanguage];
+    if (Array.isArray(translated) && translated.length > 0) {
+      return translated;
+    }
+
+    const baseValues = formData[field];
+    return Array.isArray(baseValues) && baseValues.length > 0 ? baseValues : [""];
+  };
   const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
   return (

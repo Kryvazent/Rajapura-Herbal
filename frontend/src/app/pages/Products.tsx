@@ -13,6 +13,15 @@ export default function Products() {
   const categoryLabel = (category: string) => category === "All" ? c.all : c.categories[category as keyof typeof c.categories] ?? category;
   const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
+  const productList = (product: Product, field: "benefits" | "ingredients" | "howToUse") => {
+    const translated = localizedList(product.translations?.[field], language);
+    if (translated.length > 0) {
+      return translated;
+    }
+
+    const baseValues = product[field];
+    return Array.isArray(baseValues) ? baseValues : [];
+  };
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -360,7 +369,7 @@ export default function Products() {
 
                   
                   <div className="flex flex-wrap gap-1" style={{ marginBottom: "12px" }}>
-                    {localizedList(product.translations?.ingredients, language).length ? localizedList(product.translations?.ingredients, language).slice(0, 3).map((ing) => (
+                    {productList(product, "ingredients").length ? productList(product, "ingredients").slice(0, 3).map((ing) => (
                       <span
                         key={ing}
                         style={{
@@ -375,7 +384,7 @@ export default function Products() {
                         {ing}
                       </span>
                     )) : product.ingredients.slice(0, 3).map((ing) => <span key={ing}>{ing}</span>)}
-                    {(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) > 3 && (
+                    {(productList(product, "ingredients").length || product.ingredients.length) > 3 && (
                       <span
                         style={{
                           color: "#8B5E3C",
@@ -383,7 +392,7 @@ export default function Products() {
                           padding: "3px 5px",
                         }}
                       >
-                        +{(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) - 3} {c.more}
+                        +{(productList(product, "ingredients").length || product.ingredients.length) - 3} {c.more}
                       </span>
                     )}
                   </div>
@@ -717,7 +726,7 @@ export default function Products() {
                         {c.benefits}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {localizedList(selectedProduct.translations?.benefits, language).map((b) => (
+                        {productList(selectedProduct, "benefits").map((b) => (
                           <span
                             key={b}
                             style={{
@@ -744,7 +753,7 @@ export default function Products() {
                           marginTop: 0,
                         }}
                       >
-                        {localizedList(selectedProduct.translations?.ingredients, language).length > 0 ? c.ingredients : ""}
+                        {productList(selectedProduct, "ingredients").length > 0 ? c.ingredients : ""}
                       </p>
                       <p
                         style={{
@@ -754,11 +763,11 @@ export default function Products() {
                           lineHeight: 1.6,
                         }}
                       >
-                        {localizedList(selectedProduct.translations?.ingredients, language).join(" · ")}
+                        {productList(selectedProduct, "ingredients").join(" · ")}
                       </p>
                     </div>
 
-                    {localizedList(selectedProduct.translations?.howToUse, language).length > 0 && (
+                    {productList(selectedProduct, "howToUse").length > 0 && (
                         <div>
                           <p
                             style={{
@@ -784,7 +793,7 @@ export default function Products() {
                               gap: "8px",
                             }}
                           >
-                            {localizedList(selectedProduct.translations?.howToUse, language).map((step, i) => (
+                            {productList(selectedProduct, "howToUse").map((step, i) => (
                               <li
                                 key={i}
                                 style={{
