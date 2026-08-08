@@ -21,6 +21,7 @@ import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
 import { Language } from "../i18n/LanguageContext";
+import { productsCopy } from "../i18n/translations/products";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -355,6 +356,8 @@ export default function AdminProducts() {
   const [imageUploadStep, setImageUploadStep] = useState(
     "Step 1: Select a product image."
   );
+
+  const languageCopy = productsCopy[formLanguage];
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -744,15 +747,41 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
+  const selectedCategoryValue = (() => {
+    if (formLanguage === "en") return formData.category;
+
+    const translatedCategory = formData.translations?.category?.si?.trim();
+    if (!translatedCategory) return "";
+
+    const match = CATEGORIES.find(
+      (category) =>
+        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
+        translatedCategory
+    );
+
+    return match ?? "";
+  })();
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
-    const translated = formData.translations?.[field]?.[formLanguage];
-    if (Array.isArray(translated) && translated.length > 0) {
-      return translated;
+    if (formLanguage === "en") {
+      const baseValues = formData[field];
+      return Array.isArray(baseValues) && baseValues.length > 0 ? baseValues : [""];
     }
 
-    const baseValues = formData[field];
-    return Array.isArray(baseValues) && baseValues.length > 0 ? baseValues : [""];
+    const translated = formData.translations?.[field]?.si;
+    return Array.isArray(translated) && translated.length > 0 ? translated : [""];
   };
+  const categoryOptions = CATEGORIES.map((category) => ({
+    value: category,
+    label:
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
+      category,
+  }));
+  const badgeOptions = BADGES.map((badge) => ({
+    value: badge,
+    label: badge
+      ? languageCopy.badges[badge as keyof typeof languageCopy.badges] ?? badge
+      : languageCopy.none,
+  }));
   const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
   return (
@@ -1189,9 +1218,26 @@ export default function AdminProducts() {
                     Category {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                   </label>
                   <div style={{ position: "relative" }}>
-                    {formLanguage === "en" ? <select
-                      value={translatedText("category")}
-                      onChange={(e) => setTranslatedText("category", e.target.value)}
+                    <select
+                      value={selectedCategoryValue}
+                      onChange={(e) => {
+                        const nextCategory = e.target.value;
+                        const translatedCategory =
+                          languageCopy.categories[nextCategory as keyof typeof languageCopy.categories] ??
+                          nextCategory;
+                        setFormData((current) => ({
+                          ...current,
+                          ...(formLanguage === "en" ? { category: nextCategory } : {}),
+                          translations: {
+                            ...current.translations,
+                            category: {
+                              ...current.translations?.category,
+                              ...(formLanguage === "en" ? { en: nextCategory } : {}),
+                              [formLanguage]: translatedCategory,
+                            },
+                          },
+                        }));
+                      }}
                       style={{
                         width: "100%",
                         padding: "10px 36px 10px 14px",
@@ -1205,10 +1251,13 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c}>{c}</option>
+                      <option value=""></option>
+                      {categoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
                       ))}
-                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />}
+                    </select>
                     <ChevronDown
                       size={14}
                       style={{
@@ -1252,9 +1301,9 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {BADGES.map((b) => (
-                        <option key={b} value={b}>
-                          {b || "— None —"}
+                      {badgeOptions.map((option) => (
+                        <option key={option.value || "none"} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
