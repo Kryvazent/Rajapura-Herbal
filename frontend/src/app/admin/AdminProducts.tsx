@@ -137,6 +137,8 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
 const sinhalaTranslationsPersisted = (submitted: Product, saved: Product) => {
   const textFields = ["name", "category", "description"] as const;
   const listFields = ["benefits", "ingredients", "howToUse"] as const;
+  const normalizedList = (values?: string[]) =>
+    (values ?? []).map((value) => value.trim()).filter(Boolean);
 
   return (
     textFields.every((field) => {
@@ -144,8 +146,8 @@ const sinhalaTranslationsPersisted = (submitted: Product, saved: Product) => {
       return !value || saved.translations?.[field]?.si?.trim() === value;
     }) &&
     listFields.every((field) => {
-      const value = submitted.translations?.[field]?.si?.filter(Boolean) ?? [];
-      const savedValue = saved.translations?.[field]?.si?.filter(Boolean) ?? [];
+      const value = normalizedList(submitted.translations?.[field]?.si);
+      const savedValue = normalizedList(saved.translations?.[field]?.si);
       return value.length === 0 || JSON.stringify(savedValue) === JSON.stringify(value);
     })
   );
@@ -472,7 +474,12 @@ export default function AdminProducts() {
       { withCredentials: true }
     );
 
-    const savedProduct = response.data?.data as Product | undefined;
+    // The current API returns { data: product }, while older deployed APIs
+    // returned the product directly. Accept either shape before verifying the
+    // saved translations so a successful update is not reported as a failure.
+    const savedProduct = (response.data?.data ?? response.data?.product ?? response.data) as
+      | Product
+      | undefined;
     if (!savedProduct || !sinhalaTranslationsPersisted(product, savedProduct)) {
       const persistenceError = Object.assign(
         new Error("Sinhala translations were not saved. Please try again."),
