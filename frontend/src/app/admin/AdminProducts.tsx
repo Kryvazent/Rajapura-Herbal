@@ -599,6 +599,7 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const categoryTranslation = CATEGORY_TRANSLATIONS[rest.category];
     setFormData({
       ...rest,
       benefits: [...rest.benefits],
@@ -607,7 +608,14 @@ export default function AdminProducts() {
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
       translations: {
         name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
-        category: { en: rest.category, ...rest.translations?.category },
+        category: {
+          en: rest.category,
+          ...rest.translations?.category,
+          si:
+            rest.translations?.category?.si || categoryTranslation?.si || "",
+          ta:
+            rest.translations?.category?.ta || categoryTranslation?.ta || "",
+        },
         description: { en: rest.description, ...rest.translations?.description },
         benefits: { en: [...rest.benefits], ...rest.translations?.benefits },
         ingredients: { en: [...rest.ingredients], ...rest.translations?.ingredients },
