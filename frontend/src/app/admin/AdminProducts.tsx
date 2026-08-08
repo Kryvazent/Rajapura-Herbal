@@ -34,6 +34,22 @@ const CATEGORIES = [
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 const VALID_BADGES = BADGES.filter(Boolean);
 
+const CATEGORY_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  "Teas & Infusions": { si: "තේ සහ පානයන්", ta: "தேநீர் மற்றும் உட்செலுத்தல்கள்" },
+  "Oils & Serums": { si: "තෙල් සහ සීරම්", ta: "எண்ணெய்கள் மற்றும் சீரம்கள்" },
+  Supplements: { si: "අතිරේක", ta: "துணை உணவுகள்" },
+  Skincare: { si: "සම සත්කාර", ta: "தோல் பராமரிப்பு" },
+  "Powders & Blends": { si: "කුඩු සහ මිශ්‍රණ", ta: "பொடிகள் மற்றும் கலவைகள்" },
+  "Tonics & Syrups": { si: "ටොනික් සහ සිරප්", ta: "டானிக்குகள் மற்றும் சிரப்புகள்" },
+};
+
+const BADGE_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  Bestseller: { si: "වැඩිම අලෙවි", ta: "அதிக விற்பனை" },
+  Premium: { si: "උසස්", ta: "உயர்தரம்" },
+  New: { si: "නව", ta: "புதியது" },
+  Organic: { si: "කාබනික", ta: "இயற்கை" },
+};
+
 
 interface FormErrors {
   [key: string]: string;
@@ -176,7 +192,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   price: "",
   image: "",
   badge: "",
-  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], si: "", ta: "" }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
+  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], ...CATEGORY_TRANSLATIONS[CATEGORIES[0]] }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
 });
 
 
@@ -735,6 +751,27 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
+  const setCategory = (category: string) => {
+    const translation = CATEGORY_TRANSLATIONS[category];
+    setFormData((current) => ({
+      ...current,
+      category,
+      translations: {
+        ...current.translations,
+        category: {
+          ...current.translations?.category,
+          en: category,
+          ...(translation ?? {}),
+        },
+      },
+    }));
+  };
+  const badgeLabel = (badge: string) =>
+    !badge
+      ? "— None —"
+      : formLanguage === "en"
+        ? badge
+        : BADGE_TRANSLATIONS[badge]?.[formLanguage] ?? badge;
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => formData.translations?.[field]?.[formLanguage] ?? [""];
   const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
@@ -1174,7 +1211,7 @@ export default function AdminProducts() {
                   <div style={{ position: "relative" }}>
                     {formLanguage === "en" ? <select
                       value={translatedText("category")}
-                      onChange={(e) => setTranslatedText("category", e.target.value)}
+                      onChange={(e) => setCategory(e.target.value)}
                       style={{
                         width: "100%",
                         padding: "10px 36px 10px 14px",
@@ -1237,7 +1274,7 @@ export default function AdminProducts() {
                     >
                       {BADGES.map((b) => (
                         <option key={b} value={b}>
-                          {b || "— None —"}
+                          {badgeLabel(b)}
                         </option>
                       ))}
                     </select>
