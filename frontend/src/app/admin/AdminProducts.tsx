@@ -1236,6 +1236,27 @@ export default function AdminProducts() {
                       {CATEGORIES.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
+                    </select> : formLanguage === "si" ? <select
+                      value={translatedText("category")}
+                      onChange={(e) => setTranslatedText("category", e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 36px 10px 14px",
+                        borderRadius: "10px",
+                        border: "1.5px solid rgba(45,80,22,0.2)",
+                        backgroundColor: "#FAF6EE",
+                        color: "#2D5016",
+                        fontSize: "0.88rem",
+                        outline: "none",
+                        appearance: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={CATEGORY_TRANSLATIONS[category].si}>
+                          {CATEGORY_TRANSLATIONS[category].si}
+                        </option>
+                      ))}
                     </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />}
                     <ChevronDown
                       size={14}
