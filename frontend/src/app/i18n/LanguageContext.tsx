@@ -3,7 +3,8 @@ import { LANGUAGE_LABELS, messages } from "./translations/common";
 
 export { LANGUAGE_LABELS };
 
-export const LANGUAGES = ["en", "si", "ta"] as const;
+export const LANGUAGES = ["en", "si"] as const;
+// export const LANGUAGES = ["en", "si", "ta"] as const;
 export type Language = (typeof LANGUAGES)[number];
 export type LocalizedText = Partial<Record<Language, string>>;
 export type LocalizedList = Partial<Record<Language, string[]>>;
