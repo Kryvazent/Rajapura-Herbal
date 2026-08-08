@@ -474,7 +474,16 @@ export default function AdminProducts() {
 
     const savedProduct = response.data?.data as Product | undefined;
     if (!savedProduct || !sinhalaTranslationsPersisted(product, savedProduct)) {
-      throw new Error("Sinhala translations were not saved. Please try again.");
+      const persistenceError = Object.assign(
+        new Error("Sinhala translations were not saved. Please try again."),
+        {
+          submittedTranslations: product.translations,
+          savedTranslations: savedProduct?.translations,
+          response: response.data,
+        }
+      );
+      console.error("Sinhala translation persistence mismatch", persistenceError);
+      throw persistenceError;
     }
 
     return savedProduct;
@@ -744,7 +753,9 @@ export default function AdminProducts() {
       console.error("Product save failed", {
         message: err.message,
         status: err.response?.status,
-        response: err.response?.data,
+        response: err.response?.data ?? err.response,
+        submittedTranslations: err.submittedTranslations,
+        savedTranslations: err.savedTranslations,
         error: err,
       });
       const responseErrors = err.response?.data?.errors;
