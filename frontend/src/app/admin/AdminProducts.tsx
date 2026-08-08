@@ -21,6 +21,7 @@ import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
 import { Language } from "../i18n/LanguageContext";
+import { messages } from "../i18n/translations/common";
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -776,10 +777,14 @@ export default function AdminProducts() {
   };
   const badgeLabel = (badge: string) =>
     !badge
-      ? "— None —"
+      ? formLanguage === "si" ? "කිසිවක් නැත" : "— None —"
       : formLanguage === "en"
         ? badge
         : BADGE_TRANSLATIONS[badge]?.[formLanguage] ?? badge;
+  const priceValue =
+    formData.price === "Contact for price"
+      ? messages[formLanguage].contactPrice
+      : formData.price;
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => formData.translations?.[field]?.[formLanguage] ?? [""];
   const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
@@ -1326,7 +1331,7 @@ export default function AdminProducts() {
               
               <InputField
                 label="Price (LKR)"
-                value={formData.price}
+                value={priceValue}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
