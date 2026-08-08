@@ -134,6 +134,23 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   return errors;
 };
 
+const sinhalaTranslationsPersisted = (submitted: Product, saved: Product) => {
+  const textFields = ["name", "category", "description"] as const;
+  const listFields = ["benefits", "ingredients", "howToUse"] as const;
+
+  return (
+    textFields.every((field) => {
+      const value = submitted.translations?.[field]?.si?.trim();
+      return !value || saved.translations?.[field]?.si?.trim() === value;
+    }) &&
+    listFields.every((field) => {
+      const value = submitted.translations?.[field]?.si?.filter(Boolean) ?? [];
+      const savedValue = saved.translations?.[field]?.si?.filter(Boolean) ?? [];
+      return value.length === 0 || JSON.stringify(savedValue) === JSON.stringify(value);
+    })
+  );
+};
+
 
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
@@ -448,12 +465,19 @@ export default function AdminProducts() {
     );
   }
 
-  async function editProduct(product: Product): Promise<void> {
-    await axios.put(
+  async function editProduct(product: Product): Promise<Product> {
+    const response = await axios.put(
       import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
       { product },
       { withCredentials: true }
     );
+
+    const savedProduct = response.data?.data as Product | undefined;
+    if (!savedProduct || !sinhalaTranslationsPersisted(product, savedProduct)) {
+      throw new Error("Sinhala translations were not saved. Please try again.");
+    }
+
+    return savedProduct;
   }
 
   async function deleteProductApi(

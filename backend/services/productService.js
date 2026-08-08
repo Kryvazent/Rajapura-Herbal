@@ -27,13 +27,18 @@ export const deleteProduct = async (id) => {
 
 export const updateProduct = async (id, productData) => {
     const { translations, ...fields } = productData;
-    const updates = {
-        ...fields,
-        ...(translations ? { translations } : {}),
-    };
+    const existingProduct = await product.findById(id);
 
-    return await product.findByIdAndUpdate(id, { $set: updates }, {
-        new: true,
-        runValidators: true,
-    });
+    if (!existingProduct) {
+        return null;
+    }
+
+    Object.assign(existingProduct, fields);
+
+    if (translations) {
+        existingProduct.translations = translations;
+        existingProduct.markModified("translations");
+    }
+
+    return await existingProduct.save();
 };
