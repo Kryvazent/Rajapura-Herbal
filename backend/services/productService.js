@@ -26,7 +26,13 @@ export const deleteProduct = async (id) => {
 };
 
 export const updateProduct = async (id, productData) => {
-    return await product.findByIdAndUpdate(id, productData, {
+    const { translations, ...fields } = productData;
+    const updates = {
+        ...fields,
+        ...(translations ? { translations } : {}),
+    };
+
+    return await product.findByIdAndUpdate(id, { $set: updates }, {
         new: true,
         runValidators: true,
     });
