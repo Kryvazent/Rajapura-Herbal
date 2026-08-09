@@ -1,7 +1,7 @@
+import './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import rateLimit from 'express-rate-limit';
@@ -13,7 +13,6 @@ import authRoutes from './routes/authRoutes.js'
 import { uploadThingRouter } from './routes/uploadthing.js';
 import * as roleMiddleware from './middleware/roleMiddleware.js';
 
-dotenv.config({ path: new URL(".env", import.meta.url) });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
@@ -180,9 +179,6 @@ app.use("/auth/login", authLimiter);
 app.use(["/auth", "/admin", "/user"], apiLimiter);
 app.use(csrfOriginGuard);
 
-app.use(express.json({ limit: bodyLimit }));
-app.use(express.urlencoded({ limit: bodyLimit, extended: true }));
-
 const sessionConfig = {
     secret: process.env.SESSION_SECRET || "development-session-secret",
     rolling: true,
@@ -211,6 +207,13 @@ if (mongoUrl) {
 }
 
 app.use(session(sessionConfig));
+
+// UploadThing's Express adapter reads the request body itself. Mount it before
+// the JSON/urlencoded parsers, but after sessions so upload auth still works.
+app.use("/admin/uploadthing", uploadThingRouter);
+
+app.use(express.json({ limit: bodyLimit }));
+app.use(express.urlencoded({ limit: bodyLimit, extended: true }));
 
 let dbConnectionPromise = null;
 const connectDB = async () => {
@@ -246,7 +249,6 @@ const requireDatabase = async (req, res, next) => {
 };
 
 app.use("/auth", requireDatabase, authRoutes);
-app.use("/admin/uploadthing", uploadThingRouter);
 app.use("/admin", requireDatabase, roleMiddleware.verifyActiveAdminOrStaff, adminRoutes);
 app.use("/user", requireDatabase, userRoutes);
 
@@ -265,6 +267,16 @@ app.get("/health", async (req, res) => {
             message: error.message,
         });
     }
+});
+
+// Global error handler — logs unhandled errors and returns JSON
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err && err.stack ? err.stack : err);
+    const status = err && err.status ? err.status : 500;
+    const message = err && err.message ? err.message : 'Internal server error';
+    const payload = { success: false, message };
+    if (process.env.NODE_ENV !== 'production') payload.stack = err && err.stack ? err.stack : undefined;
+    res.status(status).json(payload);
 });
 
 if (!isVercel) {

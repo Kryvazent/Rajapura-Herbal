@@ -71,6 +71,8 @@ const COLOR_PRESETS = [
 
 const SERVICE_ICONS = ["🫧","🦶","🧖","💆","🫗","♨️","🌿","🌺","💎","🍃","🏺","✨"];
 const PHONE_REGEX   = /^\+?[\d\s\-\(\)]{7,20}$/;
+const SERVICE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const SERVICE_VIDEO_MAX_BYTES = 64 * 1024 * 1024;
 
 
 const validateLocation = (data: Omit<ServiceLocation, "id">): FormErrors => {
@@ -555,13 +557,37 @@ export default function AdminServices() {
   const { startUpload: startImageUpload } = useUploadThing("serviceImage");
   const { startUpload: startVideoUpload } = useUploadThing("serviceVideo");
   const uploadedUrl = (result: any[] | undefined) =>
-    result?.[0]?.ufsUrl ?? result?.[0]?.url ?? result?.[0]?.serverData?.url ?? "";
+    result?.[0]?.ufsUrl ??
+    result?.[0]?.url ??
+    result?.[0]?.appUrl ??
+    result?.[0]?.file?.ufsUrl ??
+    result?.[0]?.file?.url ??
+    result?.[0]?.serverData?.url ??
+    "";
+
+  const validateMediaFile = (file: File, kind: "image" | "video") => {
+    if (!file.type.startsWith(`${kind}/`)) {
+      showToast(`Please select a valid ${kind} file.`, "error");
+      return false;
+    }
+
+    const maxBytes = kind === "image" ? SERVICE_IMAGE_MAX_BYTES : SERVICE_VIDEO_MAX_BYTES;
+    const maxLabel = kind === "image" ? "8MB" : "64MB";
+    if (file.size > maxBytes) {
+      showToast(`${kind === "image" ? "Image" : "Video"} must be ${maxLabel} or smaller.`, "error");
+      return false;
+    }
+
+    return true;
+  };
 
   const uploadCentreMedia = async (file: File, kind: "image" | "video") => {
     if (!locModal) return;
+    if (!validateMediaFile(file, kind)) return;
     setMediaUploading(kind === "image" ? "centre-image" : "centre-video");
     try {
       const result = await (kind === "image" ? startImageUpload([file]) : startVideoUpload([file]));
+      console.debug("uploadCentreMedia result:", result);
       const url = uploadedUrl(result);
       if (!url) throw new Error("The upload completed without a file URL.");
       setLocModal((current) => current ? { ...current, data: { ...current.data, [kind === "image" ? "imageUrl" : "videoUrl"]: url } } : current);
@@ -573,12 +599,14 @@ export default function AdminServices() {
 
   const uploadServiceImage = async (file: File) => {
     if (!svcModal) return;
+    if (!validateMediaFile(file, "image")) return;
     setMediaUploading("service-image");
     try {
       const result = await startImageUpload([file]);
+      console.debug("uploadServiceImage result:", result);
       const url = uploadedUrl(result);
       if (!url) throw new Error("The upload completed without a file URL.");
-      setSvcModal((current) => current ? { ...current, data: { ...current.data, imageUrl: url } } : current);
+      setSvcModal((current) => current ? { ...current, data: { ...current.data, imageUrl: url }, } : current);
       showToast("Treatment image uploaded. Save the service to apply it.", "success");
     } catch (error: any) {
       showToast(error?.message ?? "Failed to upload treatment image.", "error");
@@ -620,6 +648,7 @@ export default function AdminServices() {
 
   const openEditLocation = (loc: ServiceLocation) => {
     const { id, ...rest } = loc as any;
+    setFormLanguage("en");
     setLocModal({
       mode: "edit",
       data: { ...rest, services: rest.services, translations: { name: { en: rest.name, ...rest.translations?.name }, area: { en: rest.area, ...rest.translations?.area }, address: { en: rest.address, ...rest.translations?.address }, mapLabel: { en: rest.mapLabel, ...rest.translations?.mapLabel }, description: { en: rest.description, ...rest.translations?.description } } },
@@ -691,6 +720,7 @@ export default function AdminServices() {
 
   const openEditService = (location_id: string, svc: ServiceItem) => {
     const { id, _id, ...rest } = svc as any;
+    setFormLanguage("en");
     setSvcModal({
       mode: "edit",
       location_id,
@@ -741,9 +771,20 @@ export default function AdminServices() {
     }
   };
 
-  const locText = (field: "name" | "area" | "address" | "mapLabel" | "description") => locModal?.data.translations?.[field]?.[formLanguage] ?? "";
+  const locText = (field: "name" | "area" | "address" | "mapLabel" | "description") => {
+    const translated = locModal?.data.translations?.[field]?.[formLanguage];
+    if (translated && translated.trim() !== "") return translated;
+    // fall back to the English source field when editing
+    if (formLanguage === "en") return (locModal?.data as any)?.[field] ?? "";
+    return "";
+  };
   const setLocText = (field: "name" | "area" | "address" | "mapLabel" | "description", value: string) => setLocModal((current) => current ? ({ ...current, data: { ...current.data, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.data.translations, [field]: { ...current.data.translations?.[field], [formLanguage]: value } } }, errors: { ...current.errors, [field]: "" } }) : current);
-  const svcText = (field: "name" | "description" | "duration") => svcModal?.data.translations?.[field]?.[formLanguage] ?? "";
+  const svcText = (field: "name" | "description" | "duration") => {
+    const translated = svcModal?.data.translations?.[field]?.[formLanguage];
+    if (translated && translated.trim() !== "") return translated;
+    if (formLanguage === "en") return (svcModal?.data as any)?.[field] ?? "";
+    return "";
+  };
   const setSvcText = (field: "name" | "description" | "duration", value: string) => setSvcModal((current) => current ? ({ ...current, data: { ...current.data, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.data.translations, [field]: { ...current.data.translations?.[field], [formLanguage]: value } } }, errors: { ...current.errors, [field]: "" } }) : current);
 
   const deleteService = (location_id: string, svc: ServiceItem) => {

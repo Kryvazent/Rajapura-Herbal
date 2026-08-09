@@ -1378,7 +1378,7 @@ export default function AdminProducts() {
                           {CATEGORY_TRANSLATIONS[category].si}
                         </option>
                       ))}
-                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />}
+                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
                     <ChevronDown
                       size={14}
                       style={{

@@ -1,8 +1,8 @@
 import axios from "axios";
 import { ArrowRight, Check, Clock3, Leaf, MapPin, Phone, Play, ShieldCheck, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Service } from "../interfaces/serviceInterface";
-import "./Services.css";
+import "./css/Services.css";
 import { localized, useLanguage } from "../i18n/LanguageContext";
 import { servicesCopy } from "../i18n/translations/services";
 
@@ -28,6 +28,7 @@ export default function Services() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      setLocations([]);
       try {
         const response = await axios.get(import.meta.env.VITE_BACKEND_URL + `/user/services?lang=${language}`);
         const data = response.data;
@@ -52,6 +53,35 @@ export default function Services() {
   const uploadedCentreImage = locations.find((location) => location.imageUrl)?.imageUrl;
   const uploadedExperienceVideo = locations.find((location) => location.videoUrl)?.videoUrl;
   const scrollToLocations = () => document.getElementById("wellness-centres")?.scrollIntoView({ behavior: "smooth" });
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoPaused, setVideoPaused] = useState(true);
+  const [rippleCount, setRippleCount] = useState(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        setVideoPaused(true);
+      });
+    }
+  }, [uploadedExperienceVideo]);
+
+  const handleVideoPlay = () => setVideoPaused(false);
+  const handleVideoPause = () => setVideoPaused(true);
+  const handlePlayButton = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    setRippleCount((count) => count + 1);
+    try {
+      await video.play();
+    } catch {
+      setVideoPaused(true);
+    }
+  };
 
   return <main className="services-page">
     <section className="services-hero" style={{ backgroundImage: `url("${uploadedCentreImage || sampleHeroImage}")` }}>
@@ -83,7 +113,26 @@ export default function Services() {
     </section>}
 
     <section className="experience-section">
-      <div className="experience-video"><video key={uploadedExperienceVideo || experienceVideo} controls playsInline preload="metadata" poster={uploadedCentreImage || sampleImages[3]}><source src={uploadedExperienceVideo || experienceVideo} /></video><div className="experience-video__label"><Play size={14} fill="currentColor" /> {c.glimpse}</div></div>
+      <div className="experience-video">
+        <video
+          key={uploadedExperienceVideo || experienceVideo}
+          ref={videoRef}
+          muted
+          autoPlay
+          playsInline
+          preload="metadata"
+          loop
+          onPlay={handleVideoPlay}
+          onPause={handleVideoPause}
+        >
+          <source src={uploadedExperienceVideo || experienceVideo} />
+        </video>
+        {videoPaused && <button className="experience-video__play-button" type="button" onClick={handlePlayButton}>
+          <span key={rippleCount} className="experience-video__play-ripple" />
+          <Play size={24} />
+        </button>}
+        <div className="experience-video__label"><Play size={14} fill="currentColor" /> {c.glimpse}</div>
+      </div>
       <div className="experience-copy"><span className="services-kicker services-kicker--light">{c.experience}</span><h2>{c.restore}</h2><p>{c.aroma}</p><ul><li><Check size={16} /> {c.assessment}</li><li><Check size={16} /> {c.tailored}</li><li><Check size={16} /> {c.aftercare}</li></ul></div>
     </section>
 
@@ -95,9 +144,10 @@ export default function Services() {
         <div className="location-card__image"><img src={location.imageUrl || sampleImages[(locationIndex + 2) % sampleImages.length]} alt={`${localized(location.translations?.area, language, location.area)} ${c.centreAlt}`} /><span>{localized(location.translations?.mapLabel, language, location.mapLabel || `${location.area} centre`)}</span></div>
         <div className="location-card__body">
           <div className="location-card__title"><span>{location.icon}</span><div><small>{c.centre}</small><h3>{localized(location.translations?.name, language, location.name)}</h3></div></div>
-          <p className="location-description">{localized(location.translations?.description, language, location.description)}</p><div className="location-address"><MapPin size={17} /><span>{localized(location.translations?.address, language, location.address)}</span></div>
-          <div className="location-services"><span>{c.available}</span>{location.services.map((service) => <div key={service.id}><p>{localized(service.translations?.name, language, service.name)}</p><small><Clock3 size={12} /> {localized(service.translations?.duration, language, service.duration)}</small></div>)}</div>
           <div className="location-card__actions"><a className="service-button service-button--green" href={`tel:${location.mobile}`}><Phone size={16} /> {c.call} {location.mobile}</a>{location.altMobile?.trim() && <a href={`tel:${location.altMobile}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#66746b", fontSize: ".73rem", textDecoration: "none", padding: "8px 0" }}><Phone size={14} /> {c.alternate} {location.altMobile}</a>}</div>
+          <p className="location-description">{localized(location.translations?.description, language, location.description)}</p>
+          <div className="location-address"><MapPin size={17} /><span>{localized(location.translations?.address, language, location.address)}</span></div>
+          <div className="location-services"><span>{c.available}</span>{location.services.map((service) => <div key={service.id}><p>{localized(service.translations?.name, language, service.name)}</p><small><Clock3 size={12} /> {localized(service.translations?.duration, language, service.duration)}</small></div>)}</div>
         </div>
       </article>)}</div>}
     </section>
