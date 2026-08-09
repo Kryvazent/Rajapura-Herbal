@@ -144,9 +144,10 @@ export default function Services() {
         <div className="location-card__image"><img src={location.imageUrl || sampleImages[(locationIndex + 2) % sampleImages.length]} alt={`${localized(location.translations?.area, language, location.area)} ${c.centreAlt}`} /><span>{localized(location.translations?.mapLabel, language, location.mapLabel || `${location.area} centre`)}</span></div>
         <div className="location-card__body">
           <div className="location-card__title"><span>{location.icon}</span><div><small>{c.centre}</small><h3>{localized(location.translations?.name, language, location.name)}</h3></div></div>
-          <p className="location-description">{localized(location.translations?.description, language, location.description)}</p><div className="location-address"><MapPin size={17} /><span>{localized(location.translations?.address, language, location.address)}</span></div>
-          <div className="location-services"><span>{c.available}</span>{location.services.map((service) => <div key={service.id}><p>{localized(service.translations?.name, language, service.name)}</p><small><Clock3 size={12} /> {localized(service.translations?.duration, language, service.duration)}</small></div>)}</div>
           <div className="location-card__actions"><a className="service-button service-button--green" href={`tel:${location.mobile}`}><Phone size={16} /> {c.call} {location.mobile}</a>{location.altMobile?.trim() && <a href={`tel:${location.altMobile}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#66746b", fontSize: ".73rem", textDecoration: "none", padding: "8px 0" }}><Phone size={14} /> {c.alternate} {location.altMobile}</a>}</div>
+          <p className="location-description">{localized(location.translations?.description, language, location.description)}</p>
+          <div className="location-address"><MapPin size={17} /><span>{localized(location.translations?.address, language, location.address)}</span></div>
+          <div className="location-services"><span>{c.available}</span>{location.services.map((service) => <div key={service.id}><p>{localized(service.translations?.name, language, service.name)}</p><small><Clock3 size={12} /> {localized(service.translations?.duration, language, service.duration)}</small></div>)}</div>
         </div>
       </article>)}</div>}
     </section>

@@ -593,7 +593,9 @@
 }
 
 .location-card__body {
-    padding: 30px
+    padding: 32px;
+    display: grid;
+    gap: 18px;
 }
 
 .location-card__title {
@@ -621,8 +623,9 @@
 
 .location-description {
     color: #69756e;
-    line-height: 1.7;
-    font-size: .86rem
+    line-height: 1.75;
+    font-size: .92rem;
+    margin: 0;
 }
 
 .location-address {
@@ -691,7 +694,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 14px;
-    margin-top: 4px
+    margin-top: 0;
 }
 
 .alternate-phone {
