@@ -68,6 +68,9 @@ const getUploadThingKeyFromUrl = (imageUrl: string): string => {
 const IMAGE_URL_REGEX =
   /^https?:\/\/\S+$/i;
 
+const getProductPriceLabel = (price?: string) =>
+  price?.trim() ? price : "Contact for price";
+
 const getUploadedImageUrl = (uploaded: any): string =>
   uploaded?.ufsUrl ??
   uploaded?.url ??
@@ -361,7 +364,7 @@ export default function AdminProducts() {
     type: "success" | "error";
   } | null>(null);
 
-  
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -403,14 +406,14 @@ export default function AdminProducts() {
     getProducts();
   }, []);
 
-  
+
   async function getProducts() {
     try {
       setLoading(true);
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/products-all"
       );
-      
+
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProducts(data);
     } catch (err) {
@@ -422,7 +425,7 @@ export default function AdminProducts() {
     }
   }
 
-  
+
   async function saveProduct(product: Product): Promise<void> {
     await axios.post(
       import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
@@ -554,7 +557,7 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     const matchSearch =
@@ -563,7 +566,7 @@ export default function AdminProducts() {
     return matchCat && matchSearch;
   });
 
-  
+
   const openAdd = () => {
     setFormLanguage("en");
     setFormData(emptyForm());
@@ -624,7 +627,7 @@ export default function AdminProducts() {
     setModalMode("edit");
   };
 
-  
+
   const handleSave = async () => {
     try {
       setSaveLoading(true);
@@ -709,7 +712,7 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -727,10 +730,10 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const set = (field: keyof Omit<Product, "_id">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     if (formErrors[field]) {
       setFormErrors((prev) => {
         const n = { ...prev };
@@ -783,10 +786,10 @@ export default function AdminProducts() {
 
   return (
     <div>
-      
+
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      
+
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -823,7 +826,7 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -875,9 +878,8 @@ export default function AdminProducts() {
                 backgroundColor:
                   categoryFilter === cat ? "#2D5016" : "transparent",
                 color: categoryFilter === cat ? "#FAF6EE" : "#6B4423",
-                border: `1px solid ${
-                  categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
-                }`,
+                border: `1px solid ${categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
+                  }`,
                 padding: "6px 14px",
                 borderRadius: "50px",
                 fontSize: "0.8rem",
@@ -891,7 +893,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -901,7 +903,7 @@ export default function AdminProducts() {
           boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
         }}
       >
-        
+
         {loading && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <div
@@ -1119,7 +1121,7 @@ export default function AdminProducts() {
         )}
       </div>
 
-      
+
       {modalMode && (
         <div
           style={{
@@ -1145,7 +1147,7 @@ export default function AdminProducts() {
               margin: "auto",
             }}
           >
-            
+
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -1179,7 +1181,7 @@ export default function AdminProducts() {
               </button>
             </div>
 
-            
+
             <div
               style={{
                 padding: "28px",
@@ -1188,7 +1190,7 @@ export default function AdminProducts() {
                 gap: "18px",
               }}
             >
-              
+
               <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
               <div>
                 <InputField
@@ -1201,7 +1203,7 @@ export default function AdminProducts() {
                 />
               </div>
 
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -1320,7 +1322,7 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              
+
               <InputField
                 label="Price (LKR)"
                 value={formData.price}
@@ -1333,7 +1335,7 @@ export default function AdminProducts() {
                 error={formErrors.price}
               />
 
-              
+
               <div>
                 <label
                   style={{
@@ -1369,7 +1371,7 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.description} />
               </div>
 
-              
+
               <div>
                 <label
                   style={{
@@ -1565,8 +1567,8 @@ export default function AdminProducts() {
                               {imageDeleting
                                 ? "Deleting..."
                                 : imageUploading
-                                ? "Uploading..."
-                                : "Upload Image"}
+                                  ? "Uploading..."
+                                  : "Upload Image"}
                             </button>
                             <button
                               type="button"
@@ -1694,7 +1696,7 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.image} />
               </div>
 
-              
+
               <TagsField
                 label="Benefits"
                 values={translatedList("benefits")}
@@ -1715,7 +1717,7 @@ export default function AdminProducts() {
               />
             </div>
 
-            
+
             <div
               style={{
                 padding: "16px 28px",
@@ -1760,15 +1762,15 @@ export default function AdminProducts() {
                 {saveLoading
                   ? "Saving..."
                   : modalMode === "add"
-                  ? "Add Product"
-                  : "Save Changes"}
+                    ? "Add Product"
+                    : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      
+
       {deleteTarget && (
         <div
           style={{
