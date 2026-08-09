@@ -20,8 +20,12 @@ import axios from "axios";
 import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
+
 import { Language, useLanguage } from "../i18n/LanguageContext";
 import { productsCopy } from "../i18n/translations/products";
+
+import { messages } from "../i18n/translations/common";
+
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -34,6 +38,22 @@ const CATEGORIES = [
 
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 const VALID_BADGES = BADGES.filter(Boolean);
+
+const CATEGORY_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  "Teas & Infusions": { si: "තේ සහ පානයන්", ta: "தேநீர் மற்றும் உட்செலுத்தல்கள்" },
+  "Oils & Serums": { si: "තෙල් සහ සීරම්", ta: "எண்ணெய்கள் மற்றும் சீரம்கள்" },
+  Supplements: { si: "අතිරේක", ta: "துணை உணவுகள்" },
+  Skincare: { si: "සම සත්කාර", ta: "தோல் பராமரிப்பு" },
+  "Powders & Blends": { si: "කුඩු සහ මිශ්‍රණ", ta: "பொடிகள் மற்றும் கலவைகள்" },
+  "Tonics & Syrups": { si: "ටොනික් සහ සිරප්", ta: "டானிக்குகள் மற்றும் சிரப்புகள்" },
+};
+
+const BADGE_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  Bestseller: { si: "වැඩිම අලෙවි", ta: "அதிக விற்பனை" },
+  Premium: { si: "උසස්", ta: "உயர்தரம்" },
+  New: { si: "නව", ta: "புதியது" },
+  Organic: { si: "කාබනික", ta: "இயற்கை" },
+};
 
 
 interface FormErrors {
@@ -118,6 +138,25 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   return errors;
 };
 
+const sinhalaTranslationsPersisted = (submitted: Product, saved: Product) => {
+  const textFields = ["name", "category", "description"] as const;
+  const listFields = ["benefits", "ingredients", "howToUse"] as const;
+  const normalizedList = (values?: string[]) =>
+    (values ?? []).map((value) => value.trim()).filter(Boolean);
+
+  return (
+    textFields.every((field) => {
+      const value = submitted.translations?.[field]?.si?.trim();
+      return !value || saved.translations?.[field]?.si?.trim() === value;
+    }) &&
+    listFields.every((field) => {
+      const value = normalizedList(submitted.translations?.[field]?.si);
+      const savedValue = normalizedList(saved.translations?.[field]?.si);
+      return value.length === 0 || JSON.stringify(savedValue) === JSON.stringify(value);
+    })
+  );
+};
+
 
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
@@ -177,7 +216,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   price: "",
   image: "",
   badge: "",
-  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], si: "", ta: "" }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
+  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], ...CATEGORY_TRANSLATIONS[CATEGORIES[0]] }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
 });
 
 
@@ -434,12 +473,33 @@ export default function AdminProducts() {
     );
   }
 
-  async function editProduct(product: Product): Promise<void> {
-    await axios.put(
+  async function editProduct(product: Product): Promise<Product> {
+    const response = await axios.put(
       import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
       { product },
       { withCredentials: true }
     );
+
+    // The current API returns { data: product }, while older deployed APIs
+    // returned the product directly. Accept either shape before verifying the
+    // saved translations so a successful update is not reported as a failure.
+    const savedProduct = (response.data?.data ?? response.data?.product ?? response.data) as
+      | Product
+      | undefined;
+    if (!savedProduct || !sinhalaTranslationsPersisted(product, savedProduct)) {
+      const persistenceError = Object.assign(
+        new Error("Sinhala translations were not saved. Please try again."),
+        {
+          submittedTranslations: product.translations,
+          savedTranslations: savedProduct?.translations,
+          response: response.data,
+        }
+      );
+      console.error("Sinhala translation persistence mismatch", persistenceError);
+      throw persistenceError;
+    }
+
+    return savedProduct;
   }
 
   async function deleteProductApi(
@@ -603,7 +663,14 @@ export default function AdminProducts() {
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
       translations: {
         name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
-        category: { en: rest.category, ...rest.translations?.category },
+        category: {
+          en: rest.category,
+          ...rest.translations?.category,
+          si:
+            rest.translations?.category?.si || categoryTranslation?.si || "",
+          ta:
+            rest.translations?.category?.ta || categoryTranslation?.ta || "",
+        },
         description: { en: rest.description, ...rest.translations?.description },
         benefits: { en: englishList("benefits"), ...rest.translations?.benefits },
         ingredients: { en: englishList("ingredients"), ...rest.translations?.ingredients },
@@ -704,8 +771,41 @@ export default function AdminProducts() {
       setModalMode(null);
       setFormErrors({});
     } catch (err: any) {
+      console.error("Product save failed", {
+        message: err.message,
+        status: err.response?.status,
+        response: err.response?.data ?? err.response,
+        submittedTranslations: err.submittedTranslations,
+        savedTranslations: err.savedTranslations,
+        error: err,
+      });
+      const responseErrors = err.response?.data?.errors;
+      const errorDetails = Array.isArray(responseErrors)
+        ? responseErrors
+            .map((error) =>
+              typeof error === "string" ? error : error?.message ?? error?.msg
+            )
+            .filter(Boolean)
+            .join(" ")
+        : "";
+      const fieldErrors = Array.isArray(responseErrors)
+        ? responseErrors.reduce((errors, error) => {
+            if (error?.field && error?.message) {
+              errors[error.field.replace(/^product\./, "")] = error.message;
+            }
+            return errors;
+          }, {} as FormErrors)
+        : {};
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setFormErrors(fieldErrors);
+      }
+
       const msg =
-        err.response?.data?.message ?? "Failed to save product.";
+        errorDetails ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to save product.";
       showToast(msg, "error");
     } finally {
       setSaveLoading(false);
@@ -1256,7 +1356,29 @@ export default function AdminProducts() {
                           {option.label}
                         </option>
                       ))}
-                    </select>
+
+                    </select> : formLanguage === "si" ? <select
+                      value={translatedText("category")}
+                      onChange={(e) => setTranslatedText("category", e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 36px 10px 14px",
+                        borderRadius: "10px",
+                        border: "1.5px solid rgba(45,80,22,0.2)",
+                        backgroundColor: "#FAF6EE",
+                        color: "#2D5016",
+                        fontSize: "0.88rem",
+                        outline: "none",
+                        appearance: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={CATEGORY_TRANSLATIONS[category].si}>
+                          {CATEGORY_TRANSLATIONS[category].si}
+                        </option>
+                      ))}
+                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />}
                     <ChevronDown
                       size={14}
                       style={{
@@ -1325,7 +1447,7 @@ export default function AdminProducts() {
 
               <InputField
                 label="Price (LKR)"
-                value={formData.price}
+                value={priceValue}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");

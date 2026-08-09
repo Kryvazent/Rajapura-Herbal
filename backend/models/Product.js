@@ -1,7 +1,34 @@
 import mongoose from "mongoose";
 
-const textTranslations = { en: { type: String, trim: true }, si: { type: String, trim: true }, ta: { type: String, trim: true } };
-const listTranslations = { en: [{ type: String, trim: true }], si: [{ type: String, trim: true }], ta: [{ type: String, trim: true }] };
+const textTranslationsSchema = new mongoose.Schema(
+  {
+    en: { type: String, trim: true },
+    si: { type: String, trim: true },
+    ta: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
+const listTranslationsSchema = new mongoose.Schema(
+  {
+    en: [{ type: String, trim: true }],
+    si: [{ type: String, trim: true }],
+    ta: [{ type: String, trim: true }],
+  },
+  { _id: false }
+);
+
+const translationsSchema = new mongoose.Schema(
+  {
+    name: textTranslationsSchema,
+    category: textTranslationsSchema,
+    description: textTranslationsSchema,
+    benefits: listTranslationsSchema,
+    ingredients: listTranslationsSchema,
+    howToUse: listTranslationsSchema,
+  },
+  { _id: false }
+);
 
 const productSchema = new mongoose.Schema(
   {
@@ -40,14 +67,7 @@ const productSchema = new mongoose.Schema(
       default: "",
     },
     tamilName: { type: String, trim: true, maxlength: [100, "Tamil name too long"] },
-    translations: {
-      name: textTranslations,
-      category: textTranslations,
-      description: textTranslations,
-      benefits: listTranslations,
-      ingredients: listTranslations,
-      howToUse: listTranslations,
-    },
+    translations: { type: translationsSchema, default: () => ({}) },
     image: {
       type: String,
       required: [true, "Image is required"],
