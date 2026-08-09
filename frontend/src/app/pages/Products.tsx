@@ -13,6 +13,15 @@ export default function Products() {
   const categoryLabel = (category: string) => category === "All" ? c.all : c.categories[category as keyof typeof c.categories] ?? category;
   const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
+  const productList = (product: Product, field: "benefits" | "ingredients" | "howToUse") => {
+    const translated = localizedList(product.translations?.[field], language);
+    if (translated.length > 0) {
+      return translated;
+    }
+
+    const baseValues = product[field];
+    return Array.isArray(baseValues) ? baseValues : [];
+  };
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -55,7 +64,7 @@ export default function Products() {
     }
   }
 
-  
+
   const categories = [
     "All",
     ...Array.from(new Set(products.map((p) => p.category))),
@@ -72,7 +81,7 @@ export default function Products() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      
+
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -129,7 +138,7 @@ export default function Products() {
         </div>
       </div>
 
-      
+
       <div
         style={{
           height: "4px",
@@ -139,9 +148,9 @@ export default function Products() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16 py-8 sm:py-12">
-        
+
         <div className="flex flex-col gap-4 mb-8 sm:mb-10">
-          
+
           <div style={{ position: "relative" }}>
             <Search
               size={16}
@@ -172,7 +181,7 @@ export default function Products() {
             />
           </div>
 
-          
+
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
@@ -182,11 +191,10 @@ export default function Products() {
                   backgroundColor:
                     activeCategory === cat ? "#2D5016" : "#FAF6EE",
                   color: activeCategory === cat ? "#FAF6EE" : "#6B4423",
-                  border: `1px solid ${
-                    activeCategory === cat
-                      ? "#2D5016"
-                      : "rgba(45,80,22,0.25)"
-                  }`,
+                  border: `1px solid ${activeCategory === cat
+                    ? "#2D5016"
+                    : "rgba(45,80,22,0.25)"
+                    }`,
                   padding: "7px 16px",
                   borderRadius: "50px",
                   fontSize: "0.82rem",
@@ -201,7 +209,7 @@ export default function Products() {
           </div>
         </div>
 
-        
+
         {loading && (
           <div className="flex justify-center items-center py-20">
             <div
@@ -218,7 +226,7 @@ export default function Products() {
           </div>
         )}
 
-        
+
         {!loading && (
           <p
             style={{
@@ -231,7 +239,7 @@ export default function Products() {
           </p>
         )}
 
-        
+
         {!loading && products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
             {filtered.map((product) => (
@@ -251,7 +259,7 @@ export default function Products() {
                 className="group hover:shadow-lg"
                 onClick={() => setSelectedProduct(product)}
               >
-                
+
                 <div
                   style={{
                     position: "relative",
@@ -313,7 +321,7 @@ export default function Products() {
                   </div>
                 </div>
 
-                
+
                 <div
                   style={{
                     padding: "16px 18px",
@@ -358,9 +366,9 @@ export default function Products() {
                     {localized(product.translations?.description, language, product.description).substring(0, 90)}...
                   </p>
 
-                  
+
                   <div className="flex flex-wrap gap-1" style={{ marginBottom: "12px" }}>
-                    {localizedList(product.translations?.ingredients, language).length ? localizedList(product.translations?.ingredients, language).slice(0, 3).map((ing) => (
+                    {productList(product, "ingredients").length ? productList(product, "ingredients").slice(0, 3).map((ing) => (
                       <span
                         key={ing}
                         style={{
@@ -375,7 +383,7 @@ export default function Products() {
                         {ing}
                       </span>
                     )) : product.ingredients.slice(0, 3).map((ing) => <span key={ing}>{ing}</span>)}
-                    {(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) > 3 && (
+                    {(productList(product, "ingredients").length || product.ingredients.length) > 3 && (
                       <span
                         style={{
                           color: "#8B5E3C",
@@ -383,7 +391,7 @@ export default function Products() {
                           padding: "3px 5px",
                         }}
                       >
-                        +{(localizedList(product.translations?.ingredients, language).length || product.ingredients.length) - 3} {c.more}
+                        +{(productList(product, "ingredients").length || product.ingredients.length) - 3} {c.more}
                       </span>
                     )}
                   </div>
@@ -399,7 +407,13 @@ export default function Products() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {priceLabel(product.price)}
+                      {
+                        language === "si"
+                          ? "මිල සඳහා විමසන්න"
+                          : language === "ta"
+                          ? "விலை விவரங்களுக்கு விசாரிக்கவும்"
+                          : priceLabel(product.price)
+                      }
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -441,7 +455,7 @@ export default function Products() {
           </div>
         )}
 
-        
+
         {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
             <Leaf
@@ -461,7 +475,7 @@ export default function Products() {
         )}
       </div>
 
-      
+
       {selectedProduct && (
         <div
           style={{
@@ -490,7 +504,7 @@ export default function Products() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            
+
             <div
               className="flex sm:hidden items-center justify-between px-4 py-3"
               style={{ backgroundColor: "#2D5016", flexShrink: 0 }}
@@ -521,12 +535,12 @@ export default function Products() {
               </button>
             </div>
 
-            
+
             <div
               className="flex flex-col sm:flex-row"
               style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
             >
-              
+
               <div
                 className="w-full sm:w-[42%] flex-shrink-0 relative"
                 style={{ height: "200px" }}
@@ -610,12 +624,12 @@ export default function Products() {
                 />
               </div>
 
-              
+
               <div
                 className="flex-1 flex flex-col overflow-hidden sm:h-auto"
                 style={{ minHeight: 0 }}
               >
-                
+
                 <div
                   className="hidden sm:block"
                   style={{
@@ -683,7 +697,7 @@ export default function Products() {
                   </div>
                 </div>
 
-                
+
                 <div style={{ overflowY: "auto", flex: 1 }}>
                   <div
                     className="px-5 sm:px-7 py-4 sm:py-5"
@@ -717,7 +731,7 @@ export default function Products() {
                         {c.benefits}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {localizedList(selectedProduct.translations?.benefits, language).map((b) => (
+                        {productList(selectedProduct, "benefits").map((b) => (
                           <span
                             key={b}
                             style={{
@@ -744,7 +758,7 @@ export default function Products() {
                           marginTop: 0,
                         }}
                       >
-                        {localizedList(selectedProduct.translations?.ingredients, language).length > 0 ? c.ingredients : ""}
+                        {productList(selectedProduct, "ingredients").length > 0 ? c.ingredients : ""}
                       </p>
                       <p
                         style={{
@@ -754,79 +768,79 @@ export default function Products() {
                           lineHeight: 1.6,
                         }}
                       >
-                        {localizedList(selectedProduct.translations?.ingredients, language).join(" · ")}
+                        {productList(selectedProduct, "ingredients").join(" · ")}
                       </p>
                     </div>
 
-                    {localizedList(selectedProduct.translations?.howToUse, language).length > 0 && (
-                        <div>
-                          <p
-                            style={{
-                              color: "#2D5016",
-                              fontWeight: 600,
-                              fontSize: "0.8rem",
-                              marginBottom: "10px",
-                              marginTop: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                            }}
-                          >
-                            <span>📖</span> {c.how}
-                          </p>
-                          <ol
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              listStyle: "none",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "8px",
-                            }}
-                          >
-                            {localizedList(selectedProduct.translations?.howToUse, language).map((step, i) => (
-                              <li
-                                key={i}
+                    {productList(selectedProduct, "howToUse").length > 0 && (
+                      <div>
+                        <p
+                          style={{
+                            color: "#2D5016",
+                            fontWeight: 600,
+                            fontSize: "0.8rem",
+                            marginBottom: "10px",
+                            marginTop: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          <span>📖</span> {c.how}
+                        </p>
+                        <ol
+                          style={{
+                            margin: 0,
+                            padding: 0,
+                            listStyle: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                          }}
+                        >
+                          {productList(selectedProduct, "howToUse").map((step, i) => (
+                            <li
+                              key={i}
+                              style={{
+                                display: "flex",
+                                gap: "10px",
+                                alignItems: "flex-start",
+                              }}
+                            >
+                              <span
                                 style={{
+                                  width: "20px",
+                                  height: "20px",
+                                  minWidth: "20px",
+                                  borderRadius: "50%",
+                                  backgroundColor: "#D4A017",
+                                  color: "#1A3009",
+                                  fontSize: "0.65rem",
+                                  fontWeight: 700,
                                   display: "flex",
-                                  gap: "10px",
-                                  alignItems: "flex-start",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  marginTop: "1px",
                                 }}
                               >
-                                <span
-                                  style={{
-                                    width: "20px",
-                                    height: "20px",
-                                    minWidth: "20px",
-                                    borderRadius: "50%",
-                                    backgroundColor: "#D4A017",
-                                    color: "#1A3009",
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    marginTop: "1px",
-                                  }}
-                                >
-                                  {i + 1}
-                                </span>
-                                <span
-                                  style={{
-                                    color: "#5C4033",
-                                    fontSize: "0.82rem",
-                                    lineHeight: 1.55,
-                                  }}
-                                >
-                                  {step}
-                                </span>
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
+                                {i + 1}
+                              </span>
+                              <span
+                                style={{
+                                  color: "#5C4033",
+                                  fontSize: "0.82rem",
+                                  lineHeight: 1.55,
+                                }}
+                              >
+                                {step}
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
 
-                    
+
                     <div className="flex sm:hidden gap-3 pt-2">
                       <button
                         onClick={() => setSelectedProduct(null)}

@@ -18,7 +18,7 @@ export const messages = {
   si: {
     home: "මුල් පිටුව", products: "අපගේ නිෂ්පාදන", services: "සේවාවන්", stores: "වෙළඳසැලක් සොයන්න", about: "අප ගැන",
     nearest: "ළඟම වෙළඳසැල සොයන්න", navigation: "සංචාලනය", tagline: "පිරිසිදු · ස්වභාවික · අව්‍යාජ ආයුර්වේද උරුමය",
-    language: "භාෂාව", contactPrice: "මිල සඳහා අමතන්න", quickLinks: "ඉක්මන් සබැඳි", contactUs: "අප අමතන්න", companyLabel: "ඖෂධීය සමාගම",
+    language: "භාෂාව", contactPrice: "මිල ගණන් දැනගැනීම සඳහා විමසන්න", quickLinks: "ඉක්මන් සබැඳි", contactUs: "අප අමතන්න", companyLabel: "ඖෂධීය සමාගම",
     heroEyebrow: "අව්‍යාජ ආයුර්වේද උරුමය", heroTitle: "සොබාදහමේ ප්‍රඥාව, රාජපුරයේ පිරිසිදු උරුමය", heroDescription: "වසර දෙසියයක ආයුර්වේද ප්‍රඥාවෙන් නිමවූ ශ්‍රී ලාංකේය ඖෂධ පැළෑටිවල සුව කිරීමේ බලය අත්විඳින්න.", exploreProducts: "නිෂ්පාදන බලන්න",
     storeTitle: "ඔබ අසල වෙළඳසැලක් සොයන්න", storeDescription: "රාජපුර නිෂ්පාදන ශ්‍රී ලංකාවේ පළාත් 9 පුරා බලයලත් වෙළඳසැල්වලින් ලබා ගත හැක.",
     aboutTitle: "රාජපුර ගැන", aboutDescription: "ශ්‍රී ලංකාවේ උසස් තත්ත්වයේ ඖෂධීය නිෂ්පාදන ප්‍රමුඛ නිෂ්පාදකයෙකු සහ බෙදාහරින්නෙකු.",

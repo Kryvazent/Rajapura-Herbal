@@ -20,8 +20,12 @@ import axios from "axios";
 import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
-import { Language } from "../i18n/LanguageContext";
+
+import { Language, useLanguage } from "../i18n/LanguageContext";
+import { productsCopy } from "../i18n/translations/products";
+
 import { messages } from "../i18n/translations/common";
+
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -391,13 +395,15 @@ export default function AdminProducts() {
   const [imageUploadStep, setImageUploadStep] = useState(
     "Step 1: Select a product image."
   );
+
+  const languageCopy = productsCopy[formLanguage];
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
 
-  
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -439,14 +445,14 @@ export default function AdminProducts() {
     getProducts();
   }, []);
 
-  
+
   async function getProducts() {
     try {
       setLoading(true);
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/products-all"
       );
-      
+
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProducts(data);
     } catch (err) {
@@ -458,7 +464,7 @@ export default function AdminProducts() {
     }
   }
 
-  
+
   async function saveProduct(product: Product): Promise<void> {
     await axios.post(
       import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
@@ -611,7 +617,7 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     const matchSearch =
@@ -620,7 +626,7 @@ export default function AdminProducts() {
     return matchCat && matchSearch;
   });
 
-  
+
   const openAdd = () => {
     setFormLanguage("en");
     setFormData(emptyForm());
@@ -640,12 +646,20 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
-    const categoryTranslation = CATEGORY_TRANSLATIONS[rest.category];
+    const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
+      const translated = rest.translations?.[field]?.en;
+      if (Array.isArray(translated) && translated.length > 0) {
+        return [...translated];
+      }
+      const fallback = rest[field];
+      return Array.isArray(fallback) ? [...fallback] : [""];
+    };
+
     setFormData({
       ...rest,
-      benefits: [...rest.benefits],
-      ingredients: [...rest.ingredients],
-      howToUse: [...(rest.howToUse ?? [])],
+      benefits: englishList("benefits"),
+      ingredients: englishList("ingredients"),
+      howToUse: englishList("howToUse"),
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
       translations: {
         name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
@@ -658,9 +672,9 @@ export default function AdminProducts() {
             rest.translations?.category?.ta || categoryTranslation?.ta || "",
         },
         description: { en: rest.description, ...rest.translations?.description },
-        benefits: { en: [...rest.benefits], ...rest.translations?.benefits },
-        ingredients: { en: [...rest.ingredients], ...rest.translations?.ingredients },
-        howToUse: { en: [...(rest.howToUse ?? [])], ...rest.translations?.howToUse },
+        benefits: { en: englishList("benefits"), ...rest.translations?.benefits },
+        ingredients: { en: englishList("ingredients"), ...rest.translations?.ingredients },
+        howToUse: { en: englishList("howToUse"), ...rest.translations?.howToUse },
       },
     });
     setFormLanguage("en");
@@ -680,7 +694,7 @@ export default function AdminProducts() {
     setModalMode("edit");
   };
 
-  
+
   const handleSave = async () => {
     try {
       setSaveLoading(true);
@@ -798,7 +812,7 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -816,10 +830,10 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const set = (field: keyof Omit<Product, "_id">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     if (formErrors[field]) {
       setFormErrors((prev) => {
         const n = { ...prev };
@@ -833,40 +847,49 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
-  const setCategory = (category: string) => {
-    const translation = CATEGORY_TRANSLATIONS[category];
-    setFormData((current) => ({
-      ...current,
-      category,
-      translations: {
-        ...current.translations,
-        category: {
-          ...current.translations?.category,
-          en: category,
-          ...(translation ?? {}),
-        },
-      },
-    }));
+  const selectedCategoryValue = (() => {
+    if (formLanguage === "en") return formData.category;
+
+    const translatedCategory = formData.translations?.category?.si?.trim();
+    if (!translatedCategory) return "";
+
+    const match = CATEGORIES.find(
+      (category) =>
+        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
+        translatedCategory
+    );
+
+    return match ?? "";
+  })();
+  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
+    if (formLanguage === "en") {
+      const baseValues = formData[field];
+      return Array.isArray(baseValues) && baseValues.length > 0 ? baseValues : [""];
+    }
+
+    const translated = formData.translations?.[field]?.si;
+    return Array.isArray(translated) && translated.length > 0 ? translated : [""];
   };
-  const badgeLabel = (badge: string) =>
-    !badge
-      ? formLanguage === "si" ? "කිසිවක් නැත" : "— None —"
-      : formLanguage === "en"
-        ? badge
-        : BADGE_TRANSLATIONS[badge]?.[formLanguage] ?? badge;
-  const priceValue =
-    formData.price === "Contact for price"
-      ? messages[formLanguage].contactPrice
-      : formData.price;
-  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => formData.translations?.[field]?.[formLanguage] ?? [""];
+  const categoryOptions = CATEGORIES.map((category) => ({
+    value: category,
+    label:
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
+      category,
+  }));
+  const badgeOptions = BADGES.map((badge) => ({
+    value: badge,
+    label: badge
+      ? languageCopy.badges[badge as keyof typeof languageCopy.badges] ?? badge
+      : languageCopy.none,
+  }));
   const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
 
   return (
     <div>
-      
+
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      
+
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -903,7 +926,7 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -955,9 +978,8 @@ export default function AdminProducts() {
                 backgroundColor:
                   categoryFilter === cat ? "#2D5016" : "transparent",
                 color: categoryFilter === cat ? "#FAF6EE" : "#6B4423",
-                border: `1px solid ${
-                  categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
-                }`,
+                border: `1px solid ${categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
+                  }`,
                 padding: "6px 14px",
                 borderRadius: "50px",
                 fontSize: "0.8rem",
@@ -971,7 +993,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -981,7 +1003,7 @@ export default function AdminProducts() {
           boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
         }}
       >
-        
+
         {loading && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <div
@@ -1199,7 +1221,7 @@ export default function AdminProducts() {
         )}
       </div>
 
-      
+
       {modalMode && (
         <div
           style={{
@@ -1225,7 +1247,7 @@ export default function AdminProducts() {
               margin: "auto",
             }}
           >
-            
+
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -1259,7 +1281,7 @@ export default function AdminProducts() {
               </button>
             </div>
 
-            
+
             <div
               style={{
                 padding: "28px",
@@ -1268,7 +1290,7 @@ export default function AdminProducts() {
                 gap: "18px",
               }}
             >
-              
+
               <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
               <div>
                 <InputField
@@ -1281,7 +1303,7 @@ export default function AdminProducts() {
                 />
               </div>
 
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -1295,9 +1317,26 @@ export default function AdminProducts() {
                     Category {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                   </label>
                   <div style={{ position: "relative" }}>
-                    {formLanguage === "en" ? <select
-                      value={translatedText("category")}
-                      onChange={(e) => setCategory(e.target.value)}
+                    <select
+                      value={selectedCategoryValue}
+                      onChange={(e) => {
+                        const nextCategory = e.target.value;
+                        const translatedCategory =
+                          languageCopy.categories[nextCategory as keyof typeof languageCopy.categories] ??
+                          nextCategory;
+                        setFormData((current) => ({
+                          ...current,
+                          ...(formLanguage === "en" ? { category: nextCategory } : {}),
+                          translations: {
+                            ...current.translations,
+                            category: {
+                              ...current.translations?.category,
+                              ...(formLanguage === "en" ? { en: nextCategory } : {}),
+                              [formLanguage]: translatedCategory,
+                            },
+                          },
+                        }));
+                      }}
                       style={{
                         width: "100%",
                         padding: "10px 36px 10px 14px",
@@ -1311,9 +1350,13 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c}>{c}</option>
+                      <option value=""></option>
+                      {categoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
                       ))}
+
                     </select> : formLanguage === "si" ? <select
                       value={translatedText("category")}
                       onChange={(e) => setTranslatedText("category", e.target.value)}
@@ -1379,9 +1422,9 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {BADGES.map((b) => (
-                        <option key={b} value={b}>
-                          {badgeLabel(b)}
+                      {badgeOptions.map((option) => (
+                        <option key={option.value || "none"} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -1401,7 +1444,7 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              
+
               <InputField
                 label="Price (LKR)"
                 value={priceValue}
@@ -1414,7 +1457,7 @@ export default function AdminProducts() {
                 error={formErrors.price}
               />
 
-              
+
               <div>
                 <label
                   style={{
@@ -1450,7 +1493,7 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.description} />
               </div>
 
-              
+
               <div>
                 <label
                   style={{
@@ -1646,8 +1689,8 @@ export default function AdminProducts() {
                               {imageDeleting
                                 ? "Deleting..."
                                 : imageUploading
-                                ? "Uploading..."
-                                : "Upload Image"}
+                                  ? "Uploading..."
+                                  : "Upload Image"}
                             </button>
                             <button
                               type="button"
@@ -1775,7 +1818,7 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.image} />
               </div>
 
-              
+
               <TagsField
                 label="Benefits"
                 values={translatedList("benefits")}
@@ -1796,7 +1839,7 @@ export default function AdminProducts() {
               />
             </div>
 
-            
+
             <div
               style={{
                 padding: "16px 28px",
@@ -1841,15 +1884,15 @@ export default function AdminProducts() {
                 {saveLoading
                   ? "Saving..."
                   : modalMode === "add"
-                  ? "Add Product"
-                  : "Save Changes"}
+                    ? "Add Product"
+                    : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      
+
       {deleteTarget && (
         <div
           style={{
