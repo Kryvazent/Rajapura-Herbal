@@ -20,7 +20,7 @@ import axios from "axios";
 import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
-import { Language } from "../i18n/LanguageContext";
+import { Language, useLanguage } from "../i18n/LanguageContext";
 import { productsCopy } from "../i18n/translations/products";
 
 const CATEGORIES = [
@@ -67,9 +67,6 @@ const getUploadThingKeyFromUrl = (imageUrl: string): string => {
 
 const IMAGE_URL_REGEX =
   /^https?:\/\/\S+$/i;
-
-const getProductPriceLabel = (price?: string) =>
-  price?.trim() ? price : "Contact for price";
 
 const getUploadedImageUrl = (uploaded: any): string =>
   uploaded?.ufsUrl ??
