@@ -28,6 +28,7 @@ export default function Services() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      setLocations([]);
       try {
         const response = await axios.get(import.meta.env.VITE_BACKEND_URL + `/user/services?lang=${language}`);
         const data = response.data;
