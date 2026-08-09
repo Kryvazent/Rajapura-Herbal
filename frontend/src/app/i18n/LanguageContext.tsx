@@ -6,8 +6,11 @@ export { LANGUAGE_LABELS };
 export const LANGUAGES = ["en", "si"] as const;
 // export const LANGUAGES = ["en", "si", "ta"] as const;
 export type Language = (typeof LANGUAGES)[number];
-export type LocalizedText = Partial<Record<Language, string>>;
-export type LocalizedList = Partial<Record<Language, string[]>>;
+// Tamil translations remain supported in stored content, even though the
+// language selector currently exposes only English and Sinhala.
+export type TranslationLanguage = Language | "ta";
+export type LocalizedText = Partial<Record<TranslationLanguage, string>>;
+export type LocalizedList = Partial<Record<TranslationLanguage, string[]>>;
 
 type MessageKey = keyof typeof messages.en;
 type LanguageContextValue = { language: Language; setLanguage: (language: Language) => void; t: (key: MessageKey) => string };
