@@ -1357,7 +1357,10 @@ export default function AdminProducts() {
                         </option>
                       ))}
 
-                    </select> : formLanguage === "si" ? <select
+                    </select> 
+                    {/* Ingredients  */}
+                    
+                    {/* <select
                       value={translatedText("category")}
                       onChange={(e) => setTranslatedText("category", e.target.value)}
                       style={{
@@ -1378,7 +1381,9 @@ export default function AdminProducts() {
                           {CATEGORY_TRANSLATIONS[category].si}
                         </option>
                       ))}
-                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
+                    </select>    */}
+                    
+                     {/* <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
                     <ChevronDown
                       size={14}
                       style={{
@@ -1389,7 +1394,7 @@ export default function AdminProducts() {
                         color: "#8B5E3C",
                         pointerEvents: "none",
                       }}
-                    />
+                    /> */}
                   </div>
                   <FieldError message={formErrors.category} />
                 </div>
@@ -1447,7 +1452,7 @@ export default function AdminProducts() {
 
               <InputField
                 label="Price (LKR)"
-                value={priceValue}
+                value={formData.price}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
