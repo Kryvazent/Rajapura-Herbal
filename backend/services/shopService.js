@@ -1,5 +1,24 @@
 import Shop from "../models/Shop.js";
 
+const mergeLocalizedText = (currentValue = {}, nextValue = {}) => ({
+    ...currentValue,
+    ...nextValue,
+});
+
+const mergeProvinceTranslations = (currentTranslations = {}, nextTranslations = {}) => ({
+    ...currentTranslations,
+    ...nextTranslations,
+    name: mergeLocalizedText(currentTranslations.name, nextTranslations.name),
+});
+
+const mergeShopTranslations = (currentTranslations = {}, nextTranslations = {}) => ({
+    ...currentTranslations,
+    ...nextTranslations,
+    name: mergeLocalizedText(currentTranslations.name, nextTranslations.name),
+    address: mergeLocalizedText(currentTranslations.address, nextTranslations.address),
+    hours: mergeLocalizedText(currentTranslations.hours, nextTranslations.hours),
+});
+
 const getShopDocument = async () => {
     let shopDoc = await Shop.findAll({});
     if (!shopDoc) {
@@ -24,6 +43,7 @@ export const updateProvince = async (_id, updateData) => {
     }
     shopDoc.name = updateData.name;
     shopDoc.icon = updateData.icon;
+    shopDoc.translations = mergeProvinceTranslations(shopDoc.translations, updateData.translations);
     await shopDoc.save();
     return shopDoc;
 };
@@ -53,6 +73,7 @@ export const updateDistrict = async (province_id, district_id, updateData) => {
         throw new Error('District not found');
     }
     district.name = updateData.name;
+    district.translations = mergeProvinceTranslations(district.translations, updateData.translations);
     await province.save();
     return district;
 };
@@ -100,6 +121,7 @@ export const updateTown = async (province_id, district_id, town_id, updateData) 
         throw new Error('Town not found');
     }
     town.name = updateData.name;
+    town.translations = mergeProvinceTranslations(town.translations, updateData.translations);
     return await province.save();
 };
 
@@ -158,6 +180,7 @@ export const updateShop = async (province_id, district_id, town_id, shop_id, sho
     shop.phone = shopData.phone;
     shop.hours = shopData.hours;
     shop.type = shopData.type;
+    shop.translations = mergeShopTranslations(shop.translations, shopData.translations);
     return await province.save();
 };
 
@@ -201,13 +224,16 @@ export const addShopWizard = async (wizardData) => {
         provMode,
         selectedProvId,
         newProvName,
+        newProvTranslations,
         newProvIcon,
         distMode,
         selectedDistId,
         newDistName,
+        newDistTranslations,
         townMode,
         selectedTownId,
         newTownName,
+        newTownTranslations,
         shopForm
     } = wizardData;
 
@@ -218,6 +244,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         province = new Shop({
             name: newProvName,
+            translations: { name: newProvTranslations },
             icon: newProvIcon,
             districts: []
         });
@@ -229,6 +256,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         province.districts.push({
             name: newDistName,
+            translations: { name: newDistTranslations },
             towns: []
         });
         district = province.districts[province.districts.length - 1];
@@ -240,6 +268,7 @@ export const addShopWizard = async (wizardData) => {
     } else {
         district.towns.push({
             name: newTownName,
+            translations: { name: newTownTranslations },
             shops: []
         });
         town = district.towns[district.towns.length - 1];

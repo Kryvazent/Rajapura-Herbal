@@ -1,0 +1,1 @@
+export const navAccessibility = { en: { logo: "Rajapura Logo", menu: "Toggle menu" }, si: { logo: "රාජපුර ලාංඡනය", menu: "මෙනුව විවෘත හෝ වසන්න" }, ta: { logo: "ராஜபுர சின்னம்", menu: "பட்டியைத் திறக்க அல்லது மூட" } } as const;

@@ -30,19 +30,23 @@ export const router = createBrowserRouter([
       { path: "*", Component: NotFound },
     ],
   },
-  { path: ADMIN_BASE_PATH, Component: AdminLogin },
   {
     path: ADMIN_BASE_PATH,
-    Component: AdminLayout,
     children: [
-      { path: "dashboard", Component: AdminDashboard },
-      { path: "products", Component: AdminProducts },
-      { path: "stores", Component: AdminStores },
-      { path: "services", Component: AdminServices },
-      { path: "team", Component: AdminTeam },
-      { path: "users", Component: AdminUsers },
-      { path: "profile", Component: AdminProfile },
-      { path: "*", Component: NotFound },
+      { index: true, Component: AdminLogin },
+      {
+        Component: AdminLayout,
+        children: [
+          { path: "dashboard", Component: AdminDashboard },
+          { path: "products", Component: AdminProducts },
+          { path: "stores", Component: AdminStores },
+          { path: "services", Component: AdminServices },
+          { path: "team", Component: AdminTeam },
+          { path: "users", Component: AdminUsers },
+          { path: "profile", Component: AdminProfile },
+          { path: "*", Component: NotFound },
+        ],
+      },
     ],
   },
 ]);

@@ -4,11 +4,10 @@ import { useEffect, useState } from "react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 import { adminPath } from "./adminPaths";
-
-const getProductPriceLabel = (price?: string) =>
-  price?.trim() ? price : "Contact for price";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function AdminDashboard() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [provinces, setProvinces] = useState<any[]>([]);
 
@@ -76,6 +75,9 @@ export default function AdminDashboard() {
   );
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
+
+  const getProductPriceLabel = (price?: string) =>
+    price?.trim() ? price : t("contactPrice");
 
   const stats = [
     {

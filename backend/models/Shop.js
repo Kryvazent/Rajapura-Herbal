@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+const textTranslations = { en: { type: String, trim: true }, si: { type: String, trim: true }, ta: { type: String, trim: true } };
 
 const storeSchema = new mongoose.Schema({
   name: {
@@ -33,6 +34,7 @@ const storeSchema = new mongoose.Schema({
       message: "Invalid shop type",
     },
   },
+  translations: { name: textTranslations, address: textTranslations, hours: textTranslations },
 });
 
 const townSchema = new mongoose.Schema({
@@ -43,6 +45,7 @@ const townSchema = new mongoose.Schema({
     maxlength: [60, "Town name cannot exceed 60 characters"],
   },
   shops: [storeSchema],
+  translations: { name: textTranslations },
 });
 
 const districtSchema = new mongoose.Schema({
@@ -53,6 +56,7 @@ const districtSchema = new mongoose.Schema({
     maxlength: [60, "District name cannot exceed 60 characters"],
   },
   towns: [townSchema],
+  translations: { name: textTranslations },
 });
 
 const provinceSchema = new mongoose.Schema(
@@ -69,6 +73,7 @@ const provinceSchema = new mongoose.Schema(
       required: [true, "Province icon is required"],
       trim: true,
     },
+    translations: { name: textTranslations },
     districts: [districtSchema],
   },
   { timestamps: true }

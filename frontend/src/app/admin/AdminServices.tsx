@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useUploadThing } from "../lib/uploadthing";
+import LanguageTabs from "./LanguageTabs";
+import { Language, LocalizedText } from "../i18n/LanguageContext";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -31,6 +33,7 @@ interface ServiceItem {
   icon: string;
   imageUrl?: string;
   showInShowcase?: boolean;
+  translations?: { name?: LocalizedText; description?: LocalizedText; duration?: LocalizedText };
 }
 
 interface ServiceLocation {
@@ -50,6 +53,7 @@ interface ServiceLocation {
   imageUrl?: string;
   videoUrl?: string;
   services: ServiceItem[];
+  translations?: { name?: LocalizedText; area?: LocalizedText; address?: LocalizedText; mapLabel?: LocalizedText; description?: LocalizedText };
 }
 
 interface FormErrors {
@@ -67,6 +71,8 @@ const COLOR_PRESETS = [
 
 const SERVICE_ICONS = ["🫧","🦶","🧖","💆","🫗","♨️","🌿","🌺","💎","🍃","🏺","✨"];
 const PHONE_REGEX   = /^\+?[\d\s\-\(\)]{7,20}$/;
+const SERVICE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const SERVICE_VIDEO_MAX_BYTES = 64 * 1024 * 1024;
 
 
 const validateLocation = (data: Omit<ServiceLocation, "id">): FormErrors => {
@@ -496,6 +502,7 @@ const blankLocation = (): Omit<ServiceLocation, "id"> => ({
   imageUrl: "",
   videoUrl: "",
   services: [],
+  translations: { name: { en: "", si: "", ta: "" }, area: { en: "", si: "", ta: "" }, address: { en: "", si: "", ta: "" }, mapLabel: { en: "", si: "", ta: "" }, description: { en: "", si: "", ta: "" } },
 });
 
 const blankService = (): Omit<ServiceItem, "id"> => ({
@@ -505,6 +512,7 @@ const blankService = (): Omit<ServiceItem, "id"> => ({
   icon: "🌿",
   imageUrl: "",
   showInShowcase: false,
+  translations: { name: { en: "", si: "", ta: "" }, description: { en: "", si: "", ta: "" }, duration: { en: "", si: "", ta: "" } },
 });
 
 
@@ -516,6 +524,7 @@ export default function AdminServices() {
   const [delLoading, setDelLoading]   = useState(false);
   const [mediaUploading, setMediaUploading] = useState<"centre-image" | "centre-video" | "service-image" | null>(null);
   const [toast, setToast]             = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [formLanguage, setFormLanguage] = useState<Language>("en");
 
   
   const [locModal, setLocModal] = useState<null | {
@@ -548,13 +557,37 @@ export default function AdminServices() {
   const { startUpload: startImageUpload } = useUploadThing("serviceImage");
   const { startUpload: startVideoUpload } = useUploadThing("serviceVideo");
   const uploadedUrl = (result: any[] | undefined) =>
-    result?.[0]?.ufsUrl ?? result?.[0]?.url ?? result?.[0]?.serverData?.url ?? "";
+    result?.[0]?.ufsUrl ??
+    result?.[0]?.url ??
+    result?.[0]?.appUrl ??
+    result?.[0]?.file?.ufsUrl ??
+    result?.[0]?.file?.url ??
+    result?.[0]?.serverData?.url ??
+    "";
+
+  const validateMediaFile = (file: File, kind: "image" | "video") => {
+    if (!file.type.startsWith(`${kind}/`)) {
+      showToast(`Please select a valid ${kind} file.`, "error");
+      return false;
+    }
+
+    const maxBytes = kind === "image" ? SERVICE_IMAGE_MAX_BYTES : SERVICE_VIDEO_MAX_BYTES;
+    const maxLabel = kind === "image" ? "8MB" : "64MB";
+    if (file.size > maxBytes) {
+      showToast(`${kind === "image" ? "Image" : "Video"} must be ${maxLabel} or smaller.`, "error");
+      return false;
+    }
+
+    return true;
+  };
 
   const uploadCentreMedia = async (file: File, kind: "image" | "video") => {
     if (!locModal) return;
+    if (!validateMediaFile(file, kind)) return;
     setMediaUploading(kind === "image" ? "centre-image" : "centre-video");
     try {
       const result = await (kind === "image" ? startImageUpload([file]) : startVideoUpload([file]));
+      console.debug("uploadCentreMedia result:", result);
       const url = uploadedUrl(result);
       if (!url) throw new Error("The upload completed without a file URL.");
       setLocModal((current) => current ? { ...current, data: { ...current.data, [kind === "image" ? "imageUrl" : "videoUrl"]: url } } : current);
@@ -566,12 +599,14 @@ export default function AdminServices() {
 
   const uploadServiceImage = async (file: File) => {
     if (!svcModal) return;
+    if (!validateMediaFile(file, "image")) return;
     setMediaUploading("service-image");
     try {
       const result = await startImageUpload([file]);
+      console.debug("uploadServiceImage result:", result);
       const url = uploadedUrl(result);
       if (!url) throw new Error("The upload completed without a file URL.");
-      setSvcModal((current) => current ? { ...current, data: { ...current.data, imageUrl: url } } : current);
+      setSvcModal((current) => current ? { ...current, data: { ...current.data, imageUrl: url }, } : current);
       showToast("Treatment image uploaded. Save the service to apply it.", "success");
     } catch (error: any) {
       showToast(error?.message ?? "Failed to upload treatment image.", "error");
@@ -609,14 +644,14 @@ export default function AdminServices() {
   }, []);
 
   
-  const openAddLocation = () =>
-    setLocModal({ mode: "add", data: blankLocation(), errors: {} });
+  const openAddLocation = () => { setFormLanguage("en"); setLocModal({ mode: "add", data: blankLocation(), errors: {} }); };
 
   const openEditLocation = (loc: ServiceLocation) => {
     const { id, ...rest } = loc as any;
+    setFormLanguage("en");
     setLocModal({
       mode: "edit",
-      data: { ...rest, services: rest.services },
+      data: { ...rest, services: rest.services, translations: { name: { en: rest.name, ...rest.translations?.name }, area: { en: rest.area, ...rest.translations?.area }, address: { en: rest.address, ...rest.translations?.address }, mapLabel: { en: rest.mapLabel, ...rest.translations?.mapLabel }, description: { en: rest.description, ...rest.translations?.description } } },
       id: loc._id,
       errors: {},
     });
@@ -681,15 +716,15 @@ export default function AdminServices() {
   };
 
   
-  const openAddService = (location_id: string) =>
-    setSvcModal({ mode: "add", location_id, data: blankService(), errors: {} });
+  const openAddService = (location_id: string) => { setFormLanguage("en"); setSvcModal({ mode: "add", location_id, data: blankService(), errors: {} }); };
 
   const openEditService = (location_id: string, svc: ServiceItem) => {
     const { id, _id, ...rest } = svc as any;
+    setFormLanguage("en");
     setSvcModal({
       mode: "edit",
       location_id,
-      data: rest,
+      data: { ...rest, translations: { name: { en: rest.name, ...rest.translations?.name }, description: { en: rest.description, ...rest.translations?.description }, duration: { en: rest.duration, ...rest.translations?.duration } } },
       service_id: svc._id,
       errors: {},
     });
@@ -735,6 +770,22 @@ export default function AdminServices() {
       setSaveLoading(false);
     }
   };
+
+  const locText = (field: "name" | "area" | "address" | "mapLabel" | "description") => {
+    const translated = locModal?.data.translations?.[field]?.[formLanguage];
+    if (translated && translated.trim() !== "") return translated;
+    // fall back to the English source field when editing
+    if (formLanguage === "en") return (locModal?.data as any)?.[field] ?? "";
+    return "";
+  };
+  const setLocText = (field: "name" | "area" | "address" | "mapLabel" | "description", value: string) => setLocModal((current) => current ? ({ ...current, data: { ...current.data, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.data.translations, [field]: { ...current.data.translations?.[field], [formLanguage]: value } } }, errors: { ...current.errors, [field]: "" } }) : current);
+  const svcText = (field: "name" | "description" | "duration") => {
+    const translated = svcModal?.data.translations?.[field]?.[formLanguage];
+    if (translated && translated.trim() !== "") return translated;
+    if (formLanguage === "en") return (svcModal?.data as any)?.[field] ?? "";
+    return "";
+  };
+  const setSvcText = (field: "name" | "description" | "duration", value: string) => setSvcModal((current) => current ? ({ ...current, data: { ...current.data, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.data.translations, [field]: { ...current.data.translations?.[field], [formLanguage]: value } } }, errors: { ...current.errors, [field]: "" } }) : current);
 
   const deleteService = (location_id: string, svc: ServiceItem) => {
     setDeleteTarget({
@@ -1200,6 +1251,7 @@ export default function AdminServices() {
           wide
           loading={saveLoading || mediaUploading === "centre-image" || mediaUploading === "centre-video"}
         >
+          <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
           
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "12px", alignItems: "start" }}>
             <div>
@@ -1235,14 +1287,8 @@ export default function AdminServices() {
             </div>
             <FieldRow
               label="Centre Name"
-              value={locModal.data.name}
-              onChange={(v) => {
-                setLocModal({
-                  ...locModal,
-                  data: { ...locModal.data, name: v },
-                  errors: { ...locModal.errors, name: "" },
-                });
-              }}
+              value={locText("name")}
+              onChange={(v) => setLocText("name", v)}
               placeholder="e.g. Rajapura Wellness Centre – Paliyagoda"
               required
               error={locModal.errors.name}
@@ -1253,38 +1299,24 @@ export default function AdminServices() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <FieldRow
               label="Area (short name)"
-              value={locModal.data.area}
-              onChange={(v) =>
-                setLocModal({
-                  ...locModal,
-                  data: { ...locModal.data, area: v },
-                  errors: { ...locModal.errors, area: "" },
-                })
-              }
+              value={locText("area")}
+              onChange={(v) => setLocText("area", v)}
               placeholder="e.g. Paliyagoda"
               required
               error={locModal.errors.area}
             />
             <FieldRow
               label="Map Label"
-              value={locModal.data.mapLabel}
-              onChange={(v) =>
-                setLocModal({ ...locModal, data: { ...locModal.data, mapLabel: v } })
-              }
+              value={locText("mapLabel")}
+              onChange={(v) => setLocText("mapLabel", v)}
               placeholder="e.g. Western Province · Colombo District"
             />
           </div>
 
           <FieldRow
             label="Address"
-            value={locModal.data.address}
-            onChange={(v) =>
-              setLocModal({
-                ...locModal,
-                data: { ...locModal.data, address: v },
-                errors: { ...locModal.errors, address: "" },
-              })
-            }
+            value={locText("address")}
+            onChange={(v) => setLocText("address", v)}
             placeholder="Full address"
             required
             error={locModal.errors.address}
@@ -1323,14 +1355,8 @@ export default function AdminServices() {
 
           <FieldRow
             label="Description"
-            value={locModal.data.description}
-            onChange={(v) =>
-              setLocModal({
-                ...locModal,
-                data: { ...locModal.data, description: v },
-                errors: { ...locModal.errors, description: "" },
-              })
-            }
+            value={locText("description")}
+            onChange={(v) => setLocText("description", v)}
             placeholder="Brief description of this centre..."
             textarea
             error={locModal.errors.description}
@@ -1396,6 +1422,7 @@ export default function AdminServices() {
           onSave={saveService}
           loading={saveLoading || mediaUploading === "service-image"}
         >
+          <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
           
           <div>
             <label style={{ display: "block", color: "#2D5016", fontSize: "0.8rem", marginBottom: "6px" }}>
@@ -1438,14 +1465,8 @@ export default function AdminServices() {
 
           <FieldRow
             label="Service Name"
-            value={svcModal.data.name}
-            onChange={(v) =>
-              setSvcModal({
-                ...svcModal,
-                data: { ...svcModal.data, name: v },
-                errors: { ...svcModal.errors, name: "" },
-              })
-            }
+            value={svcText("name")}
+            onChange={(v) => setSvcText("name", v)}
             placeholder="e.g. Full Body Ayurvedic Massage"
             required
             error={svcModal.errors.name}
@@ -1453,28 +1474,16 @@ export default function AdminServices() {
 
           <FieldRow
             label="Duration"
-            value={svcModal.data.duration}
-            onChange={(v) =>
-              setSvcModal({
-                ...svcModal,
-                data: { ...svcModal.data, duration: v },
-                errors: { ...svcModal.errors, duration: "" },
-              })
-            }
+            value={svcText("duration")}
+            onChange={(v) => setSvcText("duration", v)}
             placeholder="e.g. 60 – 90 min"
             error={svcModal.errors.duration}
           />
 
           <FieldRow
             label="Description"
-            value={svcModal.data.description}
-            onChange={(v) =>
-              setSvcModal({
-                ...svcModal,
-                data: { ...svcModal.data, description: v },
-                errors: { ...svcModal.errors, description: "" },
-              })
-            }
+            value={svcText("description")}
+            onChange={(v) => setSvcText("description", v)}
             placeholder="Brief description of this service..."
             textarea
             error={svcModal.errors.description}

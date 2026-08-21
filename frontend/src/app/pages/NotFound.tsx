@@ -1,7 +1,12 @@
 import { Home, Leaf, SearchX } from "lucide-react";
 import { Link } from "react-router";
+import { useLanguage } from "../i18n/LanguageContext";
+import { notFoundCopy } from "../i18n/translations/notFound";
+
 
 export default function NotFound() {
+  const { language } = useLanguage();
+  const c = notFoundCopy[language];
   return (
     <section
       style={{
@@ -48,7 +53,7 @@ export default function NotFound() {
               textTransform: "uppercase",
             }}
           >
-            Page Not Found
+            {c.eyebrow}
           </span>
           <Leaf size={14} style={{ color: "#8B5E3C" }} />
         </div>
@@ -73,7 +78,7 @@ export default function NotFound() {
             margin: "0 0 14px",
           }}
         >
-          This path has not been prepared yet
+          {c.title}
         </h2>
 
         <p
@@ -85,8 +90,7 @@ export default function NotFound() {
             fontSize: "0.98rem",
           }}
         >
-          The page you are looking for may have moved, or the address may be
-          incorrect. Return home and continue exploring Rajapura Herbal.
+          {c.text}
         </p>
 
         <div className="flex flex-wrap justify-center gap-3">
@@ -106,7 +110,7 @@ export default function NotFound() {
             }}
           >
             <Home size={16} />
-            Back to Home
+            {c.home}
           </Link>
           <Link
             to="/products"
@@ -123,7 +127,7 @@ export default function NotFound() {
               border: "1px solid rgba(45,80,22,0.35)",
             }}
           >
-            View Products
+            {c.products}
           </Link>
         </div>
       </div>

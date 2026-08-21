@@ -1,9 +1,10 @@
 import TeamMember from "../models/TeamMember.js";
+import { localizeTeam } from "../utils/localize.js";
 
-export const getTeam = async (_req, res) => {
+export const getTeam = async (req, res) => {
   try {
     const data = await TeamMember.find({}).sort({ displayOrder: 1, createdAt: 1 });
-    res.status(200).json({ success: true, data });
+    res.status(200).json({ success: true, data: localizeTeam(data, req.query.lang) });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to load team members" });
   }

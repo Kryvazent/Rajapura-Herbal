@@ -19,6 +19,13 @@ import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 import { Schema } from "mongoose";
 import { useUploadThing } from "../lib/uploadthing";
+import LanguageTabs from "./LanguageTabs";
+
+import { Language, useLanguage } from "../i18n/LanguageContext";
+import { productsCopy } from "../i18n/translations/products";
+
+import { messages } from "../i18n/translations/common";
+
 
 const CATEGORIES = [
   "Teas & Infusions",
@@ -31,6 +38,22 @@ const CATEGORIES = [
 
 const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
 const VALID_BADGES = BADGES.filter(Boolean);
+
+const CATEGORY_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  "Teas & Infusions": { si: "තේ සහ පානයන්", ta: "தேநீர் மற்றும் உட்செலுத்தல்கள்" },
+  "Oils & Serums": { si: "තෙල් සහ සීරම්", ta: "எண்ணெய்கள் மற்றும் சீரம்கள்" },
+  Supplements: { si: "අතිරේක", ta: "துணை உணவுகள்" },
+  Skincare: { si: "සම සත්කාර", ta: "தோல் பராமரிப்பு" },
+  "Powders & Blends": { si: "කුඩු සහ මිශ්‍රණ", ta: "பொடிகள் மற்றும் கலவைகள்" },
+  "Tonics & Syrups": { si: "ටොනික් සහ සිරප්", ta: "டானிக்குகள் மற்றும் சிரப்புகள்" },
+};
+
+const BADGE_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
+  Bestseller: { si: "වැඩිම අලෙවි", ta: "அதிக விற்பனை" },
+  Premium: { si: "උසස්", ta: "உயர்தரம்" },
+  New: { si: "නව", ta: "புதியது" },
+  Organic: { si: "කාබනික", ta: "இயற்கை" },
+};
 
 
 interface FormErrors {
@@ -115,6 +138,25 @@ const validateProduct = (form: Omit<Product, "_id">): FormErrors => {
   return errors;
 };
 
+const sinhalaTranslationsPersisted = (submitted: Product, saved: Product) => {
+  const textFields = ["name", "category", "description"] as const;
+  const listFields = ["benefits", "ingredients", "howToUse"] as const;
+  const normalizedList = (values?: string[]) =>
+    (values ?? []).map((value) => value.trim()).filter(Boolean);
+
+  return (
+    textFields.every((field) => {
+      const value = submitted.translations?.[field]?.si?.trim();
+      return !value || saved.translations?.[field]?.si?.trim() === value;
+    }) &&
+    listFields.every((field) => {
+      const value = normalizedList(submitted.translations?.[field]?.si);
+      const savedValue = normalizedList(saved.translations?.[field]?.si);
+      return value.length === 0 || JSON.stringify(savedValue) === JSON.stringify(value);
+    })
+  );
+};
+
 
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
@@ -165,6 +207,7 @@ function FieldError({ message }: { message?: string }) {
 const emptyForm = (): Omit<Product, "_id"> => ({
   name: "",
   sinhalaName: "",
+  tamilName: "",
   category: CATEGORIES[0],
   description: "",
   benefits: [""],
@@ -173,6 +216,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   price: "",
   image: "",
   badge: "",
+  translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], ...CATEGORY_TRANSLATIONS[CATEGORIES[0]] }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
 });
 
 
@@ -332,6 +376,7 @@ export default function AdminProducts() {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [formData, setFormData] = useState<Omit<Product, "_id">>(emptyForm());
+  const [formLanguage, setFormLanguage] = useState<Language>("en");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [editingId, setEditingId] = useState<Schema.Types.ObjectId | string>("");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -350,13 +395,15 @@ export default function AdminProducts() {
   const [imageUploadStep, setImageUploadStep] = useState(
     "Step 1: Select a product image."
   );
+
+  const languageCopy = productsCopy[formLanguage];
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
 
-  
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
@@ -398,14 +445,14 @@ export default function AdminProducts() {
     getProducts();
   }, []);
 
-  
+
   async function getProducts() {
     try {
       setLoading(true);
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL + "/user/products-all"
       );
-      
+
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setProducts(data);
     } catch (err) {
@@ -417,7 +464,7 @@ export default function AdminProducts() {
     }
   }
 
-  
+
   async function saveProduct(product: Product): Promise<void> {
     await axios.post(
       import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
@@ -426,12 +473,33 @@ export default function AdminProducts() {
     );
   }
 
-  async function editProduct(product: Product): Promise<void> {
-    await axios.put(
+  async function editProduct(product: Product): Promise<Product> {
+    const response = await axios.put(
       import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
       { product },
       { withCredentials: true }
     );
+
+    // The current API returns { data: product }, while older deployed APIs
+    // returned the product directly. Accept either shape before verifying the
+    // saved translations so a successful update is not reported as a failure.
+    const savedProduct = (response.data?.data ?? response.data?.product ?? response.data) as
+      | Product
+      | undefined;
+    if (!savedProduct || !sinhalaTranslationsPersisted(product, savedProduct)) {
+      const persistenceError = Object.assign(
+        new Error("Sinhala translations were not saved. Please try again."),
+        {
+          submittedTranslations: product.translations,
+          savedTranslations: savedProduct?.translations,
+          response: response.data,
+        }
+      );
+      console.error("Sinhala translation persistence mismatch", persistenceError);
+      throw persistenceError;
+    }
+
+    return savedProduct;
   }
 
   async function deleteProductApi(
@@ -549,7 +617,7 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const filtered = products.filter((p) => {
     const matchCat = categoryFilter === "All" || p.category === categoryFilter;
     const matchSearch =
@@ -558,8 +626,9 @@ export default function AdminProducts() {
     return matchCat && matchSearch;
   });
 
-  
+
   const openAdd = () => {
+    setFormLanguage("en");
     setFormData(emptyForm());
     setFormErrors({});
     setUploadProgress(0);
@@ -577,13 +646,38 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
+      const translated = rest.translations?.[field]?.en;
+      if (Array.isArray(translated) && translated.length > 0) {
+        return [...translated];
+      }
+      const fallback = rest[field];
+      return Array.isArray(fallback) ? [...fallback] : [""];
+    };
+
     setFormData({
       ...rest,
-      benefits: [...rest.benefits],
-      ingredients: [...rest.ingredients],
-      howToUse: [...(rest.howToUse ?? [])],
+      benefits: englishList("benefits"),
+      ingredients: englishList("ingredients"),
+      howToUse: englishList("howToUse"),
       badge: VALID_BADGES.includes(rest.badge ?? "") ? rest.badge : "",
+      translations: {
+        name: { en: rest.name, si: rest.sinhalaName, ta: rest.tamilName ?? "", ...rest.translations?.name },
+        category: {
+          en: rest.category,
+          ...rest.translations?.category,
+          si:
+            rest.translations?.category?.si || categoryTranslation?.si || "",
+          ta:
+            rest.translations?.category?.ta || categoryTranslation?.ta || "",
+        },
+        description: { en: rest.description, ...rest.translations?.description },
+        benefits: { en: englishList("benefits"), ...rest.translations?.benefits },
+        ingredients: { en: englishList("ingredients"), ...rest.translations?.ingredients },
+        howToUse: { en: englishList("howToUse"), ...rest.translations?.howToUse },
+      },
     });
+    setFormLanguage("en");
     setFormErrors({});
     setUploadProgress(0);
     setImageUploading(false);
@@ -600,7 +694,7 @@ export default function AdminProducts() {
     setModalMode("edit");
   };
 
-  
+
   const handleSave = async () => {
     try {
       setSaveLoading(true);
@@ -677,15 +771,48 @@ export default function AdminProducts() {
       setModalMode(null);
       setFormErrors({});
     } catch (err: any) {
+      console.error("Product save failed", {
+        message: err.message,
+        status: err.response?.status,
+        response: err.response?.data ?? err.response,
+        submittedTranslations: err.submittedTranslations,
+        savedTranslations: err.savedTranslations,
+        error: err,
+      });
+      const responseErrors = err.response?.data?.errors;
+      const errorDetails = Array.isArray(responseErrors)
+        ? responseErrors
+            .map((error) =>
+              typeof error === "string" ? error : error?.message ?? error?.msg
+            )
+            .filter(Boolean)
+            .join(" ")
+        : "";
+      const fieldErrors = Array.isArray(responseErrors)
+        ? responseErrors.reduce((errors, error) => {
+            if (error?.field && error?.message) {
+              errors[error.field.replace(/^product\./, "")] = error.message;
+            }
+            return errors;
+          }, {} as FormErrors)
+        : {};
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setFormErrors(fieldErrors);
+      }
+
       const msg =
-        err.response?.data?.message ?? "Failed to save product.";
+        errorDetails ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to save product.";
       showToast(msg, "error");
     } finally {
       setSaveLoading(false);
     }
   };
 
-  
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -703,10 +830,10 @@ export default function AdminProducts() {
     }
   };
 
-  
+
   const set = (field: keyof Omit<Product, "_id">, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     if (formErrors[field]) {
       setFormErrors((prev) => {
         const n = { ...prev };
@@ -716,12 +843,53 @@ export default function AdminProducts() {
     }
   };
 
+  const translatedText = (field: "name" | "category" | "description") => formData.translations?.[field]?.[formLanguage] ?? "";
+  const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
+    setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
+  };
+  const selectedCategoryValue = (() => {
+    if (formLanguage === "en") return formData.category;
+
+    const translatedCategory = formData.translations?.category?.si?.trim();
+    if (!translatedCategory) return "";
+
+    const match = CATEGORIES.find(
+      (category) =>
+        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
+        translatedCategory
+    );
+
+    return match ?? "";
+  })();
+  const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
+    if (formLanguage === "en") {
+      const baseValues = formData[field];
+      return Array.isArray(baseValues) && baseValues.length > 0 ? baseValues : [""];
+    }
+
+    const translated = formData.translations?.[field]?.si;
+    return Array.isArray(translated) && translated.length > 0 ? translated : [""];
+  };
+  const categoryOptions = CATEGORIES.map((category) => ({
+    value: category,
+    label:
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
+      category,
+  }));
+  const badgeOptions = BADGES.map((badge) => ({
+    value: badge,
+    label: badge
+      ? languageCopy.badges[badge as keyof typeof languageCopy.badges] ?? badge
+      : languageCopy.none,
+  }));
+  const setTranslatedList = (field: "benefits" | "ingredients" | "howToUse", value: string[]) => setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
+
   return (
     <div>
-      
+
       {toast && <Toast message={toast.message} type={toast.type} />}
 
-      
+
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h2
@@ -758,7 +926,7 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -810,9 +978,8 @@ export default function AdminProducts() {
                 backgroundColor:
                   categoryFilter === cat ? "#2D5016" : "transparent",
                 color: categoryFilter === cat ? "#FAF6EE" : "#6B4423",
-                border: `1px solid ${
-                  categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
-                }`,
+                border: `1px solid ${categoryFilter === cat ? "#2D5016" : "rgba(45,80,22,0.2)"
+                  }`,
                 padding: "6px 14px",
                 borderRadius: "50px",
                 fontSize: "0.8rem",
@@ -826,7 +993,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      
+
       <div
         style={{
           backgroundColor: "#FAF6EE",
@@ -836,7 +1003,7 @@ export default function AdminProducts() {
           boxShadow: "0 2px 10px rgba(45,80,22,0.06)",
         }}
       >
-        
+
         {loading && (
           <div style={{ padding: "40px", textAlign: "center" }}>
             <div
@@ -1054,7 +1221,7 @@ export default function AdminProducts() {
         )}
       </div>
 
-      
+
       {modalMode && (
         <div
           style={{
@@ -1080,7 +1247,7 @@ export default function AdminProducts() {
               margin: "auto",
             }}
           >
-            
+
             <div
               style={{
                 background: "linear-gradient(135deg, #2D5016, #4A7C23)",
@@ -1114,7 +1281,7 @@ export default function AdminProducts() {
               </button>
             </div>
 
-            
+
             <div
               style={{
                 padding: "28px",
@@ -1123,27 +1290,20 @@ export default function AdminProducts() {
                 gap: "18px",
               }}
             >
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <LanguageTabs value={formLanguage} onChange={setFormLanguage} />
+              <div>
                 <InputField
-                  label="Product Name"
-                  value={formData.name}
-                  onChange={(v) => set("name", v)}
+                  label={`Product Name (${formLanguage.toUpperCase()})`}
+                  value={translatedText("name")}
+                  onChange={(v) => setTranslatedText("name", v)}
                   placeholder="e.g. Rajapura Herbal Tea"
-                  required
-                  error={formErrors.name}
-                />
-                <InputField
-                  label="Sinhala Name"
-                  value={formData.sinhalaName}
-                  onChange={(v) => set("sinhalaName", v)}
-                  placeholder="e.g. රාජපුර ඖෂධ තේ"
-                  required
-                  error={formErrors.sinhalaName}
+                  required={formLanguage === "en"}
+                  error={formLanguage === "en" ? formErrors.name : undefined}
                 />
               </div>
 
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -1154,12 +1314,29 @@ export default function AdminProducts() {
                       marginBottom: "6px",
                     }}
                   >
-                    Category <span style={{ color: "#D4183D" }}>*</span>
+                    Category {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                   </label>
                   <div style={{ position: "relative" }}>
                     <select
-                      value={formData.category}
-                      onChange={(e) => set("category", e.target.value)}
+                      value={selectedCategoryValue}
+                      onChange={(e) => {
+                        const nextCategory = e.target.value;
+                        const translatedCategory =
+                          languageCopy.categories[nextCategory as keyof typeof languageCopy.categories] ??
+                          nextCategory;
+                        setFormData((current) => ({
+                          ...current,
+                          ...(formLanguage === "en" ? { category: nextCategory } : {}),
+                          translations: {
+                            ...current.translations,
+                            category: {
+                              ...current.translations?.category,
+                              ...(formLanguage === "en" ? { en: nextCategory } : {}),
+                              [formLanguage]: translatedCategory,
+                            },
+                          },
+                        }));
+                      }}
                       style={{
                         width: "100%",
                         padding: "10px 36px 10px 14px",
@@ -1173,10 +1350,35 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c}>{c}</option>
+                      <option value=""></option>
+                      {categoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
                       ))}
-                    </select>
+
+                    </select> : formLanguage === "si" ? <select
+                      value={translatedText("category")}
+                      onChange={(e) => setTranslatedText("category", e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 36px 10px 14px",
+                        borderRadius: "10px",
+                        border: "1.5px solid rgba(45,80,22,0.2)",
+                        backgroundColor: "#FAF6EE",
+                        color: "#2D5016",
+                        fontSize: "0.88rem",
+                        outline: "none",
+                        appearance: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={CATEGORY_TRANSLATIONS[category].si}>
+                          {CATEGORY_TRANSLATIONS[category].si}
+                        </option>
+                      ))}
+                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
                     <ChevronDown
                       size={14}
                       style={{
@@ -1220,9 +1422,9 @@ export default function AdminProducts() {
                         cursor: "pointer",
                       }}
                     >
-                      {BADGES.map((b) => (
-                        <option key={b} value={b}>
-                          {b || "— None —"}
+                      {badgeOptions.map((option) => (
+                        <option key={option.value || "none"} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -1242,10 +1444,10 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              
+
               <InputField
                 label="Price (LKR)"
-                value={formData.price}
+                value={priceValue}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -1255,7 +1457,7 @@ export default function AdminProducts() {
                 error={formErrors.price}
               />
 
-              
+
               <div>
                 <label
                   style={{
@@ -1265,11 +1467,11 @@ export default function AdminProducts() {
                     marginBottom: "6px",
                   }}
                 >
-                  Description <span style={{ color: "#D4183D" }}>*</span>
+                  Description {formLanguage === "en" && <span style={{ color: "#D4183D" }}>*</span>}
                 </label>
                 <textarea
-                  value={formData.description}
-                  onChange={(e) => set("description", e.target.value)}
+                  value={translatedText("description")}
+                  onChange={(e) => setTranslatedText("description", e.target.value)}
                   placeholder="Product description..."
                   rows={3}
                   style={{
@@ -1291,7 +1493,7 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.description} />
               </div>
 
-              
+
               <div>
                 <label
                   style={{
@@ -1487,8 +1689,8 @@ export default function AdminProducts() {
                               {imageDeleting
                                 ? "Deleting..."
                                 : imageUploading
-                                ? "Uploading..."
-                                : "Upload Image"}
+                                  ? "Uploading..."
+                                  : "Upload Image"}
                             </button>
                             <button
                               type="button"
@@ -1616,28 +1818,28 @@ export default function AdminProducts() {
                 <FieldError message={formErrors.image} />
               </div>
 
-              
+
               <TagsField
                 label="Benefits"
-                values={formData.benefits}
-                onChange={(v) => set("benefits", v)}
+                values={translatedList("benefits")}
+                onChange={(v) => setTranslatedList("benefits", v)}
                 placeholder="e.g. Improves digestion"
               />
               <TagsField
                 label="Ingredients"
-                values={formData.ingredients}
-                onChange={(v) => set("ingredients", v)}
+                values={translatedList("ingredients")}
+                onChange={(v) => setTranslatedList("ingredients", v)}
                 placeholder="e.g. Ginger"
               />
               <TagsField
                 label="How to Use Steps"
-                values={formData.howToUse ?? [""]}
-                onChange={(v) => set("howToUse", v)}
+                values={translatedList("howToUse")}
+                onChange={(v) => setTranslatedList("howToUse", v)}
                 placeholder="e.g. Mix 1 teaspoon in warm water..."
               />
             </div>
 
-            
+
             <div
               style={{
                 padding: "16px 28px",
@@ -1682,15 +1884,15 @@ export default function AdminProducts() {
                 {saveLoading
                   ? "Saving..."
                   : modalMode === "add"
-                  ? "Add Product"
-                  : "Save Changes"}
+                    ? "Add Product"
+                    : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      
+
       {deleteTarget && (
         <div
           style={{
