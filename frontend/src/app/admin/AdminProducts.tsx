@@ -646,6 +646,7 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const categoryTranslation = CATEGORY_TRANSLATIONS[rest.category];
     const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
       const translated = rest.translations?.[field]?.en;
       if (Array.isArray(translated) && translated.length > 0) {
@@ -712,6 +713,19 @@ export default function AdminProducts() {
       const errors = validateProduct(productData);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
+
+        if (errors.sinhalaName) {
+          setFormLanguage("si");
+          showToast(
+            "Please complete all relevant fields in the other language tabs before saving.",
+            "error"
+          );
+        } else {
+          showToast(
+            "Please complete the highlighted required fields before saving.",
+            "error"
+          );
+        }
         return;
       }
 
@@ -847,19 +861,30 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
+  const getCategoryLabel = (category: string) => {
+    const savedTranslation =
+      category === formData.category
+        ? formData.translations?.category?.[formLanguage]?.trim()
+        : "";
+
+    return (
+      savedTranslation ||
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ||
+      category
+    );
+  };
+
   const selectedCategoryValue = (() => {
     if (formLanguage === "en") return formData.category;
 
-    const translatedCategory = formData.translations?.category?.si?.trim();
-    if (!translatedCategory) return "";
+    const translatedCategory = formData.translations?.category?.[formLanguage]?.trim();
+    if (!translatedCategory) return formData.category;
 
-    const match = CATEGORIES.find(
-      (category) =>
-        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
-        translatedCategory
+    const match = [...new Set([...CATEGORIES, formData.category])].find(
+      (category) => getCategoryLabel(category) === translatedCategory
     );
 
-    return match ?? "";
+    return match ?? formData.category;
   })();
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
     if (formLanguage === "en") {
@@ -870,11 +895,11 @@ export default function AdminProducts() {
     const translated = formData.translations?.[field]?.si;
     return Array.isArray(translated) && translated.length > 0 ? translated : [""];
   };
-  const categoryOptions = CATEGORIES.map((category) => ({
+  // Keep a legacy/saved category visible while editing, even if it is no
+  // longer part of the current predefined category list.
+  const categoryOptions = [...new Set([...CATEGORIES, formData.category])].map((category) => ({
     value: category,
-    label:
-      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
-      category,
+    label: getCategoryLabel(category),
   }));
   const badgeOptions = BADGES.map((badge) => ({
     value: badge,
@@ -1298,8 +1323,14 @@ export default function AdminProducts() {
                   value={translatedText("name")}
                   onChange={(v) => setTranslatedText("name", v)}
                   placeholder="e.g. Rajapura Herbal Tea"
-                  required={formLanguage === "en"}
-                  error={formLanguage === "en" ? formErrors.name : undefined}
+                  required={formLanguage === "en" || formLanguage === "si"}
+                  error={
+                    formLanguage === "en"
+                      ? formErrors.name
+                      : formLanguage === "si"
+                        ? formErrors.sinhalaName
+                        : undefined
+                  }
                 />
               </div>
 
