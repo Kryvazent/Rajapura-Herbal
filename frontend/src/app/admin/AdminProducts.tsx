@@ -848,6 +848,19 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
+  const getCategoryLabel = (category: string) => {
+    const savedTranslation =
+      category === formData.category
+        ? formData.translations?.category?.[formLanguage]?.trim()
+        : "";
+
+    return (
+      savedTranslation ||
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ||
+      category
+    );
+  };
+
   const selectedCategoryValue = (() => {
     if (formLanguage === "en") return formData.category;
 
@@ -855,9 +868,7 @@ export default function AdminProducts() {
     if (!translatedCategory) return formData.category;
 
     const match = [...new Set([...CATEGORIES, formData.category])].find(
-      (category) =>
-        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
-        translatedCategory
+      (category) => getCategoryLabel(category) === translatedCategory
     );
 
     return match ?? formData.category;
@@ -875,9 +886,7 @@ export default function AdminProducts() {
   // longer part of the current predefined category list.
   const categoryOptions = [...new Set([...CATEGORIES, formData.category])].map((category) => ({
     value: category,
-    label:
-      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
-      category,
+    label: getCategoryLabel(category),
   }));
   const badgeOptions = BADGES.map((badge) => ({
     value: badge,
