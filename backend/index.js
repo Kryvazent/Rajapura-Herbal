@@ -24,6 +24,9 @@ const isRailway = Boolean(
 const isProduction =
     process.env.NODE_ENV === 'production' || isVercel || isRailway;
 const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI || "";
+
+console.log("Environment:", process.env.FRONTEND_URL);
+
 const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())

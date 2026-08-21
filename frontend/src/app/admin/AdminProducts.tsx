@@ -646,6 +646,7 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const categoryTranslation = CATEGORY_TRANSLATIONS[rest.category];
     const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
       const translated = rest.translations?.[field]?.en;
       if (Array.isArray(translated) && translated.length > 0) {
@@ -850,16 +851,16 @@ export default function AdminProducts() {
   const selectedCategoryValue = (() => {
     if (formLanguage === "en") return formData.category;
 
-    const translatedCategory = formData.translations?.category?.si?.trim();
-    if (!translatedCategory) return "";
+    const translatedCategory = formData.translations?.category?.[formLanguage]?.trim();
+    if (!translatedCategory) return formData.category;
 
-    const match = CATEGORIES.find(
+    const match = [...new Set([...CATEGORIES, formData.category])].find(
       (category) =>
         (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
         translatedCategory
     );
 
-    return match ?? "";
+    return match ?? formData.category;
   })();
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
     if (formLanguage === "en") {
@@ -870,7 +871,9 @@ export default function AdminProducts() {
     const translated = formData.translations?.[field]?.si;
     return Array.isArray(translated) && translated.length > 0 ? translated : [""];
   };
-  const categoryOptions = CATEGORIES.map((category) => ({
+  // Keep a legacy/saved category visible while editing, even if it is no
+  // longer part of the current predefined category list.
+  const categoryOptions = [...new Set([...CATEGORIES, formData.category])].map((category) => ({
     value: category,
     label:
       languageCopy.categories[category as keyof typeof languageCopy.categories] ??
