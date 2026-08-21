@@ -713,6 +713,19 @@ export default function AdminProducts() {
       const errors = validateProduct(productData);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
+
+        if (errors.sinhalaName) {
+          setFormLanguage("si");
+          showToast(
+            "Please complete all relevant fields in the other language tabs before saving.",
+            "error"
+          );
+        } else {
+          showToast(
+            "Please complete the highlighted required fields before saving.",
+            "error"
+          );
+        }
         return;
       }
 
@@ -1310,8 +1323,14 @@ export default function AdminProducts() {
                   value={translatedText("name")}
                   onChange={(v) => setTranslatedText("name", v)}
                   placeholder="e.g. Rajapura Herbal Tea"
-                  required={formLanguage === "en"}
-                  error={formLanguage === "en" ? formErrors.name : undefined}
+                  required={formLanguage === "en" || formLanguage === "si"}
+                  error={
+                    formLanguage === "en"
+                      ? formErrors.name
+                      : formLanguage === "si"
+                        ? formErrors.sinhalaName
+                        : undefined
+                  }
                 />
               </div>
 
