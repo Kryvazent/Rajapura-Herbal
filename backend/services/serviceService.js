@@ -19,7 +19,14 @@ export const addNewService = async (serviceData) => {
         description: serviceData.description || '',
         imageUrl: serviceData.imageUrl || '',
         videoUrl: serviceData.videoUrl || '',
-        services: []
+        translations: serviceData.translations || {
+          name: { en: serviceData.name || '', si: '', ta: '' },
+          area: { en: serviceData.area || '', si: '', ta: '' },
+          address: { en: serviceData.address || '', si: '', ta: '' },
+          mapLabel: { en: serviceData.mapLabel || '', si: '', ta: '' },
+          description: { en: serviceData.description || '', si: '', ta: '' },
+        },
+        services: [],
     });
 
     return await newService.save();

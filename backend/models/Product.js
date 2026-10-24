@@ -1,5 +1,35 @@
 import mongoose from "mongoose";
 
+const textTranslationsSchema = new mongoose.Schema(
+  {
+    en: { type: String, trim: true },
+    si: { type: String, trim: true },
+    ta: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
+const listTranslationsSchema = new mongoose.Schema(
+  {
+    en: [{ type: String, trim: true }],
+    si: [{ type: String, trim: true }],
+    ta: [{ type: String, trim: true }],
+  },
+  { _id: false }
+);
+
+const translationsSchema = new mongoose.Schema(
+  {
+    name: textTranslationsSchema,
+    category: textTranslationsSchema,
+    description: textTranslationsSchema,
+    benefits: listTranslationsSchema,
+    ingredients: listTranslationsSchema,
+    howToUse: listTranslationsSchema,
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -36,6 +66,8 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    tamilName: { type: String, trim: true, maxlength: [100, "Tamil name too long"] },
+    translations: { type: translationsSchema, default: () => ({}) },
     image: {
       type: String,
       required: [true, "Image is required"],

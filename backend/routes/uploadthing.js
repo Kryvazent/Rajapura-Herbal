@@ -1,8 +1,11 @@
+import "../config/env.js";
+import express from "express";
 import { createRouteHandler, createUploadthing } from "uploadthing/express";
 import { UploadThingError } from "uploadthing/server";
 import { deleteUploadThingFileByKey } from "../services/uploadthingService.js";
 
 const f = createUploadthing();
+const uploadThingToken = process.env.UPLOADTHING_TOKEN?.trim();
 const backendUrl =
   process.env.BACKEND_URL ||
   process.env.UPLOADTHING_CALLBACK_ORIGIN ||
@@ -58,7 +61,11 @@ export const uploadRouter = {
       }
       return { userId: req.session.userId, role: req.session.role };
     })
-    .onUploadComplete(({ file, metadata }) => ({ uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url })),
+    .onUploadComplete(({ file, metadata }) => {
+      console.log(`Service image uploaded by ${metadata.userId}: ${file.name}`);
+      console.debug('serviceImage file object:', file);
+      return { uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url };
+    }),
   serviceVideo: f(
     { video: { maxFileSize: "64MB", maxFileCount: 1 } },
     { awaitServerData: false }
@@ -70,16 +77,37 @@ export const uploadRouter = {
       }
       return { userId: req.session.userId, role: req.session.role };
     })
-    .onUploadComplete(({ file, metadata }) => ({ uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url })),
+    .onUploadComplete(({ file, metadata }) => {
+      console.log(`Service video uploaded by ${metadata.userId}: ${file.name}`);
+      console.debug('serviceVideo file object:', file);
+      return { uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url };
+    }),
 };
 
-export const uploadThingRouter = createRouteHandler({
+const uploadThingRouteHandler = createRouteHandler({
   router: uploadRouter,
   config: {
+    ...(uploadThingToken && { token: uploadThingToken }),
     ...(uploadThingCallbackUrl && { callbackUrl: uploadThingCallbackUrl }),
     handleDaemonPromise: "void",
   },
 });
+
+export const uploadThingRouter = express.Router();
+
+uploadThingRouter.use((req, res, next) => {
+  if (!process.env.UPLOADTHING_TOKEN?.trim()) {
+    return res.status(503).json({
+      success: false,
+      message:
+        "UploadThing is not configured. Set UPLOADTHING_TOKEN in the backend environment and restart the server.",
+    });
+  }
+
+  next();
+});
+
+uploadThingRouter.use(uploadThingRouteHandler);
 
 export const deleteUploadThingFile = async (req, res) => {
   const { key } = req.body;

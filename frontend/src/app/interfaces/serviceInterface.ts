@@ -1,3 +1,4 @@
+import type { LocalizedText } from "../i18n/LanguageContext";
 export interface ServiceItem {
   id: number;
   name: string;
@@ -6,6 +7,7 @@ export interface ServiceItem {
   icon: string;
   imageUrl?: string;
   showInShowcase?: boolean;
+  translations?: { name?: LocalizedText; description?: LocalizedText; duration?: LocalizedText };
 }
 
 export interface Service {
@@ -24,4 +26,5 @@ export interface Service {
   imageUrl?: string;
   videoUrl?: string;
   services: ServiceItem[];
+  translations?: { name?: LocalizedText; area?: LocalizedText; address?: LocalizedText; mapLabel?: LocalizedText; description?: LocalizedText };
 }

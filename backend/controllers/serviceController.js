@@ -1,4 +1,5 @@
 import * as serviceService from "../services/serviceService.js";
+import { localizeServices } from "../utils/localize.js";
 
 
 const formatMongooseError = (error) => {
@@ -19,7 +20,7 @@ const formatMongooseError = (error) => {
 export const getAllServices = async (req, res) => {
   try {
     const services = await serviceService.getAllServices();
-    res.status(200).json({ success: true, data: services });
+    res.status(200).json({ success: true, data: localizeServices(services, req.query.lang) });
   } catch (error) {
     console.error("getAllServices error:", error);
     res

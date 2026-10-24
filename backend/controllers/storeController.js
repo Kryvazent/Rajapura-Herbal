@@ -24,7 +24,7 @@ export const addProvince = async (req, res) => {
       .json({ success: false, message: "Province data is required" });
   }
 
-  const { name, icon } = req.body.province;
+  const { name, icon, translations } = req.body.province;
 
   if (!name || !name.trim()) {
     return res
@@ -41,6 +41,7 @@ export const addProvince = async (req, res) => {
     const province = await shopService.addProvince({
       name: name.trim(),
       icon: icon.trim(),
+      translations,
       districts: [],
     });
     res.status(201).json({ success: true, data: province });
@@ -52,7 +53,7 @@ export const addProvince = async (req, res) => {
 };
 
 export const updateProvince = async (req, res) => {
-  const { _id, name, icon } = req.body;
+  const { _id, name, icon, translations } = req.body;
 
   if (!_id) {
     return res
@@ -74,6 +75,7 @@ export const updateProvince = async (req, res) => {
     const updatedProvince = await shopService.updateProvince(_id, {
       name: name.trim(),
       icon: icon.trim(),
+      translations,
     });
     res.status(200).json({ success: true, data: updatedProvince });
   } catch (error) {
@@ -127,7 +129,7 @@ export const deleteProvince = async (req, res) => {
 
 
 export const addDistrict = async (req, res) => {
-  const { _id, name } = req.body;
+  const { _id, name, translations } = req.body;
 
   if (!_id) {
     return res
@@ -143,6 +145,7 @@ export const addDistrict = async (req, res) => {
   try {
     const district = await shopService.addDistrict(_id, {
       name: name.trim(),
+      translations,
       towns: [],
     });
     res.status(201).json({ success: true, data: district });
@@ -159,7 +162,7 @@ export const addDistrict = async (req, res) => {
 };
 
 export const updateDistrict = async (req, res) => {
-  const { province_id, district_id, name } = req.body;
+  const { province_id, district_id, name, translations } = req.body;
 
   if (!province_id) {
     return res
@@ -181,7 +184,7 @@ export const updateDistrict = async (req, res) => {
     const updatedDistrict = await shopService.updateDistrict(
       province_id,
       district_id,
-      { name: name.trim() }
+      { name: name.trim(), translations }
     );
     res.status(200).json({ success: true, data: updatedDistrict });
   } catch (error) {
@@ -244,7 +247,7 @@ export const deleteDistrict = async (req, res) => {
 
 
 export const addTown = async (req, res) => {
-  const { province_id, district_id, name } = req.body;
+  const { province_id, district_id, name, translations } = req.body;
 
   if (!province_id) {
     return res
@@ -265,6 +268,7 @@ export const addTown = async (req, res) => {
   try {
     const town = await shopService.addTown(province_id, district_id, {
       name: name.trim(),
+      translations,
       shops: [],
     });
     res.status(201).json({ success: true, data: town });
@@ -288,7 +292,7 @@ export const addTown = async (req, res) => {
 };
 
 export const updateTown = async (req, res) => {
-  const { province_id, district_id, town_id, name } = req.body;
+  const { province_id, district_id, town_id, name, translations } = req.body;
 
   if (!province_id) {
     return res
@@ -316,7 +320,7 @@ export const updateTown = async (req, res) => {
       province_id,
       district_id,
       town_id,
-      { name: name.trim() }
+      { name: name.trim(), translations }
     );
     res.status(200).json({ success: true, data: updatedTown });
   } catch (error) {

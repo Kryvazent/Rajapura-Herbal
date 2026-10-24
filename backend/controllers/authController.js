@@ -96,31 +96,32 @@ export const logout = (req, res) => {
 };
 
 export const status = async (req, res) => {
-  if (req.session && req.session.userId) {
-    try {
-      const user = await User.findById(req.session.userId).select("role status flags");
-      const isAllowed =
-        user && user.status === "ACTIVE" && ["ADMIN", "STAFF"].includes(user.role);
-
-      if (!isAllowed) {
-        destroySession(req);
-        return res.status(401).json({ success: false, authenticated: false });
-      }
-
-      req.session.role = user.role;
-      req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
-      return res.status(200).json({
-        success: true,
-        authenticated: true,
-        role: user.role,
-        mustChangePassword: user.flags?.mustChangePassword ?? false,
-      });
-    } catch (error) {
-      console.error("status error:", error);
-      return res.status(500).json({ success: false, authenticated: false });
-    }
+  if (!req.session?.userId) {
+    return res.status(200).json({ success: true, authenticated: false });
   }
-  res.status(401).json({ success: false, authenticated: false });
+
+  try {
+    const user = await User.findById(req.session.userId).select("role status flags");
+    const isAllowed =
+      user && user.status === "ACTIVE" && ["ADMIN", "STAFF"].includes(user.role);
+
+    if (!isAllowed) {
+      destroySession(req);
+      return res.status(200).json({ success: true, authenticated: false });
+    }
+
+    req.session.role = user.role;
+    req.session.mustChangePassword = user.flags?.mustChangePassword ?? false;
+    return res.status(200).json({
+      success: true,
+      authenticated: true,
+      role: user.role,
+      mustChangePassword: user.flags?.mustChangePassword ?? false,
+    });
+  } catch (error) {
+    console.error("status error:", error);
+    return res.status(500).json({ success: false, authenticated: false });
+  }
 };
 
 

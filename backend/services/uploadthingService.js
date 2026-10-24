@@ -1,3 +1,4 @@
+import "../config/env.js";
 import { UTApi } from "uploadthing/server";
 
 const utapi = new UTApi();

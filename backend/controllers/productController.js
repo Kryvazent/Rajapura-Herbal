@@ -1,5 +1,6 @@
 import * as productService from "../services/productService.js";
 import { deleteUploadThingFileByUrl } from "../services/uploadthingService.js";
+import { localizeProducts } from "../utils/localize.js";
 
 
 const formatMongooseError = (error) => {
@@ -20,7 +21,7 @@ const formatMongooseError = (error) => {
 export const getAllProducts = async (req, res) => {
   try {
     const products = await productService.getAllProducts();
-    res.status(200).json({ success: true, data: products });
+    res.status(200).json({ success: true, data: localizeProducts(products, req.query.lang) });
   } catch (error) {
     console.error("getAllProducts error:", error);
     res
@@ -42,7 +43,7 @@ export const getProductCount = async (req, res) => {
 
   try {
     const products = await productService.getProductsByCount(count);
-    res.status(200).json({ success: true, data: products });
+    res.status(200).json({ success: true, data: localizeProducts(products, req.query.lang) });
   } catch (error) {
     console.error("getProductCount error:", error);
     res
@@ -71,7 +72,7 @@ export const getProductsByPage = async (req, res) => {
 
   try {
     const products = await productService.getProductsByPage(skip, limit);
-    res.status(200).json({ success: true, data: products });
+    res.status(200).json({ success: true, data: localizeProducts(products, req.query.lang) });
   } catch (error) {
     console.error("getProductsByPage error:", error);
     res
