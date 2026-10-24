@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages } from "lucide-react";
+import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages, ShoppingCart } from "lucide-react";
 import Logo from "./Logo";
 import { LANGUAGES, LANGUAGE_LABELS, useLanguage } from "../i18n/LanguageContext";
 import { navAccessibility } from "../i18n/translations/navigation";
@@ -102,9 +102,36 @@ function LanguageSwitcher({ mobile = false }: { mobile?: boolean }) {
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [country, setCountry] = useState<string | null>(null);
+  const [cartCount, setCartCount] = useState(0);
   const location = useLocation();
   const { language, t } = useLanguage();
   const a11y = navAccessibility[language];
+
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then((response) => response.json())
+      .then((data) => setCountry(data.country_code ?? null))
+      .catch(() => setCountry(null));
+
+    const updateCartCount = () => {
+      try {
+        const cart = JSON.parse(localStorage.getItem("rajapuraCart") || "[]");
+        setCartCount(Array.isArray(cart) ? cart.reduce((count: number, item: { qty?: number }) => count + (item.qty || 0), 0) : 0);
+      } catch {
+        setCartCount(0);
+      }
+    };
+    updateCartCount();
+    window.addEventListener("storage", updateCartCount);
+    window.addEventListener("rajapura:cart-updated", updateCartCount);
+    return () => {
+      window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("rajapura:cart-updated", updateCartCount);
+    };
+  }, []);
+
+  const showCart = country !== null && country !== "LK";
 
   const links = [
     { to: "/", label: t("home") },
@@ -179,6 +206,29 @@ export function Navbar() {
           
           <div className="rajapura-desktop-cta hidden md:flex items-center gap-3">
             <LanguageSwitcher />
+            {showCart && (
+              <Link
+                to="/cart"
+                aria-label={`Shopping cart, ${cartCount} items`}
+                title="Shopping cart"
+                style={{
+                  position: "relative",
+                  width: 40,
+                  height: 40,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#2D5016",
+                  border: "1px solid rgba(45,80,22,0.22)",
+                  borderRadius: "50%",
+                  background: "#FAF6EE",
+                  textDecoration: "none",
+                }}
+              >
+                <ShoppingCart size={19} />
+                {cartCount > 0 && <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 10, fontWeight: 800 }}>{cartCount}</span>}
+              </Link>
+            )}
             <Link
               to="/store-locator"
               style={{
@@ -198,14 +248,27 @@ export function Navbar() {
           </div>
 
           
-          <button
-            className="rajapura-mobile-toggle md:hidden flex items-center justify-center"
-            style={{ color: "#2D5016", background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px" }}
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={a11y.menu}
-          >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {showCart && (
+              <Link
+                to="/cart"
+                aria-label={`Shopping cart, ${cartCount} items`}
+                onClick={close}
+                style={{ position: "relative", display: "inline-flex", padding: 7, color: "#2D5016" }}
+              >
+                <ShoppingCart size={21} />
+                {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{cartCount}</span>}
+              </Link>
+            )}
+            <button
+              className="rajapura-mobile-toggle md:hidden flex items-center justify-center"
+              style={{ color: "#2D5016", background: "none", border: "none", cursor: "pointer", padding: "6px", borderRadius: "8px" }}
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={a11y.menu}
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
       </nav>
 

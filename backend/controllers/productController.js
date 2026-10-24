@@ -180,3 +180,13 @@ export const updateProduct = async (req, res) => {
     res.status(status).json({ success: false, message, errors });
   }
 };
+
+export const updateStock = async (req, res) => {
+  const stock = Number(req.body?.stock);
+  if (!Number.isInteger(stock) || stock < 0) return res.status(422).json({ success: false, message: "Stock must be a non-negative whole number" });
+  try {
+    const product = await productService.updateProduct(req.params.id, { stock });
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    res.json({ success: true, data: product });
+  } catch (error) { res.status(422).json({ success: false, message: "Unable to update stock" }); }
+};

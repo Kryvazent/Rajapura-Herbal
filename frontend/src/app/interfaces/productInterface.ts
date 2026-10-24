@@ -12,6 +12,7 @@ export interface Product {
   ingredients: string[];
   howToUse?: string[];
   price: string;
+  stock: number;
   image: string;
   badge?: string;
   translations?: {

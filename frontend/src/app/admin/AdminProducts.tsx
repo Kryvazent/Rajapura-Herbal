@@ -214,6 +214,7 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   ingredients: [""],
   howToUse: [""],
   price: "",
+  stock: 0,
   image: "",
   badge: "",
   translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], ...CATEGORY_TRANSLATIONS[CATEGORIES[0]] }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
@@ -1493,6 +1494,13 @@ export default function AdminProducts() {
                 error={formErrors.price}
               />
 
+              <InputField
+                label="Available stock"
+                type="number"
+                value={String(formData.stock ?? 0)}
+                onChange={(v) => set("stock", Math.max(0, Number(v) || 0))}
+                placeholder="0"
+              />
 
               <div>
                 <label

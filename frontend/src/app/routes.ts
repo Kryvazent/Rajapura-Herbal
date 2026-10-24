@@ -16,6 +16,9 @@ import AdminUsers from "./admin/AdminUsers";
 import AdminProfile from "./admin/AdminProfile";
 import AdminTeam from "./admin/AdminTeam";
 import { ADMIN_BASE_PATH } from "./admin/adminPaths";
+import AdminStock from "./admin/AdminStock";
+import AdminOrders from "./admin/AdminOrders";
+import Cart from "./pages/Cart";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +27,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: "products", Component: Products },
+      { path: "cart", Component: Cart },
       { path: "services", Component: Services },
       { path: "store-locator", Component: StoreLocator },
       { path: "about", Component: About },
@@ -39,6 +43,8 @@ export const router = createBrowserRouter([
         children: [
           { path: "dashboard", Component: AdminDashboard },
           { path: "products", Component: AdminProducts },
+          { path: "stock", Component: AdminStock },
+          { path: "orders", Component: AdminOrders },
           { path: "stores", Component: AdminStores },
           { path: "services", Component: AdminServices },
           { path: "team", Component: AdminTeam },

@@ -12,6 +12,8 @@ import {
   Leaf,
   CircleHelp,
   UsersRound,
+  ClipboardList,
+  Boxes,
 } from "lucide-react";
 import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
@@ -24,6 +26,8 @@ const ADMIN_TOUR_STORAGE_KEY = "rajapuraAdminTourCompleted";
 const navItems = [
   { to: adminPath("dashboard"), label: "Dashboard", icon: LayoutDashboard },
   { to: adminPath("products"), label: "Products", icon: Package },
+  { to: adminPath("stock"), label: "Stock", icon: Boxes },
+  { to: adminPath("orders"), label: "Orders", icon: ClipboardList },
   { to: adminPath("stores"), label: "Stores", icon: Store },
   { to: adminPath("services"), label: "Services", icon: Sparkles },
   { to: adminPath("team"), label: "Team", icon: UsersRound },

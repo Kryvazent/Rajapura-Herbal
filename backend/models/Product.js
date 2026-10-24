@@ -68,6 +68,7 @@ const productSchema = new mongoose.Schema(
     },
     tamilName: { type: String, trim: true, maxlength: [100, "Tamil name too long"] },
     translations: { type: translationsSchema, default: () => ({}) },
+    stock: { type: Number, min: 0, default: 0 },
     image: {
       type: String,
       required: [true, "Image is required"],
