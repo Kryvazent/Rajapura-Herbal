@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart, Share2, Check } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import { localized, localizedList, useLanguage } from "../i18n/LanguageContext";
 import { productsCopy } from "../i18n/translations/products";
 import axios from "axios";
 import { formatUSDPrice } from "../lib/price";
+
+const slugifyProductName = (name: string) =>
+  name.normalize("NFKD").toLowerCase().replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
 
 export default function Products() {
   const { language, t } = useLanguage();
@@ -39,9 +42,53 @@ export default function Products() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [shareCopied, setShareCopied] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [cartNotice, setCartNotice] = useState<{ success: boolean; message: string; loginRequired?: boolean } | null>(null);
+  const productSlug = (product: Product) => {
+    const base = slugifyProductName(product.translations?.name?.en || product.name);
+    const sameSlug = products.filter((item) => slugifyProductName(item.translations?.name?.en || item.name) === base);
+    const duplicateIndex = sameSlug.findIndex((item) => String(item._id) === String(product._id));
+    return duplicateIndex > 0 ? `${base}-${duplicateIndex + 1}` : base;
+  };
+
+  useEffect(() => {
+    const sharedSlug = searchParams.get("product");
+    if (!sharedSlug) {
+      setSelectedProduct(null);
+      return;
+    }
+    const normalizedSlug = sharedSlug.toLowerCase();
+    const product = products.find(
+      (item) => String(item._id) === sharedSlug || productSlug(item) === normalizedSlug,
+    );
+    if (product) setSelectedProduct(product);
+  }, [products, searchParams]);
+
+  const openProduct = (product: Product) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("product", productSlug(product));
+    setSearchParams(nextParams);
+  };
+
+  const closeProduct = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("product");
+    setSearchParams(nextParams);
+    setShareCopied(false);
+  };
+
+  const copyProductLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2200);
+    } catch {
+      setCartNotice({ success: false, message: "Could not copy the link. Copy it from your browser address bar." });
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -67,7 +114,7 @@ export default function Products() {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
       window.dispatchEvent(new Event("rajapura:cart-updated"));
       setCartNotice({ success: true, message: "Added to your cart" });
-      setSelectedProduct(null);
+      closeProduct();
       setQty(1);
     } catch (error) {
       const requestError = error as any;
@@ -81,7 +128,6 @@ export default function Products() {
 
   async function loadData() {
     setLoading(true);
-    setSelectedProduct(null);
     try {
       const res = await axios.get(
         import.meta.env.VITE_BACKEND_URL +
@@ -301,7 +347,7 @@ export default function Products() {
                   flexDirection: "column",
                 }}
                 className="group hover:shadow-lg"
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => openProduct(product)}
               >
                 <div
                   style={{
@@ -522,7 +568,7 @@ export default function Products() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedProduct(product);
+                            openProduct(product);
                           }}
                           style={{
                             backgroundColor: "transparent",
@@ -634,7 +680,7 @@ export default function Products() {
             justifyContent: "center",
             padding: "12px",
           }}
-          onClick={() => setSelectedProduct(null)}
+          onClick={closeProduct}
         >
           <div
             style={{
@@ -669,19 +715,24 @@ export default function Products() {
                   selectedProduct.name,
                 )}
               </h2>
-              <button
-                onClick={() => setSelectedProduct(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "rgba(250,246,238,0.8)",
-                  cursor: "pointer",
-                  display: "flex",
-                  padding: "4px",
-                }}
-              >
-                <X size={20} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button type="button" onClick={copyProductLink} aria-label="Copy product link" title="Copy product link" style={{ background: "none", border: "none", color: "#FAF6EE", cursor: "pointer", display: "flex", padding: 4 }}>
+                  {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
+                </button>
+                <button
+                  onClick={closeProduct}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(250,246,238,0.8)",
+                    cursor: "pointer",
+                    display: "flex",
+                    padding: "4px",
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <div
@@ -836,7 +887,29 @@ export default function Products() {
                     </span>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setSelectedProduct(null)}
+                        type="button"
+                        onClick={copyProductLink}
+                        aria-label={shareCopied ? "Product link copied" : "Copy product link"}
+                        title={shareCopied ? "Link copied" : "Copy product link"}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          backgroundColor: "#EEF2DF",
+                          color: "#2D5016",
+                          padding: "7px 12px",
+                          borderRadius: "50px",
+                          border: "1px solid rgba(45,80,22,.2)",
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
+                        {shareCopied ? "Copied" : "Share"}
+                      </button>
+                      <button
+                        onClick={closeProduct}
                         style={{
                           backgroundColor: "transparent",
                           color: "#6B4423",
@@ -1090,7 +1163,7 @@ export default function Products() {
 
                     <div className="flex sm:hidden gap-3 pt-2">
                       <button
-                        onClick={() => setSelectedProduct(null)}
+                        onClick={closeProduct}
                         style={{
                           flex: 1,
                           padding: "10px",
