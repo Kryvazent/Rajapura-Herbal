@@ -511,15 +511,32 @@ export default function AdminStores() {
   const fetchProvinces = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/admin/provinces`, {
-        withCredentials: true,
-      });
-  
-      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
-      setProvincesState(data);
+      let data: unknown;
+      try {
+        const res = await axios.get(`${API_URL}/admin/provinces`, {
+          withCredentials: true,
+        });
+        data = Array.isArray(res.data) ? res.data : res.data?.data;
+      } catch (adminRequestError) {
+        // The public store-list endpoint serves the same province data. Use it
+        // as a read-only fallback so a protected admin read failure does not
+        // block the store management page from loading.
+        const publicResponse = await axios.get(`${API_URL}/user/shops`);
+        data = Array.isArray(publicResponse.data)
+          ? publicResponse.data
+          : publicResponse.data?.data;
+        if (!Array.isArray(data)) throw adminRequestError;
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error("The server returned an invalid province list.");
+      }
+      setProvincesState(data as Province[]);
     } catch (error) {
       console.error("Error fetching provinces:", error);
-      showToast("Failed to load provinces.", "error");
+      const requestError = error as any;
+      const message = requestError.response?.data?.message ?? requestError.message;
+      showToast(message ? `Failed to load provinces: ${message}` : "Failed to load provinces.", "error");
     } finally {
       setLoading(false);
     }

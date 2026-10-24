@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages, ShoppingCart } from "lucide-react";
+import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages, ShoppingCart, CircleUserRound } from "lucide-react";
 import Logo from "./Logo";
 import { LANGUAGES, LANGUAGE_LABELS, useLanguage } from "../i18n/LanguageContext";
 import { navAccessibility } from "../i18n/translations/navigation";
@@ -104,6 +104,8 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   const [cartCount, setCartCount] = useState(0);
+  const [isCustomer, setIsCustomer] = useState(false);
+  const [customerInitial, setCustomerInitial] = useState("");
   const location = useLocation();
   const { language, t } = useLanguage();
   const a11y = navAccessibility[language];
@@ -111,23 +113,63 @@ export function Navbar() {
   useEffect(() => {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
-      .then((data) => setCountry(data.country_code ?? null))
+      .then((data) => {
+        // setCountry(data.country_code ?? null)
+        console.log("IPAPI response:", data);
+        setCountry("USA")
+      })
       .catch(() => setCountry(null));
 
+    const updateCustomerStatus = () => {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/status`, { credentials: "include" })
+        .then((response) => response.json())
+        .then(async (data) => {
+          const customer = data.authenticated && data.role === "USER";
+          setIsCustomer(customer);
+          if (!customer) {
+            setCustomerInitial("");
+            return;
+          }
+          const profileResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/me`, { credentials: "include" });
+          const profileData = await profileResponse.json();
+          const firstName = profileData.data?.firstName?.trim() ?? "";
+          const lastName = profileData.data?.lastName?.trim() ?? "";
+          const initials = lastName
+            ? `${firstName[0] ?? ""}${lastName[0]}`
+            : firstName.slice(0, 2);
+          setCustomerInitial(initials.toUpperCase());
+        })
+        .catch(() => {
+          setIsCustomer(false);
+          setCustomerInitial("");
+        });
+    };
+    updateCustomerStatus();
+
     const updateCartCount = () => {
-      try {
-        const cart = JSON.parse(localStorage.getItem("rajapuraCart") || "[]");
-        setCartCount(Array.isArray(cart) ? cart.reduce((count: number, item: { qty?: number }) => count + (item.qty || 0), 0) : 0);
-      } catch {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/user/cart`, { credentials: "include" })
+        .then(async (response) => {
+          if (!response.ok) return setCartCount(0);
+          const result = await response.json();
+          const items = result.data?.items ?? [];
+          setCartCount(items.reduce((count: number, item: { qty?: number }) => count + (item.qty || 0), 0));
+        })
+        .catch(() => {
         setCartCount(0);
-      }
+        });
     };
     updateCartCount();
     window.addEventListener("storage", updateCartCount);
+    window.addEventListener("storage", updateCustomerStatus);
     window.addEventListener("rajapura:cart-updated", updateCartCount);
+    window.addEventListener("rajapura:auth-updated", updateCustomerStatus);
+    window.addEventListener("rajapura:auth-updated", updateCartCount);
     return () => {
       window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("storage", updateCustomerStatus);
       window.removeEventListener("rajapura:cart-updated", updateCartCount);
+      window.removeEventListener("rajapura:auth-updated", updateCustomerStatus);
+      window.removeEventListener("rajapura:auth-updated", updateCartCount);
     };
   }, []);
 
@@ -137,7 +179,6 @@ export function Navbar() {
     { to: "/", label: t("home") },
     { to: "/products", label: t("products") },
     { to: "/services", label: t("services") },
-    { to: "/store-locator", label: t("stores") },
     { to: "/about", label: t("about") },
   ];
 
@@ -145,6 +186,9 @@ export function Navbar() {
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
   const close = () => setMenuOpen(false);
+  const accountIcon = isCustomer && customerInitial
+    ? <span aria-hidden="true" style={{ width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: "50%", color: "#2D5016", background: "transparent", fontSize: ".82rem", fontWeight: 700 }}>{customerInitial}</span>
+    : <CircleUserRound size={20} strokeWidth={1.8} />;
 
   return (
     <>
@@ -160,7 +204,7 @@ export function Navbar() {
         
         <div
           style={{ backgroundColor: "#FAF6EE", borderBottom: "2px solid #8BC34A" }}
-          className="px-4 sm:px-6 lg:px-16 py-3 sm:py-4 flex items-center justify-between shadow-sm"
+          className="rajapura-header-inner px-4 sm:px-6 lg:px-16 py-3 sm:py-4 flex items-center justify-between shadow-sm"
         >
           
           <Link to="/" className="flex items-center gap-2 sm:gap-3 no-underline" onClick={close}>
@@ -181,7 +225,13 @@ export function Navbar() {
           </Link>
 
           
-          <div className="rajapura-desktop-nav hidden md:flex items-center gap-6 lg:gap-8">
+          <div
+            className={`rajapura-desktop-nav hidden md:flex items-center ${
+              showCart
+                ? "gap-6 lg:gap-8"
+                : "flex-1 justify-center gap-8 lg:gap-12"
+            }`}
+          >
             {links.map((link) => (
               <Link
                 key={link.to}
@@ -205,7 +255,6 @@ export function Navbar() {
 
           
           <div className="rajapura-desktop-cta hidden md:flex items-center gap-3">
-            <LanguageSwitcher />
             {showCart && (
               <Link
                 to="/cart"
@@ -229,6 +278,7 @@ export function Navbar() {
                 {cartCount > 0 && <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 10, fontWeight: 800 }}>{cartCount}</span>}
               </Link>
             )}
+            <LanguageSwitcher />
             <Link
               to="/store-locator"
               style={{
@@ -245,11 +295,36 @@ export function Navbar() {
             >
               {t("nearest")}
             </Link>
+            {showCart && (
+              <Link
+                to={isCustomer ? "/profile" : "/account"}
+                aria-label={isCustomer ? "Customer profile" : "Sign in"}
+                title={isCustomer ? "Customer profile" : "Sign in"}
+                style={{
+                  marginLeft: 8,
+                  color: "#2D5016",
+                  padding: 7,
+                  width: 38,
+                  height: 38,
+                  boxSizing: "border-box",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  border: "1px solid rgba(45,80,22,0.22)",
+                  background: "#FAF6EE",
+                  textDecoration: "none",
+                }}
+              >
+                {accountIcon}
+              </Link>
+            )}
           </div>
 
           
-          <div className="flex items-center gap-2">
+          <div className="flex md:hidden items-center gap-2">
             {showCart && (
+              <>
               <Link
                 to="/cart"
                 aria-label={`Shopping cart, ${cartCount} items`}
@@ -259,6 +334,10 @@ export function Navbar() {
                 <ShoppingCart size={21} />
                 {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{cartCount}</span>}
               </Link>
+              <Link to={isCustomer ? "/profile" : "/account"} onClick={close} aria-label={isCustomer ? "Customer profile" : "Sign in"} title={isCustomer ? "Customer profile" : "Sign in"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
+                {accountIcon}
+              </Link>
+              </>
             )}
             <button
               className="rajapura-mobile-toggle md:hidden flex items-center justify-center"
@@ -534,6 +613,20 @@ export function Navbar() {
           .rajapura-mobile-overlay,
           .rajapura-mobile-drawer {
             display: none !important;
+          }
+        }
+
+        @media (min-width: 1280px) {
+          .rajapura-header-inner {
+            position: relative;
+          }
+
+          .rajapura-header-inner .rajapura-desktop-nav {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: max-content;
+            flex: none;
           }
         }
 

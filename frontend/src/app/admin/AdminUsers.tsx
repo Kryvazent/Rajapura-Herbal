@@ -1234,19 +1234,15 @@ export default function AdminUsers() {
       });
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setUsers(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("fetchUsers error:", error);
-      showToast("Failed to load users.", "error");
+      const message = error.response?.data?.message;
+      showToast(message ? `Failed to load users: ${message}` : "Failed to load users. Check your connection and try again.", "error");
     } finally {
       setLoading(false);
     }
   }, [showToast]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  
   useEffect(() => {
     if (!searchQuery.trim()) {
       fetchUsers();
@@ -1416,6 +1412,7 @@ export default function AdminUsers() {
   const totalStaff = users.filter((u) => u.role === "STAFF").length;
   const totalActive = users.filter((u) => u.status === "ACTIVE").length;
   const totalDisabled = users.filter((u) => u.status === "DISABLED").length;
+
 
   return (
     <div>

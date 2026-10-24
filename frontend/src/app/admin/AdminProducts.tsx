@@ -36,7 +36,7 @@ const CATEGORIES = [
   "Tonics & Syrups",
 ];
 
-const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
+const BADGES = ["", "Bestseller", "Premium", "New", "Organic", "GMP Certified"];
 const VALID_BADGES = BADGES.filter(Boolean);
 
 const CATEGORY_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
@@ -214,6 +214,8 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   ingredients: [""],
   howToUse: [""],
   price: "",
+  priceLKR: "",
+  priceUSD: "",
   stock: 0,
   image: "",
   badge: "",
@@ -659,6 +661,8 @@ export default function AdminProducts() {
 
     setFormData({
       ...rest,
+      priceLKR: rest.priceLKR || (rest.price?.startsWith("LKR ") ? rest.price : ""),
+      priceUSD: rest.priceUSD || "",
       benefits: englishList("benefits"),
       ingredients: englishList("ingredients"),
       howToUse: englishList("howToUse"),
@@ -702,6 +706,7 @@ export default function AdminProducts() {
       setSaveLoading(true);
 
       let productData = formData;
+      productData = { ...productData, price: productData.priceLKR || productData.price || "" };
       if (selectedImageFile) {
         setImageUploadStep(
           "Step 3: Saving detected a new selected image. Uploading it first..."
@@ -733,7 +738,7 @@ export default function AdminProducts() {
       if (modalMode === "add") {
         await saveProduct({
           ...productData,
-          badge: productData.badge || undefined,
+          badge: productData.badge || null,
         } as Product);
         showToast("Product added successfully.", "success");
       } else if (editingId) {
@@ -741,7 +746,7 @@ export default function AdminProducts() {
         await editProduct({
           _id: editingId,
           ...productData,
-          badge: productData.badge || undefined,
+          badge: productData.badge || null,
         } as Product);
 
         const imageWasUpdated =
@@ -1157,7 +1162,7 @@ export default function AdminProducts() {
                           fontSize: "0.9rem",
                         }}
                       >
-                        {getProductPriceLabel(product.price)}
+                        {getProductPriceLabel(product.priceLKR || product.price)}
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1483,15 +1488,28 @@ export default function AdminProducts() {
 
 
               <InputField
-                label="Price (LKR)"
-                value={formData.price}
+                label="Sri Lanka price (LKR)"
+                value={formData.priceLKR || ""}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                  set("price", numeric ? `LKR ${formatted}` : "");
+                  set("priceLKR", numeric ? `LKR ${formatted}` : "");
                 }}
                 placeholder="e.g. LKR 850"
-                error={formErrors.price}
+                error={formErrors.priceLKR}
+              />
+
+              <InputField
+                label="International price (USD)"
+                value={formData.priceUSD || ""}
+                onChange={(v) => {
+                  const numeric = v.replace(/[^0-9.]/g, "");
+                  const [whole, ...fraction] = numeric.split(".");
+                  const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                  set("priceUSD", numeric ? `USD ${formattedWhole}${fraction.length ? `.${fraction.join("").slice(0, 2)}` : ""}` : "");
+                }}
+                placeholder="e.g. USD 12.50"
+                error={formErrors.priceUSD}
               />
 
               <InputField

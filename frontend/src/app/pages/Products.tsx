@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Search, Leaf, ChevronRight, X } from "lucide-react";
+import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import { localized, localizedList, useLanguage } from "../i18n/LanguageContext";
 import { productsCopy } from "../i18n/translations/products";
 import axios from "axios";
+import { formatUSDPrice } from "../lib/price";
 
 export default function Products() {
   const { language, t } = useLanguage();
   const c = productsCopy[language];
+  const outOfStockLabel = language === "si" ? "තොග අවසන්" : "Out of stock";
   const categoryLabel = (category: string) =>
     category === "All"
       ? c.all
@@ -17,6 +19,9 @@ export default function Products() {
     badge ? (c.badges[badge as keyof typeof c.badges] ?? badge) : "";
   const priceLabel = (price?: string) =>
     price?.trim() ? price : t("contactPrice");
+  const productPriceLabel = (product: Product) => international
+    ? priceLabel(formatUSDPrice(product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "")))
+    : [product.priceLKR || product.price, product.priceUSD].filter(Boolean).join(" · ") || t("contactPrice");
   const productList = (
     product: Product,
     field: "benefits" | "ingredients" | "howToUse",
@@ -36,36 +41,42 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [country, setCountry] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartNotice, setCartNotice] = useState<{ success: boolean; message: string; loginRequired?: boolean } | null>(null);
 
   useEffect(() => {
     loadData();
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
-      .then((d) => {
-        // setCountry(d.country_code ?? null);
-        setCountry("USA");
+      .then((data) => {
+        // setCountry(data.country_code ?? null)
+        setCountry("USA")
       })
       .catch(() => setCountry(null));
-    setCartCount(
-      JSON.parse(localStorage.getItem("rajapuraCart") || "[]").reduce(
-        (n: number, i: any) => n + i.qty,
-        0,
-      ),
-    );
   }, [language]);
 
+  useEffect(() => {
+    if (!cartNotice) return;
+    const timeout = window.setTimeout(() => setCartNotice(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [cartNotice]);
+
   const international = country !== null && country !== "LK";
-  const addToCart = (product: Product) => {
-    const cart = JSON.parse(localStorage.getItem("rajapuraCart") || "[]");
-    const current = cart.find((i: any) => i.product._id === product._id);
-    if (current) current.qty = Math.min(product.stock ?? 0, current.qty + qty);
-    else cart.push({ product, qty });
-    localStorage.setItem("rajapuraCart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("rajapura:cart-updated"));
-    setCartCount(cart.reduce((n: number, i: any) => n + i.qty, 0));
-    setSelectedProduct(null);
-    setQty(1);
+  const addToCart = async (product: Product, quantity = qty) => {
+    try {
+      if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Enter a valid quantity.");
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
+      window.dispatchEvent(new Event("rajapura:cart-updated"));
+      setCartNotice({ success: true, message: "Added to your cart" });
+      setSelectedProduct(null);
+      setQty(1);
+    } catch (error) {
+      const requestError = error as any;
+      setCartNotice({
+        success: false,
+        message: requestError.response?.data?.message ?? (error instanceof Error ? error.message : "Could not add this product to your cart."),
+        loginRequired: requestError.response?.status === 401,
+      });
+    }
   };
 
   async function loadData() {
@@ -117,24 +128,11 @@ export default function Products() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      {international && (
-        <Link
-          to="/cart"
-          style={{
-            position: "fixed",
-            right: 20,
-            bottom: 20,
-            zIndex: 20,
-            padding: "12px 18px",
-            borderRadius: 30,
-            background: "#2D5016",
-            color: "#FAF6EE",
-            textDecoration: "none",
-          }}
-        >
-          Cart ({cartCount})
-        </Link>
-      )}
+      {cartNotice && <div role="status" aria-live="polite" style={{ position: "fixed", right: 22, bottom: 22, zIndex: 120, display: "flex", alignItems: "center", gap: 10, maxWidth: "min(420px, calc(100vw - 32px))", padding: "13px 18px", borderRadius: 14, color: cartNotice.success ? "#FAF6EE" : "#7D241D", background: cartNotice.success ? "#244516" : "#FFF3F0", border: cartNotice.success ? "1px solid #8BC34A" : "1px solid #E6B6AE", boxShadow: "0 10px 30px rgba(20,35,10,.2)", fontWeight: 700 }}>
+        {cartNotice.success ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}{cartNotice.message}
+        {cartNotice.loginRequired && <Link to="/account" style={{ color: "inherit", textDecoration: "underline", fontWeight: 800 }}>Sign in</Link>}
+        <button type="button" onClick={() => setCartNotice(null)} aria-label="Dismiss message" style={{ marginLeft: 4, display: "grid", placeItems: "center", padding: 2, border: 0, background: "transparent", color: "inherit", cursor: "pointer" }}><X size={16} /></button>
+      </div>}
       <div
         style={{
           background: "linear-gradient(135deg, #1A3009, #2D5016)",
@@ -446,7 +444,6 @@ export default function Products() {
                     ).substring(0, 90)}
                     ...
                   </p>
-
                   <div
                     className="flex flex-wrap gap-1"
                     style={{ marginBottom: "12px" }}
@@ -495,35 +492,51 @@ export default function Products() {
                   >
                     <span
                       style={{
-                        fontFamily: "'Playfair Display', serif",
+                        fontFamily: international ? "'Lato', sans-serif" : "'Playfair Display', serif",
                         color: "#2D5016",
-                        fontSize: "1.05rem",
+                        fontSize: international ? "0.82rem" : "1.05rem",
+                        fontWeight: international ? 700 : 400,
+                        ...(international && product.priceUSD ? {
+                          padding: "5px 8px",
+                          borderRadius: 999,
+                          background: "#EEF2DF",
+                          border: "1px solid rgba(45,80,22,.18)",
+                          whiteSpace: "nowrap" as const,
+                        } : {}),
                       }}
                     >
                       {language === "si"
                         ? "මිල සඳහා විමසන්න"
                         : language === "ta"
                           ? "விலை விவரங்களுக்கு விசாரிக்கவும்"
-                          : priceLabel(product.price)}
+                          : productPriceLabel(product)}
                     </span>
                     <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProduct(product);
-                        }}
-                        style={{
-                          backgroundColor: "transparent",
-                          color: "#2D5016",
-                          padding: "6px 12px",
-                          borderRadius: "50px",
-                          border: "1px solid #2D5016",
-                          fontSize: "0.76rem",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {c.details}
-                      </button>
+                      {international ? (
+                        (product.stock ?? 0) > 0 && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            <Package size={14} aria-hidden="true" /> {language === "si" ? "තොග ඇත" : "In stock"}
+                          </span>
+                        )
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProduct(product);
+                          }}
+                          style={{
+                            backgroundColor: "transparent",
+                            color: "#2D5016",
+                            padding: "6px 12px",
+                            borderRadius: "50px",
+                            border: "1px solid #2D5016",
+                            fontSize: "0.76rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {c.details}
+                        </button>
+                      )}
                       {international && (product.stock ?? 0) === 0 ? (
                         <button
                           type="button"
@@ -541,7 +554,32 @@ export default function Products() {
                             opacity: 1,
                           }}
                         >
-                          Out of stock
+                          {outOfStockLabel}
+                        </button>
+                      ) : international ? (
+                        <button
+                          type="button"
+                          aria-label={`Add ${product.name} to cart`}
+                          title="Add to cart"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product, 1);
+                          }}
+                          style={{
+                            backgroundColor: "#2D5016",
+                            color: "#FAF6EE",
+                            padding: "7px 10px",
+                            borderRadius: "50px",
+                            border: "1px solid #2D5016",
+                            fontSize: "0.76rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <ShoppingCart size={17} strokeWidth={2} aria-hidden="true" />
                         </button>
                       ) : (
                         <Link
@@ -561,11 +599,6 @@ export default function Products() {
                       )}
                     </div>
                   </div>
-                  {international && (product.stock ?? 0) > 0 && (
-                    <div style={{ color: "#6B4423", fontSize: "0.75rem", marginTop: 8 }}>
-                      {product.stock} available
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -787,12 +820,19 @@ export default function Products() {
                   <div className="flex items-center justify-between">
                     <span
                       style={{
-                        fontFamily: "'Playfair Display', serif",
+                        fontFamily: international ? "'Lato', sans-serif" : "'Playfair Display', serif",
                         color: "#2D5016",
-                        fontSize: "1.15rem",
+                        fontSize: international ? "0.95rem" : "1.15rem",
+                        fontWeight: 700,
+                        ...(international && selectedProduct.priceUSD ? {
+                          padding: "5px 9px",
+                          borderRadius: 999,
+                          background: "#EEF2DF",
+                          border: "1px solid rgba(45,80,22,.18)",
+                        } : {}),
                       }}
                     >
-                      {priceLabel(selectedProduct.price)}
+                      {productPriceLabel(selectedProduct)}
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -879,25 +919,23 @@ export default function Products() {
                               textTransform: "uppercase",
                             }}
                           >
-                            Out of stock
+                            {outOfStockLabel}
                           </span>
                         ) : (
-                          <span style={{ color: "#2D5016", fontSize: "0.82rem" }}>
-                            Available: {selectedProduct.stock} · {priceLabel(selectedProduct.price)}
+                          <span style={{ color: "#2D5016", fontSize: "0.82rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            {language === "si" ? "තොග ඇත" : "In stock"}
                           </span>
                         )}
                         {(selectedProduct.stock ?? 0) > 0 && <input
                           aria-label="Quantity"
                           type="number"
                           min="1"
-                          max={selectedProduct.stock ?? 0}
                           value={qty}
-                          onChange={(e) =>
-                            setQty(Math.max(1, Number(e.target.value) || 1))
-                          }
+                          onChange={(e) => setQty(e.target.value === "" ? 1 : Number(e.target.value))}
                           style={{
-                            width: 64,
-                            padding: 7,
+                            width: 104,
+                            boxSizing: "border-box",
+                            padding: "8px 10px",
                             borderRadius: 8,
                             border: "1px solid #ccc",
                           }}

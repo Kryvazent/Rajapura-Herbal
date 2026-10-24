@@ -19,6 +19,8 @@ import { ADMIN_BASE_PATH } from "./admin/adminPaths";
 import AdminStock from "./admin/AdminStock";
 import AdminOrders from "./admin/AdminOrders";
 import Cart from "./pages/Cart";
+import Account from "./pages/Account";
+import Profile from "./pages/Profile";
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +30,8 @@ export const router = createBrowserRouter([
       { index: true, Component: Home },
       { path: "products", Component: Products },
       { path: "cart", Component: Cart },
+      { path: "account", Component: Account },
+      { path: "profile", Component: Profile },
       { path: "services", Component: Services },
       { path: "store-locator", Component: StoreLocator },
       { path: "about", Component: About },

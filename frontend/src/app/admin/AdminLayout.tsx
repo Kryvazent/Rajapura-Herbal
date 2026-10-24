@@ -69,7 +69,7 @@ export default function AdminLayout() {
     const checkAuth = async () => {
       try {
         const res = await axios.get(
-          import.meta.env.VITE_BACKEND_URL + "/auth/status",
+          import.meta.env.VITE_BACKEND_URL + "/auth/admin/status",
           { withCredentials: true }
         );
 
@@ -89,6 +89,14 @@ export default function AdminLayout() {
           return;
         }
 
+        if (!["ADMIN", "STAFF"].includes(res.data.role)) {
+          localStorage.removeItem("adminAuth");
+          localStorage.removeItem("adminRole");
+          setIsLoading(false);
+          navigate(adminPath());
+          return;
+        }
+
         const nextRole = res.data.role ?? localStorage.getItem("adminRole") ?? "";
         setRole(nextRole);
         localStorage.setItem("adminRole", nextRole);
@@ -100,7 +108,7 @@ export default function AdminLayout() {
 
         try {
           const profileRes = await axios.get(
-            import.meta.env.VITE_BACKEND_URL + "/auth/me",
+            import.meta.env.VITE_BACKEND_URL + "/auth/admin/me",
             { withCredentials: true }
           );
           if (profileRes.data?.data) {
@@ -146,7 +154,7 @@ export default function AdminLayout() {
   const handleLogout = async () => {
     try {
       await axios.post(
-        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+        import.meta.env.VITE_BACKEND_URL + "/auth/admin/logout",
         {},
         { withCredentials: true }
       );

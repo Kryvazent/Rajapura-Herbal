@@ -23,11 +23,11 @@ export default function AdminLogin() {
     const checkExistingSession = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/status`,
+          `${import.meta.env.VITE_BACKEND_URL}/auth/admin/status`,
           { withCredentials: true }
         );
 
-        if (res.data?.authenticated) {
+        if (res.data?.authenticated && ["ADMIN", "STAFF"].includes(res.data.role)) {
           localStorage.setItem("adminRole", res.data.role ?? localStorage.getItem("adminRole") ?? "");
           localStorage.setItem("adminAuth", "true");
           navigate(adminPath("dashboard"), { replace: true });
@@ -82,7 +82,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+        `${import.meta.env.VITE_BACKEND_URL}/auth/admin/login`,
         { username, password },
         { withCredentials: true }
       );

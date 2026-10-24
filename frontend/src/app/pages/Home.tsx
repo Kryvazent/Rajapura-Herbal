@@ -6,6 +6,7 @@ import { Product } from "../interfaces/productInterface";
 import { localized, useLanguage } from "../i18n/LanguageContext";
 import Logo from "../components/Logo";
 import { homeCopy, homeEstablished } from "../i18n/translations/home";
+import { formatUSDPrice } from "../lib/price";
 
 const statValues = ["200+", "48", "9", "100%"];
 const valueIcons = [Leaf, Shield, Heart, Flower];
@@ -16,12 +17,20 @@ export default function Home() {
   const stats = statValues.map((value, index) => ({ value, label: c.stats[index] }));
   const values = valueIcons.map((icon, index) => ({ icon, ...c.values[index] }));
   const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
+  const [country, setCountry] = useState<string | null>(null);
+  const productPriceLabel = (product: Product) => country === "LK"
+    ? [product.priceLKR || product.price, product.priceUSD].filter(Boolean).join(" · ") || t("contactPrice")
+    : priceLabel(formatUSDPrice(product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "")));
   const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
+    fetch("https://ipapi.co/json/")
+      .then((response) => response.json())
+      .then((data) => setCountry(data.country_code ?? null))
+      .catch(() => setCountry(null));
   }, [language]);
 
   async function loadData() {
@@ -673,7 +682,7 @@ export default function Home() {
                         fontSize: "1.05rem",
                       }}
                     >
-                      {priceLabel(product.price)}
+                      {productPriceLabel(product)}
                     </span>
                     <Link
                       to="/store-locator"

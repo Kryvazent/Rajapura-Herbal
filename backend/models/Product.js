@@ -66,6 +66,8 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    priceLKR: { type: String, trim: true, default: "" },
+    priceUSD: { type: String, trim: true, default: "" },
     tamilName: { type: String, trim: true, maxlength: [100, "Tamil name too long"] },
     translations: { type: translationsSchema, default: () => ({}) },
     stock: { type: Number, min: 0, default: 0 },
@@ -80,7 +82,7 @@ const productSchema = new mongoose.Schema(
     badge: {
       type: String,
       enum: {
-        values: ["Bestseller", "Premium", "New", "Organic"],
+        values: ["Bestseller", "Premium", "New", "Organic", "GMP Certified"],
         message: "Invalid badge type",
       },
     },

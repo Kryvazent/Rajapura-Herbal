@@ -1,5 +1,18 @@
 import Order from "../models/Order.js";
 
+export const listCustomerOrders = async (req, res) => {
+  if (req.session?.role !== "USER") {
+    return res.status(403).json({ success: false, message: "Customer account required" });
+  }
+  try {
+    const orders = await Order.find({ customer: req.session.userId }).sort({ createdAt: -1 });
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    console.error("listCustomerOrders error:", error);
+    res.status(500).json({ success: false, message: "Unable to load your orders" });
+  }
+};
+
 export const listOrders = async (_req, res) => {
   try { res.json({ success: true, data: await Order.find().sort({ createdAt: -1 }).populate("customer", "firstName lastName email") }); }
   catch (error) { console.error("listOrders error:", error); res.status(500).json({ success: false, message: "Unable to load orders" }); }
