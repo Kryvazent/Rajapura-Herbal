@@ -6,6 +6,15 @@ import axios from "axios";
 import { formatUSDPrice } from "../lib/price";
 
 type Item = { product: Product; qty: number };
+const itemUnitPrice = (product: Product): number | null => {
+  const rawPrice = product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "");
+  if (!rawPrice) return null;
+  const amount = Number(rawPrice.replace(/USD\s*/i, "").replace(/,/g, "").trim());
+  return Number.isFinite(amount) ? amount : null;
+};
+const formatDollarAmount = (amount: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+
 export default function Cart() {
   const [items, setItems] = useState<Item[]>([]);
   const [signedIn, setSignedIn] = useState(false);
@@ -75,6 +84,10 @@ export default function Cart() {
   const updateQuantity = (productId: Product["_id"], quantity: number) => {
     save(items.map((item) => item.product._id === productId ? { ...item, qty: quantity } : item));
   };
+  const pricedItems = items.map((item) => ({ ...item, unitPrice: itemUnitPrice(item.product) }));
+  const estimatedTotal = pricedItems.every((item) => item.unitPrice !== null)
+    ? pricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
+    : null;
   useEffect(() => {
     const pending = Object.entries(quantityDrafts)
       .map(([productId, rawQty]) => [productId, Number(rawQty)] as const)
@@ -220,7 +233,7 @@ export default function Cart() {
   return (
     <main
       style={{
-        maxWidth: 1200,
+        maxWidth: 1320,
         margin: "48px auto",
         padding: 20,
         color: "#2D5016",
@@ -228,7 +241,7 @@ export default function Cart() {
       }}
     >
       {cartError && <p role="alert" style={{ margin: "0 0 16px", padding: "12px 15px", borderRadius: 10, color: "#8F2D26", background: "#FFF3F0", border: "1px solid #E6B6AE" }}>{cartError}</p>}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
       <section>
       <h1 style={{ fontFamily: "'Playfair Display',serif", marginTop: 0, marginBottom: 24 }}>Your cart</h1>
       {items.map((item) => (
@@ -304,6 +317,21 @@ export default function Cart() {
         <h2 style={{ margin: "0 0 20px", fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>Payment details</h2>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid rgba(45,80,22,.12)", color: "#6B6257", fontSize: ".92rem" }}>
           <span>Items</span><strong style={{ color: "#2D5016" }}>{items.reduce((total, item) => total + item.qty, 0)}</strong>
+        </div>
+        <div style={{ display: "grid", gap: 12, padding: "14px 0", borderBottom: "1px solid rgba(45,80,22,.12)" }}>
+          {pricedItems.map((item) => (
+            <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, color: "#6B6257", fontSize: ".86rem" }}>
+              <div>
+                <div style={{ color: "#334A28", fontWeight: 700 }}>{item.product.name}</div>
+                <div style={{ marginTop: 3 }}>{item.qty} × {item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice)}</div>
+              </div>
+              <strong style={{ flexShrink: 0, color: "#2D5016" }}>{item.unitPrice === null ? "—" : formatDollarAmount(item.unitPrice * item.qty)}</strong>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 18, padding: "16px 0 18px", borderBottom: "1px solid rgba(45,80,22,.12)", color: "#243D17", fontSize: "1rem" }}>
+          <strong>Estimated total</strong>
+          <strong>{estimatedTotal === null ? "Contact for price" : formatDollarAmount(estimatedTotal)}</strong>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "14px 0 18px", color: "#6B6257", fontSize: ".92rem" }}>
           <span>Payment</span><strong style={{ color: "#2D5016" }}>On order confirmation</strong>

@@ -7,6 +7,12 @@ import { navAccessibility } from "../i18n/translations/navigation";
 
 type LanguageCode = (typeof LANGUAGES)[number];
 
+const formatCartCount = (count: number) => {
+  if (count < 1000) return String(count);
+  const thousands = count / 1000;
+  return `${thousands.toFixed(count >= 10000 ? 0 : 1).replace(/\.0$/, "")}K`;
+};
+
 function LanguageSwitcher({ mobile = false }: { mobile?: boolean }) {
   const [open, setOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
@@ -275,7 +281,7 @@ export function Navbar() {
                 }}
               >
                 <ShoppingCart size={19} />
-                {cartCount > 0 && <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 10, fontWeight: 800 }}>{cartCount}</span>}
+                {cartCount > 0 && <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 10, fontWeight: 800 }}>{formatCartCount(cartCount)}</span>}
               </Link>
             )}
             <LanguageSwitcher />
@@ -332,7 +338,7 @@ export function Navbar() {
                 style={{ position: "relative", display: "inline-flex", padding: 7, color: "#2D5016" }}
               >
                 <ShoppingCart size={21} />
-                {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{cartCount}</span>}
+                {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{formatCartCount(cartCount)}</span>}
               </Link>
               <Link to={isCustomer ? "/profile" : "/account"} onClick={close} aria-label={isCustomer ? "Customer profile" : "Sign in"} title={isCustomer ? "Customer profile" : "Sign in"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
                 {accountIcon}

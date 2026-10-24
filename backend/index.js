@@ -35,7 +35,7 @@ const hasLocalFrontendOrigin = allowedOrigins.some((origin) =>
     /localhost|127\.0\.0\.1/i.test(origin)
 );
 // const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
-const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 1 * 60 * 1000;
+const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 0 * 60 * 1000;
 const apiRateLimitMax = Number(process.env.RATE_LIMIT_MAX) || 300;
 const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX) || 10;
 const bodyLimit = process.env.BODY_LIMIT || "1mb";
