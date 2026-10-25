@@ -19,7 +19,7 @@ export default function Home() {
   const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
   const [country, setCountry] = useState<string | null>(null);
   const productPriceLabel = (product: Product) => country === "LK"
-    ? [product.priceLKR || product.price, product.priceUSD].filter(Boolean).join(" · ") || t("contactPrice")
+    ? t("contactPrice")
     : priceLabel(formatUSDPrice(product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "")));
   const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const [products, setProducts] = useState<Product[]>([]);

@@ -24,7 +24,7 @@ export default function Products() {
     price?.trim() ? price : t("contactPrice");
   const productPriceLabel = (product: Product) => international
     ? priceLabel(formatUSDPrice(product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "")))
-    : [product.priceLKR || product.price, product.priceUSD].filter(Boolean).join(" · ") || t("contactPrice");
+    : t("contactPrice");
   const productList = (
     product: Product,
     field: "benefits" | "ingredients" | "howToUse",
@@ -95,8 +95,8 @@ export default function Products() {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((data) => {
-        // setCountry(data.country_code ?? null)
-        setCountry("USA")
+        setCountry(data.country_code ?? null)
+        // setCountry("USA")
       })
       .catch(() => setCountry(null));
   }, [language]);
@@ -557,7 +557,7 @@ export default function Products() {
                           ? "விலை விவரங்களுக்கு விசாரிக்கவும்"
                           : productPriceLabel(product)}
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" style={{ margin: "6px 0 10px" }}>
                       {international ? (
                         (product.stock ?? 0) > 0 && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -740,10 +740,9 @@ export default function Products() {
               style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
             >
               <div
-                className="w-full sm:w-[42%] flex-shrink-0 relative"
-                style={{ height: "200px" }}
+                className="w-full sm:w-[42%] flex-shrink-0 flex flex-col"
               >
-                <div className="hidden sm:block absolute inset-0">
+                <div className="hidden sm:block relative flex-shrink-0" style={{ height: 200 }}>
                   <img
                     src={selectedProduct.image}
                     alt={localized(
@@ -830,9 +829,8 @@ export default function Products() {
                   )}
                   style={{
                     width: "100%",
-                    height: "100%",
+                    height: 200,
                     objectFit: "cover",
-                    display: "block",
                     flexShrink: 0,
                   }}
                 />
@@ -868,7 +866,7 @@ export default function Products() {
                       selectedProduct.name,
                     )}
                   </h2>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-start gap-3">
                     <span
                       style={{
                         fontFamily: international ? "'Lato', sans-serif" : "'Playfair Display', serif",
@@ -891,51 +889,12 @@ export default function Products() {
                         onClick={copyProductLink}
                         aria-label={shareCopied ? "Product link copied" : "Copy product link"}
                         title={shareCopied ? "Link copied" : "Copy product link"}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                          backgroundColor: "#EEF2DF",
-                          color: "#2D5016",
-                          padding: "7px 12px",
-                          borderRadius: "50px",
-                          border: "1px solid rgba(45,80,22,.2)",
-                          fontSize: "0.8rem",
-                          cursor: "pointer",
-                        }}
+                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EEF2DF", color: "#2D5016", padding: "7px 12px", borderRadius: 50, border: "1px solid rgba(45,80,22,.2)", fontSize: ".8rem", cursor: "pointer" }}
                       >
                         {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
                         {shareCopied ? "Copied" : "Share"}
                       </button>
-                      <button
-                        onClick={closeProduct}
-                        style={{
-                          backgroundColor: "transparent",
-                          color: "#6B4423",
-                          padding: "7px 14px",
-                          borderRadius: "50px",
-                          border: "1px solid #6B4423",
-                          fontSize: "0.8rem",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {c.close}
-                      </button>
-                      <Link
-                        to="/store-locator"
-                        style={{
-                          backgroundColor: "#2D5016",
-                          color: "#FAF6EE",
-                          padding: "7px 14px",
-                          borderRadius: "50px",
-                          textDecoration: "none",
-                          fontSize: "0.8rem",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "5px",
-                        }}
-                      >
+                      <Link to="/store-locator" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, backgroundColor: "#2D5016", color: "#FAF6EE", padding: "7px 14px", borderRadius: 50, textDecoration: "none", fontSize: ".8rem" }}>
                         {c.find} <ChevronRight size={13} />
                       </Link>
                     </div>
