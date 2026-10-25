@@ -13,6 +13,9 @@ const slugifyProductName = (name: string) =>
 export default function Products() {
   const { language, t } = useLanguage();
   const c = productsCopy[language];
+  const shareLabel = language === "si" ? "බෙදාගන්න" : "Share";
+  const copiedLabel = language === "si" ? "පිටපත් කළා" : "Copied";
+  const addToCartLabel = language === "si" ? "කරත්තයට එක් කරන්න" : "Add to cart";
   const outOfStockLabel = language === "si" ? "තොග අවසන්" : "Out of stock";
   const categoryLabel = (category: string) =>
     category === "All"
@@ -606,7 +609,7 @@ export default function Products() {
                         <button
                           type="button"
                           aria-label={`Add ${product.name} to cart`}
-                          title="Add to cart"
+                          title={addToCartLabel}
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(product, 1);
@@ -716,7 +719,7 @@ export default function Products() {
                 )}
               </h2>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button type="button" onClick={copyProductLink} aria-label="Copy product link" title="Copy product link" style={{ background: "none", border: "none", color: "#FAF6EE", cursor: "pointer", display: "flex", padding: 4 }}>
+                <button type="button" onClick={copyProductLink} aria-label={language === "si" ? "නිෂ්පාදන සබැඳිය පිටපත් කරන්න" : "Copy product link"} title={language === "si" ? "නිෂ්පාදන සබැඳිය පිටපත් කරන්න" : "Copy product link"} style={{ background: "none", border: "none", color: "#FAF6EE", cursor: "pointer", display: "flex", padding: 4 }}>
                   {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
                 </button>
                 <button
@@ -887,12 +890,12 @@ export default function Products() {
                       <button
                         type="button"
                         onClick={copyProductLink}
-                        aria-label={shareCopied ? "Product link copied" : "Copy product link"}
-                        title={shareCopied ? "Link copied" : "Copy product link"}
+                        aria-label={shareCopied ? copiedLabel : (language === "si" ? "නිෂ්පාදන සබැඳිය පිටපත් කරන්න" : "Copy product link")}
+                        title={shareCopied ? copiedLabel : (language === "si" ? "නිෂ්පාදන සබැඳිය පිටපත් කරන්න" : "Copy product link")}
                         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#EEF2DF", color: "#2D5016", padding: "7px 12px", borderRadius: 50, border: "1px solid rgba(45,80,22,.2)", fontSize: ".8rem", cursor: "pointer" }}
                       >
                         {shareCopied ? <Check size={15} /> : <Share2 size={15} />}
-                        {shareCopied ? "Copied" : "Share"}
+                        {shareCopied ? copiedLabel : shareLabel}
                       </button>
                       <Link to="/store-locator" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, backgroundColor: "#2D5016", color: "#FAF6EE", padding: "7px 14px", borderRadius: 50, textDecoration: "none", fontSize: ".8rem" }}>
                         {c.find} <ChevronRight size={13} />
@@ -988,7 +991,7 @@ export default function Products() {
                                 ? "not-allowed"
                                 : "pointer",
                           }}
-                        >Add to cart</button>}
+                        >{addToCartLabel}</button>}
                       </div>
                     )}
 

@@ -108,15 +108,9 @@ export default function Cart() {
   if (country === "LK") return <Navigate to="/products" replace />;
   if (country === null)
     return (
-      <main
-        style={{
-          maxWidth: 900,
-          margin: "48px auto",
-          padding: 20,
-          color: "#2D5016",
-        }}
-      >
-        Checking your location…
+      <main style={{ minHeight: 460, display: "grid", placeItems: "center", padding: "44px 20px", background: "radial-gradient(ellipse at 50% 10%, rgba(139,195,74,.11), transparent 55%)" }}>
+        <div aria-label="Loading" role="status" style={{ width: 34, height: 34, border: "3px solid rgba(45,80,22,.15)", borderTopColor: "#2D5016", borderRadius: "50%", animation: "cart-spin .8s linear infinite" }} />
+        <style>{"@keyframes cart-spin{to{transform:rotate(360deg)}}"}</style>
       </main>
     );
   if (!authChecked)

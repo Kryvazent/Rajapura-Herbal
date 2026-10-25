@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import axios from "axios";
 
 const api = import.meta.env.VITE_BACKEND_URL;
@@ -35,8 +35,22 @@ export default function Account() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [country, setCountry] = useState<string | null>(null);
+  const [locationChecked, setLocationChecked] = useState(false);
 
   useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then((response) => response.json())
+      .then((data) => {
+        setCountry(data.country_code ?? null)
+        // setCountry('USA')
+      })
+      .catch(() => setCountry(null))
+      .finally(() => setLocationChecked(true));
+  }, []);
+
+  useEffect(() => {
+    if (!locationChecked || country === "LK") return;
     axios.get(`${api}/auth/customer/status`, { withCredentials: true })
       .then(async ({ data }) => {
         if (data.authenticated && data.role === "USER") {
@@ -44,7 +58,7 @@ export default function Account() {
         }
       })
       .catch(() => undefined);
-  }, []);
+  }, [locationChecked, country, navigate]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -69,6 +83,15 @@ export default function Account() {
       setBusy(false);
     }
   };
+
+  if (!locationChecked) {
+    return <main style={{ minHeight: 520, display: "grid", placeItems: "center", background: "radial-gradient(ellipse at 50% 0%, rgba(139,195,74,.09), transparent 52%)" }}>
+      <div role="status" aria-label="Loading" style={{ width: 36, height: 36, border: "3px solid rgba(45,80,22,.15)", borderTopColor: "#2D5016", borderRadius: "50%", animation: "account-spin .8s linear infinite" }} />
+      <style>{"@keyframes account-spin{to{transform:rotate(360deg)}}"}</style>
+    </main>;
+  }
+
+  if (country === "LK") return <Navigate to="/products" replace />;
 
   return (
     <main style={{ minHeight: 520, display: "grid", placeItems: "center", padding: "clamp(32px, 7vw, 76px) 20px", color: "#2D5016", fontFamily: "'Lato',sans-serif", background: "radial-gradient(ellipse at 50% 0%, rgba(139,195,74,.09), transparent 52%)" }}>

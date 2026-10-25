@@ -52,7 +52,10 @@ export default function Home() {
     loadData();
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
-      .then((data) => setCountry(data.country_code ?? null))
+      .then((data) => {
+        setCountry(data.country_code ?? null)
+        // setCountry('USA')
+      })
       .catch(() => setCountry(null));
   }, [language]);
 
