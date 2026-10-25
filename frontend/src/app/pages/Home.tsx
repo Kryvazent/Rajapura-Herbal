@@ -1,11 +1,12 @@
 import { Link } from "react-router";
-import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets } from "lucide-react";
+import { Leaf, Shield, Heart, Star, ChevronRight, Flower, Droplets, Package, ShoppingCart, CheckCircle2, CircleAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Product } from "../interfaces/productInterface";
 import { localized, useLanguage } from "../i18n/LanguageContext";
 import Logo from "../components/Logo";
 import { homeCopy, homeEstablished } from "../i18n/translations/home";
+import { formatUSDPrice } from "../lib/price";
 
 const statValues = ["200+", "48", "9", "100%"];
 const valueIcons = [Leaf, Shield, Heart, Flower];
@@ -16,12 +17,46 @@ export default function Home() {
   const stats = statValues.map((value, index) => ({ value, label: c.stats[index] }));
   const values = valueIcons.map((icon, index) => ({ icon, ...c.values[index] }));
   const priceLabel = (price?: string) => price?.trim() ? price : t("contactPrice");
+  const [country, setCountry] = useState<string | null>(null);
+  const productPriceLabel = (product: Product) => country === "LK"
+    ? t("contactPrice")
+    : priceLabel(formatUSDPrice(product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "")));
   const badgeLabel = (badge?: string) => badge ? c.badges[badge as keyof typeof c.badges] ?? badge : "";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cartNotice, setCartNotice] = useState<{ success: boolean; message: string; loginRequired?: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!cartNotice) return;
+    const timeout = window.setTimeout(() => setCartNotice(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [cartNotice]);
+
+  const addToCart = async (product: Product) => {
+    try {
+      if ((product.stock ?? 0) < 1) throw new Error(language === "si" ? "තොග අවසන්" : "Out of stock");
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/cart/items`, { productId: product._id, qty: 1 }, { withCredentials: true });
+      window.dispatchEvent(new Event("rajapura:cart-updated"));
+      setCartNotice({ success: true, message: language === "si" ? "ඔබේ කරත්තයට එක් කළා" : "Added to your cart" });
+    } catch (error) {
+      const requestError = error as any;
+      setCartNotice({
+        success: false,
+        message: requestError.response?.data?.message ?? (error instanceof Error ? error.message : "Could not add this product to your cart."),
+        loginRequired: requestError.response?.status === 401,
+      });
+    }
+  };
 
   useEffect(() => {
     loadData();
+    fetch("https://ipapi.co/json/")
+      .then((response) => response.json())
+      .then((data) => {
+        setCountry(data.country_code ?? null)
+        // setCountry('USA')
+      })
+      .catch(() => setCountry(null));
   }, [language]);
 
   async function loadData() {
@@ -57,6 +92,11 @@ export default function Home() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
+      {cartNotice && <div role="status" aria-live="polite" style={{ position: "fixed", right: 22, bottom: 22, zIndex: 120, display: "flex", alignItems: "center", gap: 10, maxWidth: "min(420px, calc(100vw - 32px))", padding: "13px 18px", borderRadius: 14, color: cartNotice.success ? "#FAF6EE" : "#7D241D", background: cartNotice.success ? "#244516" : "#FFF3F0", border: cartNotice.success ? "1px solid #8BC34A" : "1px solid #E6B6AE", boxShadow: "0 10px 30px rgba(20,35,10,.2)", fontWeight: 700 }}>
+        {cartNotice.success ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}{cartNotice.message}
+        {cartNotice.loginRequired && <Link to="/account" style={{ color: "inherit", textDecoration: "underline", fontWeight: 800 }}>Sign in</Link>}
+        <button type="button" onClick={() => setCartNotice(null)} aria-label="Dismiss message" style={{ marginLeft: 4, display: "grid", placeItems: "center", padding: 2, border: 0, background: "transparent", color: "inherit", cursor: "pointer" }}><X size={16} /></button>
+      </div>}
 
       <section
         style={{
@@ -595,13 +635,15 @@ export default function Home() {
                   borderRadius: "20px",
                   overflow: "hidden",
                   border: "1px solid rgba(139,195,74,0.25)",
-                  boxShadow: "0 4px 20px rgba(45,80,22,0.08)",
+                  boxShadow: "0 4px 20px rgba(45,80,22,0.07)",
                   transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  display: "flex",
+                  flexDirection: "column",
                 }}
                 className="group hover:shadow-xl"
               >
                 <div
-                  style={{ position: "relative", height: "220px", overflow: "hidden" }}
+                  style={{ position: "relative", height: "220px", flexShrink: 0, overflow: "hidden" }}
                 >
                   <img
                     src={product.image}
@@ -614,6 +656,7 @@ export default function Home() {
                     }}
                     className="group-hover:scale-105"
                   />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(26,48,9,.5) 0%, transparent 50%)" }} />
                   {product.badge && (
                     <div
                       style={{
@@ -632,62 +675,63 @@ export default function Home() {
                       {badgeLabel(product.badge)}
                     </div>
                   )}
+                  <div style={{ position: "absolute", bottom: 12, left: 16 }}>
+                    <p style={{ color: "#D4A017", fontSize: ".7rem", letterSpacing: ".1em", margin: 0 }}>
+                      {localized(product.translations?.category, language, product.category).toUpperCase()}
+                    </p>
+                  </div>
                 </div>
 
-                <div style={{ padding: "18px 20px" }}>
-                  <p
-                    style={{
-                      color: "#8B5E3C",
-                      fontSize: "0.72rem",
-                      letterSpacing: "0.1em",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {localized(product.translations?.category, language, product.category).toUpperCase()}
-                  </p>
+                <div style={{ padding: "16px 18px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <h3
                     style={{
                       fontFamily: "'Playfair Display', serif",
                       color: "#2D5016",
                       fontSize: "1.05rem",
-                      marginBottom: "8px",
+                      marginBottom: "2px",
+                      marginTop: 0,
+                      lineHeight: 1.3,
                     }}
                   >
                     {localized(product.translations?.name, language, product.name)}
                   </h3>
+                  <p style={{ color: "#8B5E3C", fontSize: ".75rem", fontStyle: "italic", margin: "0 0 8px" }}>
+                    {language === "si" ? product.sinhalaName : language === "ta" ? product.tamilName || product.name : product.name}
+                  </p>
                   <p
                     style={{
                       color: "#5C4033",
-                      fontSize: "0.85rem",
-                      lineHeight: 1.6,
-                      marginBottom: "16px",
+                      fontSize: ".82rem",
+                      lineHeight: 1.55,
+                      marginBottom: 12,
+                      marginTop: 0,
+                      flex: 1,
                     }}
                   >
                     {localized(product.translations?.description, language, product.description).substring(0, 90)}...
                   </p>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2" style={{ marginTop: "auto" }}>
                     <span
                       style={{
-                        fontFamily: "'Playfair Display', serif",
+                        fontFamily: "'Lato', sans-serif",
                         color: "#2D5016",
-                        fontSize: "1.05rem",
+                        fontSize: ".82rem",
+                        fontWeight: 700,
+                        ...(country !== "LK" && product.priceUSD ? { padding: "5px 8px", borderRadius: 999, background: "#EEF2DF", border: "1px solid rgba(45,80,22,.18)", whiteSpace: "nowrap" as const } : {}),
                       }}
                     >
-                      {priceLabel(product.price)}
+                      {language === "si" ? "මිල සඳහා විමසන්න" : language === "ta" ? "விலை விவரங்களுக்கு விசாரிக்கவும்" : productPriceLabel(product)}
                     </span>
-                    <Link
-                      to="/store-locator"
-                      style={{
-                        backgroundColor: "#2D5016",
-                        color: "#FAF6EE",
-                        padding: "8px 16px",
-                        borderRadius: "50px",
-                        textDecoration: "none",
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      {c.findStore}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {country !== "LK" && (product.stock ?? 0) > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}><Package size={14} aria-hidden="true" />{language === "si" ? "තොග ඇත" : "In stock"}</span>}
+                      {country !== "LK" && (product.stock ?? 0) === 0 ? (
+                        <button type="button" disabled style={{ backgroundColor: "#F0EDE6", color: "#6B4423", padding: "6px 12px", borderRadius: 50, border: "1px solid rgba(107,68,35,.28)", fontSize: ".76rem", fontWeight: 700, cursor: "not-allowed", whiteSpace: "nowrap" }}>{language === "si" ? "තොග අවසන්" : "Out of stock"}</button>
+                      ) : country !== "LK" ? (
+                        <button type="button" aria-label={`Add ${product.name} to cart`} title="Add to cart" onClick={async () => addToCart(product)} style={{ backgroundColor: "#2D5016", color: "#FAF6EE", width: 40, height: 40, borderRadius: 50, border: "1px solid #2D5016", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ShoppingCart size={17} aria-hidden="true" /></button>
+                      ) : (
+                        <Link to="/store-locator" style={{ backgroundColor: "#2D5016", color: "#FAF6EE", padding: "7px 12px", borderRadius: 50, textDecoration: "none", fontSize: ".76rem", whiteSpace: "nowrap" }}>{c.findStore}</Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

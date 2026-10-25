@@ -32,6 +32,23 @@ export const loginValidators = [
     .withMessage("Password must be between 6 and 128 characters"),
 ];
 
+export const customerRegistrationValidators = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Name must be between 2 and 100 characters"),
+  body("email")
+    .trim()
+    .isEmail()
+    .withMessage("Enter a valid email address")
+    .normalizeEmail(),
+  body("password")
+    .isLength({ min: 8, max: 128 })
+    .withMessage("Password must be between 8 and 128 characters"),
+];
+
 
 export const productValidators = [
   body("product")
@@ -83,8 +100,8 @@ export const productValidators = [
 
   body("product.badge")
     .optional({ nullable: true, checkFalsy: true })
-    .isIn(["Bestseller", "Premium", "New", "Organic"])
-    .withMessage("Badge must be one of: Bestseller, Premium, New, Organic"),
+    .isIn(["Bestseller", "Premium", "New", "Organic", "GMP Certified"])
+    .withMessage("Badge must be one of: Bestseller, Premium, New, Organic, GMP Certified"),
 
   body("product.benefits")
     .optional()

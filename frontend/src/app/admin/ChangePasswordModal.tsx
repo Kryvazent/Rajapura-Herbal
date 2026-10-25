@@ -175,7 +175,7 @@ export default function ChangePasswordModal({ onSuccess }: Props) {
     try {
       setLoading(true);
       await axios.post(
-        `${API_URL}/auth/change-password`,
+        `${API_URL}/auth/admin/change-password`,
         { currentPassword, newPassword },
         { withCredentials: true }
       );

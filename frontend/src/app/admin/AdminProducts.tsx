@@ -36,7 +36,7 @@ const CATEGORIES = [
   "Tonics & Syrups",
 ];
 
-const BADGES = ["", "Bestseller", "Premium", "New", "Organic"];
+const BADGES = ["", "Bestseller", "Premium", "New", "Organic", "GMP Certified"];
 const VALID_BADGES = BADGES.filter(Boolean);
 
 const CATEGORY_TRANSLATIONS: Record<string, { si: string; ta: string }> = {
@@ -214,6 +214,9 @@ const emptyForm = (): Omit<Product, "_id"> => ({
   ingredients: [""],
   howToUse: [""],
   price: "",
+  priceLKR: "",
+  priceUSD: "",
+  stock: 0,
   image: "",
   badge: "",
   translations: { name: { en: "", si: "", ta: "" }, category: { en: CATEGORIES[0], ...CATEGORY_TRANSLATIONS[CATEGORIES[0]] }, description: { en: "", si: "", ta: "" }, benefits: { en: [""], si: [""], ta: [""] }, ingredients: { en: [""], si: [""], ta: [""] }, howToUse: { en: [""], si: [""], ta: [""] } },
@@ -646,6 +649,7 @@ export default function AdminProducts() {
 
   const openEdit = (product: Product) => {
     const { _id, ...rest } = product;
+    const categoryTranslation = CATEGORY_TRANSLATIONS[rest.category];
     const englishList = (field: "benefits" | "ingredients" | "howToUse") => {
       const translated = rest.translations?.[field]?.en;
       if (Array.isArray(translated) && translated.length > 0) {
@@ -657,6 +661,8 @@ export default function AdminProducts() {
 
     setFormData({
       ...rest,
+      priceLKR: rest.priceLKR || (rest.price?.startsWith("LKR ") ? rest.price : ""),
+      priceUSD: rest.priceUSD || "",
       benefits: englishList("benefits"),
       ingredients: englishList("ingredients"),
       howToUse: englishList("howToUse"),
@@ -700,6 +706,7 @@ export default function AdminProducts() {
       setSaveLoading(true);
 
       let productData = formData;
+      productData = { ...productData, price: productData.priceLKR || productData.price || "" };
       if (selectedImageFile) {
         setImageUploadStep(
           "Step 3: Saving detected a new selected image. Uploading it first..."
@@ -712,13 +719,26 @@ export default function AdminProducts() {
       const errors = validateProduct(productData);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
+
+        if (errors.sinhalaName) {
+          setFormLanguage("si");
+          showToast(
+            "Please complete all relevant fields in the other language tabs before saving.",
+            "error"
+          );
+        } else {
+          showToast(
+            "Please complete the highlighted required fields before saving.",
+            "error"
+          );
+        }
         return;
       }
 
       if (modalMode === "add") {
         await saveProduct({
           ...productData,
-          badge: productData.badge || undefined,
+          badge: productData.badge || null,
         } as Product);
         showToast("Product added successfully.", "success");
       } else if (editingId) {
@@ -726,7 +746,7 @@ export default function AdminProducts() {
         await editProduct({
           _id: editingId,
           ...productData,
-          badge: productData.badge || undefined,
+          badge: productData.badge || null,
         } as Product);
 
         const imageWasUpdated =
@@ -847,19 +867,30 @@ export default function AdminProducts() {
   const setTranslatedText = (field: "name" | "category" | "description", value: string) => {
     setFormData((current) => ({ ...current, ...(formLanguage === "en" ? { [field]: value } : {}), ...(field === "name" && formLanguage === "si" ? { sinhalaName: value } : {}), ...(field === "name" && formLanguage === "ta" ? { tamilName: value } : {}), translations: { ...current.translations, [field]: { ...current.translations?.[field], [formLanguage]: value } } }));
   };
+  const getCategoryLabel = (category: string) => {
+    const savedTranslation =
+      category === formData.category
+        ? formData.translations?.category?.[formLanguage]?.trim()
+        : "";
+
+    return (
+      savedTranslation ||
+      languageCopy.categories[category as keyof typeof languageCopy.categories] ||
+      category
+    );
+  };
+
   const selectedCategoryValue = (() => {
     if (formLanguage === "en") return formData.category;
 
-    const translatedCategory = formData.translations?.category?.si?.trim();
-    if (!translatedCategory) return "";
+    const translatedCategory = formData.translations?.category?.[formLanguage]?.trim();
+    if (!translatedCategory) return formData.category;
 
-    const match = CATEGORIES.find(
-      (category) =>
-        (languageCopy.categories[category as keyof typeof languageCopy.categories] ?? category) ===
-        translatedCategory
+    const match = [...new Set([...CATEGORIES, formData.category])].find(
+      (category) => getCategoryLabel(category) === translatedCategory
     );
 
-    return match ?? "";
+    return match ?? formData.category;
   })();
   const translatedList = (field: "benefits" | "ingredients" | "howToUse") => {
     if (formLanguage === "en") {
@@ -870,11 +901,11 @@ export default function AdminProducts() {
     const translated = formData.translations?.[field]?.si;
     return Array.isArray(translated) && translated.length > 0 ? translated : [""];
   };
-  const categoryOptions = CATEGORIES.map((category) => ({
+  // Keep a legacy/saved category visible while editing, even if it is no
+  // longer part of the current predefined category list.
+  const categoryOptions = [...new Set([...CATEGORIES, formData.category])].map((category) => ({
     value: category,
-    label:
-      languageCopy.categories[category as keyof typeof languageCopy.categories] ??
-      category,
+    label: getCategoryLabel(category),
   }));
   const badgeOptions = BADGES.map((badge) => ({
     value: badge,
@@ -1131,7 +1162,7 @@ export default function AdminProducts() {
                           fontSize: "0.9rem",
                         }}
                       >
-                        {getProductPriceLabel(product.price)}
+                        {getProductPriceLabel(product.priceLKR || product.price)}
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -1298,8 +1329,14 @@ export default function AdminProducts() {
                   value={translatedText("name")}
                   onChange={(v) => setTranslatedText("name", v)}
                   placeholder="e.g. Rajapura Herbal Tea"
-                  required={formLanguage === "en"}
-                  error={formLanguage === "en" ? formErrors.name : undefined}
+                  required={formLanguage === "en" || formLanguage === "si"}
+                  error={
+                    formLanguage === "en"
+                      ? formErrors.name
+                      : formLanguage === "si"
+                        ? formErrors.sinhalaName
+                        : undefined
+                  }
                 />
               </div>
 
@@ -1357,7 +1394,10 @@ export default function AdminProducts() {
                         </option>
                       ))}
 
-                    </select> : formLanguage === "si" ? <select
+                    </select> 
+                    {/* Ingredients  */}
+                    
+                    {/* <select
                       value={translatedText("category")}
                       onChange={(e) => setTranslatedText("category", e.target.value)}
                       style={{
@@ -1378,7 +1418,9 @@ export default function AdminProducts() {
                           {CATEGORY_TRANSLATIONS[category].si}
                         </option>
                       ))}
-                    </select> : <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
+                    </select>    */}
+                    
+                     {/* <input value={translatedText("category")} onChange={(e) => setTranslatedText("category", e.target.value)} placeholder="Translated category" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(45,80,22,0.2)", background: "#FAF6EE", boxSizing: "border-box" }} />
                     <ChevronDown
                       size={14}
                       style={{
@@ -1389,7 +1431,7 @@ export default function AdminProducts() {
                         color: "#8B5E3C",
                         pointerEvents: "none",
                       }}
-                    />
+                    /> */}
                   </div>
                   <FieldError message={formErrors.category} />
                 </div>
@@ -1446,17 +1488,37 @@ export default function AdminProducts() {
 
 
               <InputField
-                label="Price (LKR)"
-                value={priceValue}
+                label="Sri Lanka price (LKR)"
+                value={formData.priceLKR || ""}
                 onChange={(v) => {
                   const numeric = v.replace(/[^0-9]/g, "");
                   const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                  set("price", numeric ? `LKR ${formatted}` : "");
+                  set("priceLKR", numeric ? `LKR ${formatted}` : "");
                 }}
                 placeholder="e.g. LKR 850"
-                error={formErrors.price}
+                error={formErrors.priceLKR}
               />
 
+              <InputField
+                label="International price (USD)"
+                value={formData.priceUSD || ""}
+                onChange={(v) => {
+                  const numeric = v.replace(/[^0-9.]/g, "");
+                  const [whole, ...fraction] = numeric.split(".");
+                  const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                  set("priceUSD", numeric ? `USD ${formattedWhole}${fraction.length ? `.${fraction.join("").slice(0, 2)}` : ""}` : "");
+                }}
+                placeholder="e.g. USD 12.50"
+                error={formErrors.priceUSD}
+              />
+
+              <InputField
+                label="Available stock"
+                type="number"
+                value={String(formData.stock ?? 0)}
+                onChange={(v) => set("stock", Math.max(0, Number(v) || 0))}
+                placeholder="0"
+              />
 
               <div>
                 <label

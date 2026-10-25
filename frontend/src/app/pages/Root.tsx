@@ -1,9 +1,10 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import SEO from "../components/SEO";
 
 export default function Root() {
+  const { pathname } = useLocation();
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#FAF6EE" }}>
       <SEO />
@@ -11,7 +12,7 @@ export default function Root() {
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>
-      <Footer />
+      {pathname !== "/profile" && <Footer />}
     </div>
   );
 }

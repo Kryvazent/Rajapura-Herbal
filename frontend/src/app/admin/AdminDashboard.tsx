@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                       flexShrink: 0,
                     }}
                   >
-                    {getProductPriceLabel(p.price)}
+                    {getProductPriceLabel(p.priceLKR || p.price)}
                   </span>
                 </div>
               ))
