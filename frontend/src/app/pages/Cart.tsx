@@ -653,10 +653,11 @@ export default function Cart() {
                   <Receipt size={20} aria-hidden="true" />
                   <strong style={{ display: "block", fontSize: ".85rem" }}>{si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}</strong>
                 </button>
-                <button type="button" aria-pressed={checkoutPaymentMethod === "Online payment"} disabled={!canPayOnline} onClick={() => { setPaymentMethod("Online payment"); setPaymentSlipOpen(false); setCheckoutError(""); }} className={`checkout-method${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}>
-                  <CreditCard size={20} aria-hidden="true" />
+                <div role="note" aria-label={si ? "මාර්ගගත ගෙවීම ළඟදීම ලබාගත හැක" : "Online payment coming soon"} className="checkout-method" style={{ display: "grid", gridTemplateColumns: "24px 1fr", gridTemplateRows: "auto auto", alignContent: "center", columnGap: 9, rowGap: 4, color: "#7B806E", background: "#F3F2EA", border: "1px dashed rgba(45,80,22,.2)", cursor: "default", boxShadow: "none" }}>
+                  <CreditCard size={20} aria-hidden="true" style={{ gridRow: "1 / span 2", alignSelf: "center" }} />
                   <strong style={{ display: "block", fontSize: ".85rem" }}>{si ? "මාර්ගගත ගෙවීම" : "Online payment"}</strong>
-                </button>
+                  <small style={{ color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700 }}>{si ? "ළඟදීම ලබාගත හැක" : "Available soon"}</small>
+                </div>
               </div>
               {checkoutPaymentMethod === "Payment slip" && !paymentSlipOpen && paymentSlip && paymentSlipPreviewUrl && <div aria-label={`${si ? "රිසිට්පතේ පෙරදසුන" : "Preview of"} ${paymentSlip.name}`} style={{ display: "grid", gap: 8, minWidth: 0, maxWidth: "100%", boxSizing: "border-box", overflow: "hidden", marginTop: 13, padding: 10, border: "1px solid rgba(45,80,22,.14)", borderRadius: 13, background: "rgba(255,254,250,.8)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}><strong title={paymentSlip.name} style={{ flex: 1, minWidth: 0, overflow: "hidden", color: "#405235", fontSize: ".76rem", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{paymentSlip.name}</strong><button type="button" onClick={() => setPaymentSlipOpen(true)} style={{ flexShrink: 0, padding: "5px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 8, color: "#31551F", background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>{si ? "වෙනස් කරන්න" : "Change"}</button></div>
