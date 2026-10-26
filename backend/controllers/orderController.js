@@ -60,9 +60,14 @@ export const createCustomerOrder = async (req, res) => {
       return res.status(422).json({ success: false, message: "One or more selected items are no longer in your cart" });
     }
 
+    const isSriLankaOrder = /^(LK|Sri Lanka)$/i.test(country.trim());
+    const currency = isSriLankaOrder ? "LKR" : "USD";
     const products = selectedCartItems.map(({ product, qty }) => {
-      const rawPrice = product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "");
-      const price = Number(String(rawPrice).replace(/USD\s*/i, "").replace(/,/g, "").trim());
+      const legacyPriceMatchesCurrency = new RegExp(`^${currency}\\s`, "i").test(product.price || "");
+      const rawPrice = isSriLankaOrder
+        ? product.priceLKR || (legacyPriceMatchesCurrency ? product.price : "")
+        : product.priceUSD || (legacyPriceMatchesCurrency ? product.price : "");
+      const price = Number(String(rawPrice).replace(/^(USD|LKR)\s*/i, "").replace(/,/g, "").trim());
       return { product: product._id, name: product.name, qty, price: Number.isFinite(price) ? price : 0 };
     });
     const customerUpdate = await Customer.updateOne(
@@ -86,6 +91,7 @@ export const createCustomerOrder = async (req, res) => {
       additionalNote: additionalNote.trim(),
       products,
       paymentMethod,
+      currency,
       paymentSlipUrl: paymentSlipUrl.trim(),
       paymentSlipFileName: paymentSlipFileName.trim(),
     });

@@ -5,7 +5,7 @@ import axios from "axios";
 
 const api = import.meta.env.VITE_BACKEND_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
-type Order = { _id: string; createdAt: string; country: string; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number }[] };
+type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number }[] };
 type PageId = "profile" | "orders" | "payments";
 
 const cardStyle: CSSProperties = { padding: 24, borderRadius: 16, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.1)", boxShadow: "0 5px 20px rgba(31,48,17,.045)" };
@@ -45,6 +45,8 @@ export default function Profile() {
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const date = (value: string) => new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  const orderCurrency = (order: Order): "USD" | "LKR" => order.currency ?? (/^(LK|Sri Lanka)$/i.test(order.country) ? "LKR" : "USD");
+  const formatOrderAmount = (amount: number, order: Order) => new Intl.NumberFormat("en-US", { style: "currency", currency: orderCurrency(order), currencyDisplay: "code" }).format(amount);
   const pages: { id: PageId; label: string; icon: ReactNode }[] = [
     { id: "profile", label: "Profile details", icon: <CircleUserRound size={17} /> },
     { id: "orders", label: "Orders", icon: <ClipboardList size={17} /> },
@@ -93,7 +95,7 @@ export default function Profile() {
                 </span>
               </summary>
               <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(45,80,22,.12)" }}>
-                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{item.name} <span style={{ color: "#71695E" }}>x {item.qty} · {item.price.toFixed(2)} each</span></span><strong>{(item.price * item.qty).toFixed(2)}</strong></div>)}</div>
+                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{item.name} <span style={{ color: "#71695E" }}>x {item.qty} · {formatOrderAmount(item.price, order)} each</span></span><strong>{formatOrderAmount(item.price * item.qty, order)}</strong></div>)}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
                   <div><MetaLabel>Order status</MetaLabel><Status value={order.orderStatus} /></div><div><MetaLabel>Delivery country</MetaLabel><span>{order.country}</span></div><div><MetaLabel>Contact number</MetaLabel><span>{order.customer.contactNumber}</span></div>
                   <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Delivery address</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
@@ -110,7 +112,7 @@ export default function Profile() {
           {orders.length === 0 ? <EmptyMessage text="Payment details will appear here with your orders." /> : <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: ".88rem" }}>
               <thead><tr>{["Order", "Date", "Amount", "Payment method", "Payment status"].map(item => <th key={item} style={tableHeadStyle}>{item}</th>)}</tr></thead>
-              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{order.products.reduce((total, item) => total + item.price * item.qty, 0).toFixed(2)}</td><td style={tableCellStyle}>{order.paymentMethod || "Not selected"}</td><td style={tableCellStyle}><Status value={order.paymentStatus} /></td></tr>)}</tbody>
+              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderAmount(order.products.reduce((total, item) => total + item.price * item.qty, 0), order)}</td><td style={tableCellStyle}>{order.paymentMethod || "Not selected"}</td><td style={tableCellStyle}><Status value={order.paymentStatus} /></td></tr>)}</tbody>
             </table>
           </div>}
         </section>}

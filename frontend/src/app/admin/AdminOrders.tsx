@@ -5,6 +5,7 @@ import { CalendarDays, ChevronDown, ClipboardList, CreditCard, MapPin, Package, 
 type Order = {
   _id: string;
   country: string;
+  currency?: "USD" | "LKR";
   customer: { name: string; email: string; contactNumber: string } | null;
   address: string;
   additionalNote?: string;
@@ -26,6 +27,8 @@ const formatDate = (value: string) =>
 
 const orderTotal = (order: Order) =>
   order.products.reduce((total, product) => total + product.price * product.qty, 0);
+const orderCurrency = (order: Order): "USD" | "LKR" => order.currency ?? (/^(LK|Sri Lanka)$/i.test(order.country) ? "LKR" : "USD");
+const formatOrderAmount = (amount: number, order: Order) => new Intl.NumberFormat("en-US", { style: "currency", currency: orderCurrency(order), currencyDisplay: "code" }).format(amount);
 
 const fieldStyle = {
   padding: "10px 12px",
@@ -194,7 +197,7 @@ export default function AdminOrders() {
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
                 <span style={{ padding: "5px 9px", borderRadius: 999, color: order.orderStatus === "Delivered" ? "#2E6B42" : order.orderStatus === "Cancelled" || order.orderStatus === "Returned" ? "#8B2E25" : "#76572A", background: order.orderStatus === "Delivered" ? "#E6F1E5" : order.orderStatus === "Cancelled" || order.orderStatus === "Returned" ? "#FBEDEA" : "#F6EFDF", fontSize: ".72rem", fontWeight: 800 }}>{order.orderStatus}</span>
-                <strong style={{ color: "#31551F", fontSize: ".92rem" }}>{total.toFixed(2)}</strong>
+                <strong style={{ color: "#31551F", fontSize: ".92rem" }}>{formatOrderAmount(total, order)}</strong>
                 <ChevronDown size={17} aria-hidden="true" style={{ color: "#75806D" }} />
               </span>
             </summary>
@@ -222,8 +225,8 @@ export default function AdminOrders() {
                 <h3 style={{ margin: "0 0 11px", color: "#31551F", fontSize: ".87rem" }}>Items ordered</h3>
                 <div style={{ display: "grid", gap: 9 }}>
                   {order.products.map((product, index) => <div key={`${product.name}-${index}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "#526746", fontSize: ".84rem" }}>
-                    <span>{product.name} <span style={{ color: "#75806D" }}>× {product.qty} · {product.price.toFixed(2)} each</span></span>
-                    <strong style={{ flexShrink: 0, color: "#31551F" }}>{(product.price * product.qty).toFixed(2)}</strong>
+                    <span>{product.name} <span style={{ color: "#75806D" }}>× {product.qty} · {formatOrderAmount(product.price, order)} each</span></span>
+                    <strong style={{ flexShrink: 0, color: "#31551F" }}>{formatOrderAmount(product.price * product.qty, order)}</strong>
                   </div>)}
                 </div>
                 {order.additionalNote && <p style={{ margin: "12px 0 0", paddingTop: 10, borderTop: "1px solid rgba(45,80,22,.1)", color: "#68775B", fontSize: ".82rem", lineHeight: 1.5 }}><strong>Customer note:</strong> {order.additionalNote}</p>}

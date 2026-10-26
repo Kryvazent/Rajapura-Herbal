@@ -11,6 +11,7 @@ const orderSchema = new mongoose.Schema({
   orderStatus: { type: String, enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"], default: "Pending" },
   paymentStatus: { type: String, enum: ["Unpaid", "Paid", "Refunded", "Processing"], default: "Processing" },
   paymentMethod: { type: String, default: "Not selected" },
+  currency: { type: String, enum: ["USD", "LKR"], default: "USD" },
 }, { timestamps: true });
 
 export default mongoose.model("Order", orderSchema);
