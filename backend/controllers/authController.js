@@ -121,6 +121,17 @@ export const registerCustomer = async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
+    // Older customer migrations left a unique index on the removed `user` field.
+    // MongoDB treats missing values as duplicates under that index, so it can
+    // reject every new customer and incorrectly look like an email conflict.
+    const customerIndexes = await Customer.collection.indexes().catch((indexError) => {
+      if (indexError.code === 26 || indexError.codeName === "NamespaceNotFound") return [];
+      throw indexError;
+    });
+    if (customerIndexes.some((index) => index.name === "user_1")) {
+      await Customer.collection.dropIndex("user_1");
+    }
+
     const customer = await Customer.create({
       name: name.trim(),
       email: normalizedEmail,
@@ -150,7 +161,9 @@ export const registerCustomer = async (req, res) => {
       });
     });
   } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    if (error.code === 11000 && (error.keyPattern?.email || error.keyValue?.email || /email_1/.test(error.message ?? ""))) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
     if (error.name === "ValidationError") {
       return res.status(422).json({ success: false, message: Object.values(error.errors).map((item) => item.message).join(". ") });
     }
