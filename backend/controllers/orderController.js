@@ -26,6 +26,8 @@ export const getCheckoutDetails = async (req, res) => {
 export const createCustomerOrder = async (req, res) => {
   if (req.session?.role !== "USER") return res.status(403).json({ success: false, message: "Customer account required" });
   const { orderId, paymentSlipFileName = "", address, country, contactNumber, additionalNote = "", paymentMethod, paymentSlipUrl = "", productIds } = req.body ?? {};
+  const requestedCurrency = req.body?.currency;
+  if (requestedCurrency !== undefined && !["USD", "LKR"].includes(requestedCurrency)) return res.status(422).json({ success: false, message: "Choose a valid order currency" });
   if (![address, country, contactNumber].every((value) => typeof value === "string" && value.trim())) {
     return res.status(422).json({ success: false, message: "Address, country, and contact number are required" });
   }
@@ -60,11 +62,13 @@ export const createCustomerOrder = async (req, res) => {
       return res.status(422).json({ success: false, message: "One or more selected items are no longer in your cart" });
     }
 
+    // Currency follows the customer's shopping market, not the delivery destination.
+    // Older clients may omit it, so retain the previous country-based fallback.
     const isSriLankaOrder = /^(LK|Sri Lanka)$/i.test(country.trim());
-    const currency = isSriLankaOrder ? "LKR" : "USD";
+    const currency = requestedCurrency ?? (isSriLankaOrder ? "LKR" : "USD");
     const products = selectedCartItems.map(({ product, qty }) => {
       const legacyPriceMatchesCurrency = new RegExp(`^${currency}\\s`, "i").test(product.price || "");
-      const rawPrice = isSriLankaOrder
+      const rawPrice = currency === "LKR"
         ? product.priceLKR || (legacyPriceMatchesCurrency ? product.price : "")
         : product.priceUSD || (legacyPriceMatchesCurrency ? product.price : "");
       const price = Number(String(rawPrice).replace(/^(USD|LKR)\s*/i, "").replace(/,/g, "").trim());
@@ -143,7 +147,7 @@ export const listCustomerOrders = async (req, res) => {
     const orders = await Order.find({ customer: req.session.userId })
       .sort({ createdAt: -1 })
       .populate("customer", "name contactNumber")
-      .populate("products.product", "name sinhalaName translations.name");
+      .populate("products.product", "name sinhalaName translations.name price priceLKR priceUSD");
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("listCustomerOrders error:", error);

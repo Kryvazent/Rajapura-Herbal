@@ -261,6 +261,7 @@ export default function Cart() {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
         paymentMethod: checkoutPaymentMethod,
+        currency: country === "LK" ? "LKR" : "USD",
         paymentSlipUrl: checkoutPaymentMethod === "Payment slip" ? paymentSlipUrl : "",
         productIds: selectedProductIds,
       }, { withCredentials: true });

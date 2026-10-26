@@ -6,7 +6,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 
 const api = import.meta.env.VITE_BACKEND_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
-type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number; product?: { name?: string; sinhalaName?: string; translations?: { name?: { en?: string; si?: string } } } | null }[] };
+type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number; product?: { name?: string; sinhalaName?: string; price?: string; priceUSD?: string; priceLKR?: string; translations?: { name?: { en?: string; si?: string } } } | null }[] };
 type PageId = "profile" | "orders" | "payments";
 
 const cardStyle: CSSProperties = { padding: 24, borderRadius: 16, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.1)", boxShadow: "0 5px 20px rgba(31,48,17,.045)" };
@@ -60,8 +60,37 @@ export default function Profile() {
     return si ? translations[value] ?? value : value;
   };
   const displayCountry = (country: string) => si && /^(LK|Sri Lanka)$/i.test(country) ? "ශ්‍රී ලංකාව" : country;
-  const orderCurrency = (order: Order): "USD" | "LKR" => order.currency ?? (/^(LK|Sri Lanka)$/i.test(order.country) ? "LKR" : "USD");
+  const parseStoredPrice = (value?: string) => {
+    if (!value?.trim()) return null;
+    const amount = Number(value.replace(/^(USD|LKR)\s*/i, "").replace(/,/g, "").trim());
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+  };
+  const orderCurrency = (order: Order): "USD" | "LKR" => {
+    const recoverableLegacyUSDOrder = order.products.length > 0 && order.products.every((item) => item.price <= 0 && !parseStoredPrice(item.product?.priceLKR) && parseStoredPrice(item.product?.priceUSD));
+    if (recoverableLegacyUSDOrder) return "USD";
+    if (order.currency) return order.currency;
+    return /^(LK|Sri Lanka)$/i.test(order.country) ? "LKR" : "USD";
+  };
   const formatOrderAmount = (amount: number, order: Order) => new Intl.NumberFormat("en-US", { style: "currency", currency: orderCurrency(order), currencyDisplay: "code" }).format(amount);
+  const contactPriceLabel = si ? "මිල සඳහා විමසන්න" : "Contact for price";
+  const orderProductPrice = (item: Order["products"][number], order: Order) => {
+    if (item.price > 0) return { amount: item.price, currency: orderCurrency(order) };
+    const currency = orderCurrency(order);
+    const productPrice = currency === "LKR" ? item.product?.priceLKR : item.product?.priceUSD;
+    const legacyPrice = item.product?.price?.startsWith(`${currency} `) ? item.product.price : undefined;
+    const amount = parseStoredPrice(productPrice || legacyPrice);
+    return amount === null ? null : { amount, currency };
+  };
+  const formatOrderProductPrice = (item: Order["products"][number], order: Order, quantity = 1) => {
+    const price = orderProductPrice(item, order);
+    return price ? formatOrderAmount(price.amount * quantity, { ...order, currency: price.currency }) : contactPriceLabel;
+  };
+  const formatOrderTotal = (order: Order) => {
+    const prices = order.products.map((item) => orderProductPrice(item, order));
+    return prices.some((price) => price === null)
+      ? contactPriceLabel
+      : formatOrderAmount(order.products.reduce((total, item, index) => total + (prices[index]?.amount ?? 0) * item.qty, 0), order);
+  };
   const pages: { id: PageId; label: string; icon: ReactNode }[] = [
     { id: "profile", label: si ? "පැතිකඩ විස්තර" : "Profile details", icon: <CircleUserRound size={17} /> },
     { id: "orders", label: si ? "ඇණවුම්" : "Orders", icon: <ClipboardList size={17} /> },
@@ -110,7 +139,7 @@ export default function Profile() {
                 </span>
               </summary>
               <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(45,80,22,.12)" }}>
-                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{productName(item)} <span style={{ color: "#71695E" }}>× {item.qty} · {formatOrderAmount(item.price, order)} {si ? " බැගින්" : "each"}</span></span><strong>{formatOrderAmount(item.price * item.qty, order)}</strong></div>)}</div>
+                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{productName(item)} <span style={{ color: "#71695E" }}>× {item.qty} · {formatOrderProductPrice(item, order)}{(item.price > 0 || orderProductPrice(item, order)) && (si ? " බැගින්" : " each")}</span></span><strong>{formatOrderProductPrice(item, order, item.qty)}</strong></div>)}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
                   <div><MetaLabel>{si ? "ඇණවුම් තත්ත්වය" : "Order status"}</MetaLabel><Status value={translateStatus(order.orderStatus)} /></div><div><MetaLabel>{si ? "බෙදාහැරීමේ රට" : "Delivery country"}</MetaLabel><span>{displayCountry(order.country)}</span></div><div><MetaLabel>{si ? "දුරකථන අංකය" : "Contact number"}</MetaLabel><span>{order.customer.contactNumber}</span></div>
                   <div style={{ gridColumn: "1 / -1" }}><MetaLabel>{si ? "බෙදාහැරීමේ ලිපිනය" : "Delivery address"}</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
@@ -127,7 +156,7 @@ export default function Profile() {
           {orders.length === 0 ? <EmptyMessage text={si ? "ඔබගේ ඇණවුම් සමඟ ගෙවීම් තොරතුරු මෙහි පෙන්වනු ඇත." : "Payment details will appear here with your orders."} /> : <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: ".88rem" }}>
               <thead><tr>{(si ? ["ඇණවුම", "දිනය", "මුදල", "ගෙවීමේ ක්‍රමය", "ගෙවීමේ තත්ත්වය"] : ["Order", "Date", "Amount", "Payment method", "Payment status"]).map(item => <th key={item} style={tableHeadStyle}>{item}</th>)}</tr></thead>
-              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderAmount(order.products.reduce((total, item) => total + item.price * item.qty, 0), order)}</td><td style={tableCellStyle}>{translatePaymentMethod(order.paymentMethod || "Not selected")}</td><td style={tableCellStyle}><Status value={translateStatus(order.paymentStatus)} /></td></tr>)}</tbody>
+              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderTotal(order)}</td><td style={tableCellStyle}>{translatePaymentMethod(order.paymentMethod || "Not selected")}</td><td style={tableCellStyle}><Status value={translateStatus(order.paymentStatus)} /></td></tr>)}</tbody>
             </table>
           </div>}
         </section>}
