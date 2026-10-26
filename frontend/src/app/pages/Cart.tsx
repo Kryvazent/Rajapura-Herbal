@@ -32,6 +32,7 @@ export default function Cart() {
   const [paymentMethod, setPaymentMethod] = useState<"Payment slip" | "Online payment">("Payment slip");
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   const [paymentSlipPreviewUrl, setPaymentSlipPreviewUrl] = useState("");
+  const [pendingPaymentOrderId, setPendingPaymentOrderId] = useState<string | null>(null);
   const [checkoutDetails, setCheckoutDetails] = useState({ address: "", country: "", contactNumber: "", additionalNote: "" });
   const [countries, setCountries] = useState<string[]>([]);
   const [countryQuery, setCountryQuery] = useState("");
@@ -191,21 +192,37 @@ export default function Cart() {
     setCheckoutError("");
     try {
       let paymentSlipUrl = "";
+      let orderId: string | undefined;
+      let paymentSlipFileName = "";
+      const selectedProductIds = selectedItems.map((item) => String(item.product._id));
       if (checkoutPaymentMethod === "Payment slip") {
         if (!paymentSlip) throw new Error("Choose a payment slip image or PDF to upload.");
         if (paymentSlip.size > 4 * 1024 * 1024) throw new Error("The payment slip must be 4 MB or smaller.");
         if (!paymentSlip.type.startsWith("image/") && paymentSlip.type !== "application/pdf") throw new Error("Upload the payment slip as an image or PDF.");
-        const uploaded = await startUpload([paymentSlip]);
+        orderId = pendingPaymentOrderId ?? (await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders/prepare`, {
+          address: checkoutDetails.address,
+          country: checkoutDetails.country,
+          contactNumber: checkoutDetails.contactNumber,
+          productIds: selectedProductIds,
+        }, { withCredentials: true })).data.data.orderId;
+        setPendingPaymentOrderId(orderId);
+        const originalExtension = paymentSlip.name.match(/\.[a-z0-9]{1,8}$/i)?.[0];
+        const mimeExtension = paymentSlip.type === "application/pdf" ? ".pdf" : paymentSlip.type === "image/jpeg" ? ".jpg" : paymentSlip.type === "image/png" ? ".png" : paymentSlip.type === "image/webp" ? ".webp" : paymentSlip.type === "image/gif" ? ".gif" : ".img";
+        paymentSlipFileName = `${orderId}${paymentSlip.type === "application/pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
+        const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: paymentSlip.type, lastModified: paymentSlip.lastModified });
+        const uploaded = await startUpload([renamedPaymentSlip]);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
         if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
       }
-      const selectedProductIds = selectedItems.map((item) => String(item.product._id));
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders`, {
         ...checkoutDetails,
+        ...(orderId && { orderId, paymentSlipFileName }),
         paymentMethod: checkoutPaymentMethod,
         paymentSlipUrl: checkoutPaymentMethod === "Payment slip" ? paymentSlipUrl : "",
         productIds: selectedProductIds,
       }, { withCredentials: true });
+      setPendingPaymentOrderId(null);
+      setPaymentSlip(null);
       setItems((current) => current.filter((item) => !selectedProductIds.includes(String(item.product._id))));
       setSelectedIds([]);
       window.dispatchEvent(new Event("rajapura:cart-updated"));

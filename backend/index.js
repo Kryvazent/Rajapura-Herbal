@@ -10,7 +10,7 @@ import helmet from 'helmet';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js'
-import { uploadThingRouter } from './routes/uploadthing.js';
+import { uploadThingRouter, customerUploadThingRouter } from './routes/uploadthing.js';
 import * as roleMiddleware from './middleware/roleMiddleware.js';
 
 import dns from "node:dns";
@@ -239,7 +239,7 @@ app.use("/auth/customer", customerSession);
 // UploadThing's Express adapter reads the request body itself. Mount it before
 // the JSON/urlencoded parsers, but after sessions so upload auth still works.
 app.use("/admin/uploadthing", uploadThingRouter);
-app.use("/user/uploadthing", uploadThingRouter);
+app.use("/user/uploadthing", customerUploadThingRouter);
 
 app.use(express.json({ limit: bodyLimit }));
 app.use(express.urlencoded({ limit: bodyLimit, extended: true }));

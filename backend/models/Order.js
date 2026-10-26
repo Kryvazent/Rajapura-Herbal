@@ -7,8 +7,9 @@ const orderSchema = new mongoose.Schema({
   address: { type: String, required: true, trim: true },
   additionalNote: { type: String, trim: true, maxlength: 1000, default: "" },
   paymentSlipUrl: { type: String, trim: true, default: "" },
+  paymentSlipFileName: { type: String, trim: true, default: "" },
   orderStatus: { type: String, enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"], default: "Pending" },
-  paymentStatus: { type: String, enum: ["Unpaid", "Paid", "Refunded", "Processing"], default: "Unpaid" },
+  paymentStatus: { type: String, enum: ["Unpaid", "Paid", "Refunded", "Processing"], default: "Processing" },
   paymentMethod: { type: String, default: "Not selected" },
 }, { timestamps: true });
 

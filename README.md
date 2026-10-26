@@ -85,6 +85,7 @@ MONGO_URL=<your-mongodb-connection-string>
 SESSION_SECRET=<generate-a-long-random-session-secret>
 NODE_ENV=production
 UPLOADTHING_TOKEN=<your-uploadthing-token>
+UPLOADTHING_PAYMENT_TOKEN=<your-payment-uploadthing-token>
 BODY_LIMIT=1mb
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=300
@@ -205,6 +206,7 @@ Required production environment variables:
 - `SESSION_SECRET`
 - `NODE_ENV=production`
 - `UPLOADTHING_TOKEN`
+- `UPLOADTHING_PAYMENT_TOKEN`
 
 After changing environment variables, redeploy or restart the backend service.
 
