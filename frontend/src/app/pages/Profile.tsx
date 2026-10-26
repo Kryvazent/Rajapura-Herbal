@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
-import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays } from "lucide-react";
+import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays, ChevronDown } from "lucide-react";
 import axios from "axios";
 
 const api = import.meta.env.VITE_BACKEND_URL;
@@ -86,16 +86,22 @@ export default function Profile() {
         {activePage === "orders" && <section style={cardStyle}>
           <SectionHeading icon={<Package size={18} />} title="Order details" subtitle="Products, delivery information, and order progress" />
           {orders.length === 0 ? <EmptyMessage text="Your orders will appear here when you place one." /> : <div style={{ display: "grid", gap: 15 }}>
-            {orders.map(order => <article key={order._id} style={{ padding: 18, borderRadius: 13, background: "#FAF8F2", border: "1px solid rgba(45,80,22,.09)" }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10, paddingBottom: 13, borderBottom: "1px solid rgba(45,80,22,.12)" }}><strong>Order #{order._id.slice(-7).toUpperCase()}</strong><span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#71695E", fontSize: ".84rem" }}><CalendarDays size={14} /> {date(order.createdAt)}</span></div>
-              <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{item.name} <span style={{ color: "#71695E" }}>x {item.qty} · {item.price.toFixed(2)} each</span></span><strong>{(item.price * item.qty).toFixed(2)}</strong></div>)}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
-                <div><MetaLabel>Order status</MetaLabel><Status value={order.orderStatus} /></div><div><MetaLabel>Delivery country</MetaLabel><span>{order.country}</span></div><div><MetaLabel>Contact number</MetaLabel><span>{order.customer.contactNumber}</span></div>
-                <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Delivery address</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
-                {order.additionalNote && <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Additional note</MetaLabel><span>{order.additionalNote}</span></div>}
-                {order.paymentSlipUrl && <div><MetaLabel>Payment slip</MetaLabel><a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>View uploaded slip</a></div>}
+            {orders.map(order => <details key={order._id} style={{ overflow: "hidden", borderRadius: 13, background: "#FAF8F2", border: "1px solid rgba(45,80,22,.12)" }}>
+              <summary style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "18px", color: "#244516", cursor: "pointer", listStyle: "none" }}>
+                <strong>Order #{order._id.slice(-7).toUpperCase()}</strong>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#71695E", fontSize: ".84rem" }}><CalendarDays size={14} /> {date(order.createdAt)}<ChevronDown size={16} aria-hidden="true" />
+                </span>
+              </summary>
+              <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(45,80,22,.12)" }}>
+                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{item.name} <span style={{ color: "#71695E" }}>x {item.qty} · {item.price.toFixed(2)} each</span></span><strong>{(item.price * item.qty).toFixed(2)}</strong></div>)}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
+                  <div><MetaLabel>Order status</MetaLabel><Status value={order.orderStatus} /></div><div><MetaLabel>Delivery country</MetaLabel><span>{order.country}</span></div><div><MetaLabel>Contact number</MetaLabel><span>{order.customer.contactNumber}</span></div>
+                  <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Delivery address</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
+                  {order.additionalNote && <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Additional note</MetaLabel><span>{order.additionalNote}</span></div>}
+                  {order.paymentSlipUrl && <div><MetaLabel>Payment slip</MetaLabel><a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>View uploaded slip</a></div>}
+                </div>
               </div>
-            </article>)}
+            </details>)}
           </div>}
         </section>}
 
