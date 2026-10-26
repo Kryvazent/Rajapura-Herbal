@@ -272,7 +272,7 @@ const requireDatabase = async (req, res, next) => {
         console.error("Database connection error:", error);
         res.status(503).json({
             success: false,
-            message: "Database connection is not available",
+            message: "The order service is temporarily unavailable because it could not connect to its database. Your order was not placed. Please try again in a few minutes.",
         });
     }
 };

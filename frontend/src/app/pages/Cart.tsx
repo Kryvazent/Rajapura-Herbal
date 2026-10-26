@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { Product } from "../interfaces/productInterface";
 import { ShoppingBag, ArrowRight, X, Upload, CreditCard, Receipt, CheckCircle2, ChevronDown } from "lucide-react";
 import axios from "axios";
@@ -15,8 +15,23 @@ const itemUnitPrice = (product: Product): number | null => {
 };
 const formatDollarAmount = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+const getOrderErrorMessage = (error: any) => {
+  const message = error.response?.data?.message ?? error.message ?? "";
+  const details = `${message} ${error.code ?? ""} ${error.cause?.code ?? ""}`;
+  if (/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|MongoNetwork|server selection|database connection is not available/i.test(details)) {
+    return "We couldn't connect to the order service, so your order was not placed. Your cart is unchanged. Please try again in a few minutes.";
+  }
+  if (error.request && !error.response) {
+    return "We couldn't reach the order service. Check your internet connection and try again. Your cart is unchanged.";
+  }
+  if (!message || /network error/i.test(message)) {
+    return "Something went wrong while placing your order. Your cart is unchanged; please try again.";
+  }
+  return message;
+};
 
 export default function Cart() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<Item[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [signedIn, setSignedIn] = useState(false);
@@ -29,6 +44,8 @@ export default function Cart() {
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
+  const [orderProgress, setOrderProgress] = useState("");
+  const [orderResult, setOrderResult] = useState<{ success: boolean; message: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"Payment slip" | "Online payment">("Payment slip");
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   const [paymentSlipPreviewUrl, setPaymentSlipPreviewUrl] = useState("");
@@ -190,6 +207,7 @@ export default function Cart() {
     }
     setCheckoutSubmitting(true);
     setCheckoutError("");
+    setOrderProgress(checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…");
     try {
       let paymentSlipUrl = "";
       let orderId: string | undefined;
@@ -199,21 +217,28 @@ export default function Cart() {
         if (!paymentSlip) throw new Error("Choose a payment slip image or PDF to upload.");
         if (paymentSlip.size > 4 * 1024 * 1024) throw new Error("The payment slip must be 4 MB or smaller.");
         if (!paymentSlip.type.startsWith("image/") && paymentSlip.type !== "application/pdf") throw new Error("Upload the payment slip as an image or PDF.");
-        orderId = pendingPaymentOrderId ?? (await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders/prepare`, {
-          address: checkoutDetails.address,
-          country: checkoutDetails.country,
-          contactNumber: checkoutDetails.contactNumber,
-          productIds: selectedProductIds,
-        }, { withCredentials: true })).data.data.orderId;
+        if (!pendingPaymentOrderId) {
+          const preparation = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders/prepare`, {
+            address: checkoutDetails.address,
+            country: checkoutDetails.country,
+            contactNumber: checkoutDetails.contactNumber,
+            productIds: selectedProductIds,
+          }, { withCredentials: true });
+          orderId = preparation.data.data.orderId;
+        } else {
+          orderId = pendingPaymentOrderId;
+        }
         setPendingPaymentOrderId(orderId);
         const originalExtension = paymentSlip.name.match(/\.[a-z0-9]{1,8}$/i)?.[0];
         const mimeExtension = paymentSlip.type === "application/pdf" ? ".pdf" : paymentSlip.type === "image/jpeg" ? ".jpg" : paymentSlip.type === "image/png" ? ".png" : paymentSlip.type === "image/webp" ? ".webp" : paymentSlip.type === "image/gif" ? ".gif" : ".img";
         paymentSlipFileName = `${orderId}${paymentSlip.type === "application/pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
         const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: paymentSlip.type, lastModified: paymentSlip.lastModified });
+        setOrderProgress("Uploading your payment slip…");
         const uploaded = await startUpload([renamedPaymentSlip]);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
         if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
       }
+      setOrderProgress("Submitting your order…");
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders`, {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
@@ -223,15 +248,23 @@ export default function Cart() {
       }, { withCredentials: true });
       setPendingPaymentOrderId(null);
       setPaymentSlip(null);
-      setItems((current) => current.filter((item) => !selectedProductIds.includes(String(item.product._id))));
       setSelectedIds([]);
       window.dispatchEvent(new Event("rajapura:cart-updated"));
-      setCheckoutMessage(`${response.data.message ?? "Order placed successfully."}${checkoutPaymentMethod === "Online payment" ? " We’ll contact you with payment instructions." : ""}`);
+      setCheckoutOpen(false);
+      setOrderResult({
+        success: true,
+        message: `${response.data.message ?? "Order placed successfully."}${checkoutPaymentMethod === "Online payment" ? " We’ll contact you with payment instructions." : " Your payment slip has been submitted."}`,
+      });
       setCartError("");
     } catch (error: any) {
-      setCheckoutError(error.response?.data?.message ?? error.message ?? "Unable to place your order.");
+      setCheckoutOpen(false);
+      setOrderResult({
+        success: false,
+        message: getOrderErrorMessage(error),
+      });
     } finally {
       setCheckoutSubmitting(false);
+      setOrderProgress("");
     }
   };
   useEffect(() => {
@@ -486,6 +519,18 @@ export default function Cart() {
         <button type="button" onClick={() => void openCheckout()} disabled={selectedItems.length === 0} style={{ width: "100%", padding: "12px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: selectedItems.length === 0 ? "#87947A" : "#2D5016", fontWeight: 700, cursor: selectedItems.length === 0 ? "not-allowed" : "pointer" }}>Continue to payment ({selectedItems.length})</button>
       </aside>
       </div>
+      {orderResult && <div role="presentation" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.68)" }}>
+        <section role="alertdialog" aria-modal="true" aria-labelledby="order-result-title" aria-describedby="order-result-message" style={{ width: "min(100%, 440px)", boxSizing: "border-box", padding: "clamp(26px,5vw,38px)", border: "1px solid rgba(45,80,22,.18)", borderRadius: 22, background: "#FBF8F0", color: "#244516", textAlign: "center", boxShadow: "0 28px 80px rgba(0,0,0,.3)" }}>
+          <span aria-hidden="true" style={{ width: 58, height: 58, margin: "0 auto 16px", display: "grid", placeItems: "center", borderRadius: "50%", color: orderResult.success ? "#31551F" : "#9D3029", background: orderResult.success ? "#E5ECD8" : "#FBEDEA" }}>
+            {orderResult.success ? <CheckCircle2 size={30} /> : <X size={28} />}
+          </span>
+          <h2 id="order-result-title" style={{ margin: "0 0 10px", fontFamily: "'Playfair Display',serif", fontSize: "1.65rem", fontWeight: 500 }}>
+            {orderResult.success ? "Order placed successfully" : "Order could not be placed"}
+          </h2>
+          <p id="order-result-message" style={{ margin: 0, color: "#71695E", lineHeight: 1.65 }}>{orderResult.message}</p>
+          {orderResult.success ? <button type="button" onClick={() => navigate("/profile", { replace: true, state: { section: "orders" } })} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>View my orders</button> : <button type="button" onClick={() => setOrderResult(null)} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>Return to cart</button>}
+        </section>
+      </div>}
       {checkoutOpen && <div role="presentation" onClick={() => !checkoutSubmitting && setCheckoutOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
         <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 960px)", maxHeight: "min(94vh, 900px)", overflowY: "auto", position: "relative", boxSizing: "border-box", border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "#FBF8F0", boxShadow: "0 32px 90px rgba(0,0,0,.34)", color: "#244516" }}>
           <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{padding-bottom:20px;background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-choice{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(45,80,22,.15);border-radius:15px;background:#FFFEFC;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.checkout-choice:hover{transform:translateY(-1px);border-color:rgba(45,80,22,.4)}.checkout-choice.selected{border-color:#41652E;background:#E3EBD5;box-shadow:inset 0 0 0 1px rgba(65,101,46,.13)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}}"}</style>
@@ -589,6 +634,19 @@ export default function Cart() {
             </div>
           </form>}
         </section>
+      </div>}
+      {checkoutOpen && checkoutSubmitting && <div role="status" aria-live="polite" aria-label={orderProgress} style={{ position: "fixed", inset: 0, zIndex: 1150, display: "grid", placeItems: "center", padding: 16, boxSizing: "border-box", background: "rgba(13,25,8,.72)" }}>
+        <div style={{ width: "min(100%, 960px)", height: "min(94vh, 900px)", boxSizing: "border-box", display: "grid", alignContent: "center", justifyItems: "center", gap: 18, padding: 28, border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "rgba(251,248,240,.97)", color: "#244516", textAlign: "center", boxShadow: "0 32px 90px rgba(0,0,0,.34)" }}>
+          <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />
+          <div style={{ display: "grid", gap: 8 }}>
+            <strong style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.25rem,3vw,1.7rem)", fontWeight: 500 }}>{orderProgress}</strong>
+            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>Please keep this window open while we finish processing your order.</span>
+          </div>
+          <div aria-hidden="true" style={{ width: "min(100%, 280px)", height: 5, overflow: "hidden", borderRadius: 5, background: "#E5EAD9" }}>
+            <span style={{ display: "block", width: "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", animation: "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
+          </div>
+          <style>{"@keyframes checkout-progress-spin{to{transform:rotate(360deg)}}@keyframes checkout-progress-bar{from{transform:translateX(-15%)}to{transform:translateX(155%)}}"}</style>
+        </div>
       </div>}
     </main>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays } from "lucide-react";
 import axios from "axios";
 
@@ -14,8 +14,9 @@ const tableHeadStyle: CSSProperties = { padding: "11px 12px", color: "#8B5E3C", 
 const tableCellStyle: CSSProperties = { padding: "13px 12px", borderBottom: "1px solid rgba(45,80,22,.08)" };
 
 export default function Profile() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState<PageId>("profile");
+  const [activePage, setActivePage] = useState<PageId>(() => location.state?.section === "orders" ? "orders" : "profile");
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
