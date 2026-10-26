@@ -46,7 +46,7 @@ export default function Cart() {
   const [checkoutError, setCheckoutError] = useState("");
   const [orderProgress, setOrderProgress] = useState("");
   const [orderResult, setOrderResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"Payment slip" | "Online payment">("Payment slip");
+  const [paymentMethod, setPaymentMethod] = useState<"" | "Payment slip" | "Online payment">("");
   const [paymentSlipOpen, setPaymentSlipOpen] = useState(false);
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   const [paymentSlipPreviewUrl, setPaymentSlipPreviewUrl] = useState("");
@@ -162,7 +162,7 @@ export default function Cart() {
   const selectedPricedItems = pricedItems.filter((item) => selectedIds.includes(String(item.product._id)));
   const hasContactPrice = selectedPricedItems.some((item) => item.unitPrice === null);
   const canPayOnline = selectedItems.length > 0 && !hasContactPrice;
-  const checkoutPaymentMethod = canPayOnline ? paymentMethod : "Payment slip";
+  const checkoutPaymentMethod = paymentMethod === "Online payment" && !canPayOnline ? "" : paymentMethod;
   const selectedEstimatedTotal = selectedPricedItems.every((item) => item.unitPrice !== null)
     ? selectedPricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
     : null;
@@ -183,6 +183,7 @@ export default function Cart() {
     setCheckoutLoading(true);
     setCheckoutError("");
     setCheckoutMessage("");
+    setPaymentMethod("");
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/checkout-details`, { withCredentials: true });
       const savedCountry = response.data.data?.country ?? "";
@@ -204,6 +205,10 @@ export default function Cart() {
     event.preventDefault();
     if (!countries.includes(checkoutDetails.country)) {
       setCheckoutError("Select a country from the country list.");
+      return;
+    }
+    if (!checkoutPaymentMethod) {
+      setCheckoutError("Choose a payment method to continue.");
       return;
     }
     if (checkoutPaymentMethod === "Payment slip" && !paymentSlip) {
@@ -540,7 +545,7 @@ export default function Cart() {
       </div>}
       {checkoutOpen && <div role="presentation" onClick={() => { if (!checkoutSubmitting) { setCheckoutOpen(false); setPaymentSlipOpen(false); } }} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
         <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 960px)", maxHeight: "min(94vh, 900px)", overflowY: "auto", position: "relative", boxSizing: "border-box", border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "#FBF8F0", boxShadow: "0 32px 90px rgba(0,0,0,.34)", color: "#244516" }}>
-          <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{padding-bottom:20px;background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}.checkout-method{display:grid;justify-items:start;gap:10px;min-height:112px;padding:14px;border:1px solid rgba(45,80,22,.15);border-radius:15px;background:#FFFEFC;color:#2D5016;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.checkout-method:hover:not(:disabled){transform:translateY(-1px);border-color:rgba(45,80,22,.4)}.checkout-method.selected{border-color:#41652E;background:#E3EBD5;box-shadow:inset 0 0 0 1px rgba(65,101,46,.13)}.checkout-method:disabled{opacity:.52;cursor:not-allowed}.payment-slip-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:22px}.payment-slip-column{min-width:0;padding:clamp(18px,3vw,28px)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}.payment-slip-layout{grid-template-columns:1fr}}"}</style>
+          <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{padding-bottom:20px;background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}.checkout-method{display:flex;align-items:center;gap:11px;min-height:62px;padding:14px;border:1px solid rgba(45,80,22,.2);border-radius:13px;background:linear-gradient(180deg,#FFFEFC,#F8F6EF);box-shadow:0 3px 8px rgba(36,69,22,.06);color:#2D5016;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}.checkout-method:hover:not(:disabled){transform:translateY(-2px);border-color:#65814E;box-shadow:0 7px 15px rgba(36,69,22,.12)}.checkout-method:focus-visible{outline:3px solid rgba(101,129,78,.35);outline-offset:2px}.checkout-method.selected{border-color:#41652E;background:linear-gradient(135deg,#E3EBD5,#EDF2E4);box-shadow:inset 0 0 0 1px rgba(65,101,46,.2),0 4px 10px rgba(36,69,22,.1)}.checkout-method:disabled{opacity:.52;cursor:not-allowed}.payment-slip-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:22px}.payment-slip-column{min-width:0;padding:clamp(18px,3vw,28px)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}.payment-slip-layout{grid-template-columns:1fr}}"}</style>
           <header style={{ position: "sticky", top: 0, zIndex: 2, padding: "25px clamp(22px,4vw,38px) 22px", color: "#F8F5EA", background: "linear-gradient(115deg,#203B14,#31551F 62%,#3B6227)", overflow: "hidden" }}>
             <div aria-hidden="true" style={{ position: "absolute", width: 210, height: 210, right: 38, top: -146, border: "1px solid rgba(226,204,135,.18)", borderRadius: "50%", boxShadow: "0 0 0 22px rgba(226,204,135,.035),0 0 0 46px rgba(226,204,135,.025)" }} />
             <button type="button" aria-label="Close checkout" onClick={() => { setCheckoutOpen(false); setPaymentSlipOpen(false); }} disabled={checkoutSubmitting} style={{ position: "absolute", top: 20, right: 20, zIndex: 1, display: "grid", placeItems: "center", width: 38, height: 38, border: "1px solid rgba(248,245,234,.24)", borderRadius: "50%", background: "rgba(255,255,255,.08)", color: "#F8F5EA", cursor: "pointer" }}><X size={18} /></button>
@@ -622,14 +627,17 @@ export default function Cart() {
               <div role="group" aria-label="Payment method" className="checkout-methods">
                 <button type="button" aria-pressed={checkoutPaymentMethod === "Payment slip"} onClick={() => { setPaymentMethod("Payment slip"); setCheckoutError(""); setPaymentSlipOpen(true); }} className={`checkout-method${checkoutPaymentMethod === "Payment slip" ? " selected" : ""}`}>
                   <Receipt size={20} aria-hidden="true" />
-                  <span><strong style={{ display: "block", fontSize: ".85rem" }}>Payment slip</strong><small style={{ display: "block", marginTop: 4, color: "#71695E", fontSize: ".73rem", lineHeight: 1.4 }}>View bank details and upload receipt</small></span>
+                  <strong style={{ display: "block", fontSize: ".85rem" }}>Payment slip</strong>
                 </button>
                 <button type="button" aria-pressed={checkoutPaymentMethod === "Online payment"} disabled={!canPayOnline} onClick={() => { setPaymentMethod("Online payment"); setPaymentSlipOpen(false); setCheckoutError(""); }} className={`checkout-method${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}>
                   <CreditCard size={20} aria-hidden="true" />
-                  <span><strong style={{ display: "block", fontSize: ".85rem" }}>Online payment</strong><small style={{ display: "block", marginTop: 4, color: "#71695E", fontSize: ".73rem", lineHeight: 1.4 }}>{canPayOnline ? "We’ll contact you with payment instructions" : "Unavailable for items with contact pricing"}</small></span>
+                  <strong style={{ display: "block", fontSize: ".85rem" }}>Online payment</strong>
                 </button>
               </div>
-              {checkoutPaymentMethod === "Payment slip" ? <p style={{ margin: "11px 0 0", color: "#71695E", fontSize: ".76rem", lineHeight: 1.5 }}>{paymentSlip ? `Receipt attached: ${paymentSlip.name}` : "Open Payment slip to view bank account details and attach your receipt."}</p> : <p style={{ margin: "11px 0 0", color: "#71695E", fontSize: ".76rem", lineHeight: 1.5 }}>We’ll contact you with payment instructions after your order is confirmed.</p>}
+              {checkoutPaymentMethod === "Payment slip" && !paymentSlipOpen && paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, marginTop: 13, padding: 10, border: "1px solid rgba(45,80,22,.14)", borderRadius: 13, background: "rgba(255,254,250,.8)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong title={paymentSlip.name} style={{ minWidth: 0, overflow: "hidden", color: "#405235", fontSize: ".76rem", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{paymentSlip.name}</strong><button type="button" onClick={() => setPaymentSlipOpen(true)} style={{ flexShrink: 0, padding: "5px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 8, color: "#31551F", background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>Change</button></div>
+                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 150, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 150, border: 0, borderRadius: 8, background: "#fff" }} />}
+              </div>}
               <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>Order summary</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} items</span></div>
                 <div style={{ display: "grid", gap: 8, maxHeight: 116, overflowY: "auto" }}>{selectedPricedItems.map((item) => <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#71695E", fontSize: ".76rem" }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.product.name} × {item.qty}</span><strong style={{ flexShrink: 0, color: "#405235", fontSize: ".76rem" }}>{item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice * item.qty)}</strong></div>)}</div>
