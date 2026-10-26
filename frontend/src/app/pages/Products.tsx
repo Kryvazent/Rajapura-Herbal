@@ -561,11 +561,7 @@ export default function Products() {
                         } : {}),
                       }}
                     >
-                      {language === "si"
-                        ? "මිල සඳහා විමසන්න"
-                        : language === "ta"
-                          ? "விலை விவரங்களுக்கு விசாரிக்கவும்"
-                          : productPriceLabel(product)}
+                      {productPriceLabel(product)}
                     </span>
                     <div className="flex gap-2" style={{ margin: "6px 0 10px" }}>
                       {international ? (

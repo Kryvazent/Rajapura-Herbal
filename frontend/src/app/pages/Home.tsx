@@ -720,7 +720,7 @@ export default function Home() {
                         ...(country !== "LK" && product.priceUSD ? { padding: "5px 8px", borderRadius: 999, background: "#EEF2DF", border: "1px solid rgba(45,80,22,.18)", whiteSpace: "nowrap" as const } : {}),
                       }}
                     >
-                      {language === "si" ? "මිල සඳහා විමසන්න" : language === "ta" ? "விலை விவரங்களுக்கு விசாரிக்கவும்" : productPriceLabel(product)}
+                      {productPriceLabel(product)}
                     </span>
                     <div className="flex items-center gap-2">
                       {country !== "LK" && (product.stock ?? 0) > 0 && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}><Package size={14} aria-hidden="true" />{language === "si" ? "තොග ඇත" : "In stock"}</span>}
