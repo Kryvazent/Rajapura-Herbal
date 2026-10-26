@@ -30,6 +30,10 @@ export default function Profile() {
   const [orderDate, setOrderDate] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All orders");
 
+  useEffect(() => {
+    if (location.state?.section === "profile") setActivePage("profile");
+  }, [location.state]);
+
   const orderStatusCounts = useMemo(() => orders.reduce<Record<string, number>>((counts, order) => {
     counts[order.orderStatus] = (counts[order.orderStatus] ?? 0) + 1;
     return counts;
@@ -143,7 +147,7 @@ export default function Profile() {
   const navButton = (page: typeof pages[number], compact = false) => <button key={page.id} type="button" onClick={() => setActivePage(page.id)} aria-current={activePage === page.id ? "page" : undefined} className={`customer-profile-nav${activePage === page.id ? " active" : ""}`} style={{ ...sideLinkStyle, ...(compact ? { width: "auto", whiteSpace: "nowrap" as const, color: "#31591C", background: "rgba(139,195,74,.12)" } : { background: "transparent" }) }}>{page.icon}{page.label}</button>;
 
   return <div className="customer-profile-shell" style={{ display: "flex", overflow: "hidden", fontFamily: "'Lato',sans-serif", background: "#F0EDE6", color: "#2D5016" }}>
-    <style>{`.customer-profile-shell{height:calc(100vh - 105px);height:calc(100dvh - 105px)}.customer-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}.customer-profile-nav{border:0;cursor:pointer;text-align:left}.customer-profile-nav:hover{background:rgba(139,195,74,.11)!important}.customer-profile-nav.active{color:#F8F4E8!important;background:rgba(139,195,74,.19)!important;box-shadow:inset 3px 0 #8BC34A}@media(max-width:639px){.customer-profile-shell{height:calc(100vh - 72px);height:calc(100dvh - 72px)}.customer-profile-nav.active{color:#244516!important;background:#EAF0DA!important;box-shadow:inset 0 -3px #8BC34A}}`}</style>
+    <style>{`.customer-profile-shell{height:calc(100vh - 105px);height:calc(100dvh - 105px)}.customer-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}.customer-profile-nav{border:0;cursor:pointer;text-align:left}.customer-profile-nav:hover{background:rgba(139,195,74,.11)!important}.customer-profile-nav.active{color:#F8F4E8!important;background:rgba(139,195,74,.19)!important;box-shadow:inset 3px 0 #8BC34A}.payment-history-mobile{display:none}@media(max-width:639px){.customer-profile-shell{height:calc(100vh - 72px);height:calc(100dvh - 72px)}.customer-profile-nav.active{color:#244516!important;background:#EAF0DA!important;box-shadow:inset 0 -3px #8BC34A}.payment-history-table{display:none}.payment-history-mobile{display:grid;gap:11px}}`}</style>
     <aside className="hidden lg:flex" style={{ width: 248, flexShrink: 0, flexDirection: "column", padding: "26px 16px", background: "linear-gradient(180deg, #0E1A08 0%, #1A3009 100%)", color: "#FAF6EE" }}>
       <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, padding: "4px 10px 25px", color: "inherit", textDecoration: "none", borderBottom: "1px solid rgba(139,195,74,.17)" }}>
         <span style={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", color: "#8BC34A", border: "1px solid rgba(139,195,74,.35)", background: "rgba(139,195,74,.1)" }}><Leaf size={19} /></span>
@@ -226,12 +230,30 @@ export default function Profile() {
 
         {activePage === "payments" && <section style={cardStyle}>
           <SectionHeading icon={<CreditCard size={18} />} title={si ? "ගෙවීම් ඉතිහාසය" : "Payment history"} subtitle={si ? "එක් එක් ඇණවුමේ මුදල, තත්ත්වය සහ ගෙවීමේ ක්‍රමය" : "Payment amount, status, and method for each order"} />
-          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබගේ ඇණවුම් සමඟ ගෙවීම් තොරතුරු මෙහි පෙන්වනු ඇත." : "Payment details will appear here with your orders."} /> : <div style={{ overflowX: "auto" }}>
+          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබගේ ඇණවුම් සමඟ ගෙවීම් තොරතුරු මෙහි පෙන්වනු ඇත." : "Payment details will appear here with your orders."} /> : <>
+            <div className="payment-history-table" style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: ".88rem" }}>
               <thead><tr>{(si ? ["ඇණවුම", "දිනය", "මුදල", "ගෙවීමේ ක්‍රමය", "ගෙවීමේ තත්ත්වය"] : ["Order", "Date", "Amount", "Payment method", "Payment status"]).map(item => <th key={item} style={tableHeadStyle}>{item}</th>)}</tr></thead>
               <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderTotal(order)}</td><td style={tableCellStyle}>{translatePaymentMethod(order.paymentMethod || "Not selected")}</td><td style={tableCellStyle}><Status value={translateStatus(order.paymentStatus)} /></td></tr>)}</tbody>
             </table>
-          </div>}
+            </div>
+            <div className="payment-history-mobile">
+              {orders.map(order => <details key={order._id} style={{ overflow: "hidden", border: "1px solid rgba(45,80,22,.12)", borderRadius: 13, background: "#FAF8F2" }}>
+                <summary style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: "10px 8px", padding: 15, color: "#244516", cursor: "pointer", listStyle: "none" }}>
+                  <strong style={{ color: "#244516" }}>#{order._id.slice(-7).toUpperCase()}</strong>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                    <Status value={translateStatus(order.paymentStatus)} />
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </span>
+                  <span style={{ gridColumn: "1 / -1", display: "inline-flex", alignItems: "center", gap: 6, color: "#71695E", fontSize: ".84rem" }}><CalendarDays size={14} aria-hidden="true" />{date(order.createdAt)}</span>
+                </summary>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px 10px", padding: "13px 15px 15px", borderTop: "1px solid rgba(45,80,22,.1)" }}>
+                  <div><MetaLabel>{si ? "මුදල" : "Amount"}</MetaLabel><strong style={{ fontSize: ".88rem" }}>{formatOrderTotal(order)}</strong></div>
+                  <div style={{ gridColumn: "1 / -1" }}><MetaLabel>{si ? "ගෙවීමේ ක්‍රමය" : "Payment method"}</MetaLabel><span style={{ fontSize: ".88rem" }}>{translatePaymentMethod(order.paymentMethod || "Not selected")}</span></div>
+                </div>
+              </details>)}
+            </div>
+          </>}
         </section>}
       </div>
     </main>
