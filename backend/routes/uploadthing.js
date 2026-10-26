@@ -3,6 +3,7 @@ import express from "express";
 import { createRouteHandler, createUploadthing } from "uploadthing/express";
 import { UploadThingError } from "uploadthing/server";
 import { deleteUploadThingFileByKey } from "../services/uploadthingService.js";
+import Customer from "../models/Customer.js";
 
 const f = createUploadthing();
 const uploadThingToken = process.env.UPLOADTHING_TOKEN?.trim();
@@ -86,8 +87,11 @@ export const uploadRouter = {
     { image: { maxFileSize: "4MB", maxFileCount: 1 }, pdf: { maxFileSize: "4MB", maxFileCount: 1 } },
     { awaitServerData: false }
   )
-    .middleware(({ req }) => {
-      if (!req.session?.userId || req.session?.role !== "USER") {
+    .middleware(async ({ req }) => {
+      const customer = req.session?.role === "USER" && req.session.userId
+        ? await Customer.findById(req.session.userId).select("status")
+        : null;
+      if (!customer || customer.status !== "ACTIVE") {
         throw new UploadThingError({ code: "UNAUTHORIZED", message: "Sign in with a customer account to upload a payment slip." });
       }
       return { userId: req.session.userId, role: req.session.role };

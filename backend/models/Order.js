@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
   country: { type: String, required: true, trim: true },
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
   customerName: { type: String, required: true, trim: true },
   contactNumber: { type: String, required: true, trim: true },
   products: [{ product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, name: { type: String, required: true }, qty: { type: Number, min: 1, required: true }, price: { type: Number, min: 0, required: true } }],
