@@ -441,6 +441,7 @@ export default function Cart() {
     );
   return (
     <main
+      className="customer-cart-page"
       style={{
         maxWidth: 1320,
         margin: "48px auto",
@@ -449,8 +450,34 @@ export default function Cart() {
         fontFamily: "'Lato',sans-serif",
       }}
     >
+      <style>{`
+        .customer-cart-layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:32px;align-items:start}
+        .cart-item-info{display:contents}
+        @media(max-width:767px){
+          .customer-cart-page{margin:20px auto!important;padding:14px!important}
+          .customer-cart-layout{grid-template-columns:minmax(0,1fr);gap:20px}
+          .cart-item{display:grid!important;grid-template-columns:auto 60px minmax(0,1fr) auto;grid-template-areas:"select image info info" "select quantity quantity remove";gap:10px!important;padding:12px!important}
+          .cart-item-select{grid-area:select}
+          .cart-item-image{grid-area:image;width:60px!important;height:60px!important}
+          .cart-item-info{grid-area:info;display:grid;align-content:center;gap:5px;min-width:0}
+          .cart-item-name{min-width:0;overflow-wrap:anywhere;font-size:.92rem}
+          .cart-item-price{color:#526746;font-size:.84rem;white-space:nowrap}
+          .cart-item-quantity{grid-area:quantity;justify-self:start;max-width:100%;gap:4px!important;padding:3px!important}
+          .cart-item-quantity input{width:clamp(48px,16vw,76px)!important;padding:0 4px!important}
+          .cart-item-remove{grid-area:remove;justify-self:end;padding:8px 10px!important;font-size:.76rem!important;white-space:nowrap}
+          .cart-order-summary{position:static!important;padding:18px!important}
+          .cart-order-summary-total{align-items:flex-start!important;flex-wrap:wrap}
+          .cart-order-summary-total strong:last-child{max-width:100%;text-align:right}
+        }
+        @media(max-width:360px){
+          .cart-item{grid-template-columns:auto 52px minmax(0,1fr) auto;gap:8px!important;padding:10px!important}
+          .cart-item-image{width:52px!important;height:52px!important}
+          .cart-item-quantity button{width:30px!important;height:30px!important}
+          .cart-item-remove{padding:7px 8px!important}
+        }
+      `}</style>
       {cartError && <p role="alert" style={{ margin: "0 0 16px", padding: "12px 15px", borderRadius: 10, color: "#8F2D26", background: "#FFF3F0", border: "1px solid #E6B6AE" }}>{cartError}</p>}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
+      <div className="customer-cart-layout">
       <section>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>{si ? "ඔබේ කරත්තය" : "Your cart"}</h1>
@@ -459,6 +486,7 @@ export default function Cart() {
       {items.map((item) => (
         <article
           key={String(item.product._id)}
+          className="cart-item"
           style={{
             display: "flex",
             alignItems: "center",
@@ -471,10 +499,11 @@ export default function Cart() {
             boxShadow: "0 5px 18px rgba(45,80,22,.045)",
           }}
         >
-          <label aria-label={`Select ${item.product.name} for checkout`} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
+          <label className="cart-item-select" aria-label={`Select ${item.product.name} for checkout`} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
             <input type="checkbox" checked={selectedIds.includes(String(item.product._id))} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...current, String(item.product._id)] : current.filter((id) => id !== String(item.product._id)))} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
           </label>
           <img
+            className="cart-item-image"
             src={item.product.image}
             alt=""
             style={{
@@ -484,9 +513,11 @@ export default function Cart() {
               borderRadius: 10,
             }}
           />
-          <strong style={{ flex: 1 }}>{productDisplayName(item.product, language)}</strong>
-          <span>{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || (si ? "මිල සඳහා විමසන්න" : "Contact for price")}</span>
-          <div aria-label={`Quantity for ${item.product.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
+          <div className="cart-item-info">
+            <strong className="cart-item-name" style={{ flex: 1 }}>{productDisplayName(item.product, language)}</strong>
+            <span className="cart-item-price">{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || (si ? "මිල සඳහා විමසන්න" : "Contact for price")}</span>
+          </div>
+          <div className="cart-item-quantity" aria-label={`Quantity for ${item.product.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
             <button type="button" aria-label={`Decrease ${item.product.name} quantity`} disabled={item.qty <= 1} onClick={() => updateQuantity(item.product._id, item.qty - 1)} style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 9, color: "#2D5016", background: item.qty <= 1 ? "#E8E6DD" : "#E4EBD8", fontSize: "1.2rem", fontWeight: 700, cursor: item.qty <= 1 ? "not-allowed" : "pointer" }}>−</button>
             <input
               type="number"
@@ -515,6 +546,7 @@ export default function Cart() {
             <button type="button" aria-label={`Increase ${item.product.name} quantity`} onClick={() => updateQuantity(item.product._id, item.qty + 1)} style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 9, color: "#FAF6EE", background: "#2D5016", fontSize: "1.2rem", fontWeight: 700, cursor: "pointer" }}>+</button>
           </div>
           <button
+            className="cart-item-remove"
             type="button"
             aria-label={`Remove ${item.product.name} from cart`}
             onClick={() => {
@@ -528,7 +560,7 @@ export default function Cart() {
         </article>
       ))}
       </section>
-      <aside style={{ position: "sticky", top: 24, padding: 24, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.12)", borderRadius: 18, boxShadow: "0 12px 32px rgba(45,80,22,.08)" }}>
+      <aside className="cart-order-summary" style={{ position: "sticky", top: 24, padding: 24, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.12)", borderRadius: 18, boxShadow: "0 12px 32px rgba(45,80,22,.08)" }}>
         <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "ඇණවුම් සාරාංශය" : "ORDER SUMMARY"}</p>
         <h2 style={{ margin: "0 0 20px", fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>{si ? "ගෙවීම් විස්තර" : "Payment details"}</h2>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid rgba(45,80,22,.12)", color: "#6B6257", fontSize: ".92rem" }}>
@@ -545,7 +577,7 @@ export default function Cart() {
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 18, padding: "16px 0 18px", borderBottom: "1px solid rgba(45,80,22,.12)", color: "#243D17", fontSize: "1rem" }}>
+        <div className="cart-order-summary-total" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 18, padding: "16px 0 18px", borderBottom: "1px solid rgba(45,80,22,.12)", color: "#243D17", fontSize: "1rem" }}>
           <strong>{si ? "ඇස්තමේන්තුගත මුළු එකතුව" : "Estimated total"}</strong>
           <strong>{selectedItems.length === 0 ? (si ? "ගෙවීම සඳහා භාණ්ඩ තෝරන්න" : "Select items for checkout") : selectedEstimatedTotal === null ? (si ? "මිල සඳහා විමසන්න" : "Contact for price") : formatDollarAmount(selectedEstimatedTotal)}</strong>
         </div>
