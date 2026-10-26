@@ -142,7 +142,8 @@ export const listCustomerOrders = async (req, res) => {
     }
     const orders = await Order.find({ customer: req.session.userId })
       .sort({ createdAt: -1 })
-      .populate("customer", "name contactNumber");
+      .populate("customer", "name contactNumber")
+      .populate("products.product", "name sinhalaName translations.name");
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("listCustomerOrders error:", error);

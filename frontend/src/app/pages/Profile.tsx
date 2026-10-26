@@ -2,10 +2,11 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays, ChevronDown } from "lucide-react";
 import axios from "axios";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const api = import.meta.env.VITE_BACKEND_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
-type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number }[] };
+type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number; product?: { name?: string; sinhalaName?: string; translations?: { name?: { en?: string; si?: string } } } | null }[] };
 type PageId = "profile" | "orders" | "payments";
 
 const cardStyle: CSSProperties = { padding: 24, borderRadius: 16, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.1)", boxShadow: "0 5px 20px rgba(31,48,17,.045)" };
@@ -16,6 +17,8 @@ const tableCellStyle: CSSProperties = { padding: "13px 12px", borderBottom: "1px
 export default function Profile() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const si = language === "si";
   const [activePage, setActivePage] = useState<PageId>(() => location.state?.section === "orders" ? "orders" : "profile");
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -40,19 +43,31 @@ export default function Profile() {
     navigate("/account", { replace: true });
   };
 
-  if (loading) return <main style={{ minHeight: 440, display: "grid", placeItems: "center", color: "#2D5016", background: "#F0EDE6" }}>Loading your profile...</main>;
+  if (loading) return <main style={{ minHeight: 440, display: "grid", placeItems: "center", color: "#2D5016", background: "#F0EDE6" }}>{language === "si" ? "ඔබගේ පැතිකඩ පූරණය වෙමින් පවතී..." : "Loading your profile..."}</main>;
   if (!profile) return <Navigate to="/account" replace />;
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const date = (value: string) => new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  const date = (value: string) => new Date(value).toLocaleDateString(si ? "si-LK" : undefined, { year: "numeric", month: "short", day: "numeric" });
+  const productName = (item: Order["products"][number]) => si
+    ? item.product?.translations?.name?.si?.trim() || item.product?.sinhalaName?.trim() || item.name
+    : item.product?.translations?.name?.en?.trim() || item.product?.name?.trim() || item.name;
+  const translateStatus = (value: string) => {
+    const translations: Record<string, string> = { Pending: "අපේක්ෂිත", Processing: "සැකසෙමින්", Shipped: "යවා ඇත", Delivered: "බෙදා හැර ඇත", Cancelled: "අවලංගු කළා", Returned: "ආපසු ලබා දුන්නා", Unpaid: "නොගෙවූ", Paid: "ගෙවා ඇත", Refunded: "ආපසු ගෙවූ" };
+    return si ? translations[value] ?? value : value;
+  };
+  const translatePaymentMethod = (value: string) => {
+    const translations: Record<string, string> = { "Payment slip": "ගෙවීම් රිසිට්පත", "Online payment": "මාර්ගගත ගෙවීම", "Not selected": "තෝරා නැත" };
+    return si ? translations[value] ?? value : value;
+  };
+  const displayCountry = (country: string) => si && /^(LK|Sri Lanka)$/i.test(country) ? "ශ්‍රී ලංකාව" : country;
   const orderCurrency = (order: Order): "USD" | "LKR" => order.currency ?? (/^(LK|Sri Lanka)$/i.test(order.country) ? "LKR" : "USD");
   const formatOrderAmount = (amount: number, order: Order) => new Intl.NumberFormat("en-US", { style: "currency", currency: orderCurrency(order), currencyDisplay: "code" }).format(amount);
   const pages: { id: PageId; label: string; icon: ReactNode }[] = [
-    { id: "profile", label: "Profile details", icon: <CircleUserRound size={17} /> },
-    { id: "orders", label: "Orders", icon: <ClipboardList size={17} /> },
-    { id: "payments", label: "Payment history", icon: <CreditCard size={17} /> },
+    { id: "profile", label: si ? "පැතිකඩ විස්තර" : "Profile details", icon: <CircleUserRound size={17} /> },
+    { id: "orders", label: si ? "ඇණවුම්" : "Orders", icon: <ClipboardList size={17} /> },
+    { id: "payments", label: si ? "ගෙවීම් ඉතිහාසය" : "Payment history", icon: <CreditCard size={17} /> },
   ];
-  const pageTitle = activePage === "profile" ? `Welcome, ${profile.firstName}` : activePage === "orders" ? "Your orders" : "Payment history";
+  const pageTitle = activePage === "profile" ? (si ? `ආයුබෝවන්, ${profile.firstName}` : `Welcome, ${profile.firstName}`) : activePage === "orders" ? (si ? "ඔබගේ ඇණවුම්" : "Your orders") : (si ? "ගෙවීම් ඉතිහාසය" : "Payment history");
 
   const navButton = (page: typeof pages[number], compact = false) => <button key={page.id} type="button" onClick={() => setActivePage(page.id)} aria-current={activePage === page.id ? "page" : undefined} className={`customer-profile-nav${activePage === page.id ? " active" : ""}`} style={{ ...sideLinkStyle, ...(compact ? { width: "auto", whiteSpace: "nowrap" as const, color: "#31591C", background: "rgba(139,195,74,.12)" } : { background: "transparent" }) }}>{page.icon}{page.label}</button>;
 
@@ -61,12 +76,12 @@ export default function Profile() {
     <aside className="hidden lg:flex" style={{ width: 248, flexShrink: 0, flexDirection: "column", padding: "26px 16px", background: "linear-gradient(180deg, #0E1A08 0%, #1A3009 100%)", color: "#FAF6EE" }}>
       <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, padding: "4px 10px 25px", color: "inherit", textDecoration: "none", borderBottom: "1px solid rgba(139,195,74,.17)" }}>
         <span style={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", color: "#8BC34A", border: "1px solid rgba(139,195,74,.35)", background: "rgba(139,195,74,.1)" }}><Leaf size={19} /></span>
-        <span><strong style={{ display: "block", fontFamily: "'Cinzel',serif", letterSpacing: ".08em", fontSize: ".85rem" }}>RAJAPURA</strong><small style={{ color: "#B9C4A9", letterSpacing: ".14em", fontSize: ".58rem" }}>CUSTOMER PORTAL</small></span>
+        <span><strong style={{ display: "block", fontFamily: "'Cinzel',serif", letterSpacing: ".08em", fontSize: ".85rem" }}>RAJAPURA</strong><small style={{ color: "#B9C4A9", letterSpacing: ".14em", fontSize: ".58rem" }}>{si ? "පාරිභෝගික ද්වාරය" : "CUSTOMER PORTAL"}</small></span>
       </Link>
-      <p style={{ margin: "26px 10px 10px", color: "#AFC292", fontSize: ".66rem", fontWeight: 700, letterSpacing: ".14em" }}>YOUR ACCOUNT</p>
+        <p style={{ margin: "26px 10px 10px", color: "#AFC292", fontSize: ".66rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "ඔබගේ ගිණුම" : "YOUR ACCOUNT"}</p>
       {pages.map(page => navButton(page))}
       <div style={{ flex: 1 }} />
-      <button onClick={signOut} style={{ ...sideLinkStyle, width: "100%", border: 0, background: "transparent", color: "#E6D7C7", cursor: "pointer", textAlign: "left" }}><LogOut size={17} /> Sign out</button>
+      <button onClick={signOut} style={{ ...sideLinkStyle, width: "100%", border: 0, background: "transparent", color: "#E6D7C7", cursor: "pointer", textAlign: "left" }}><LogOut size={17} /> {si ? "පිටවන්න" : "Sign out"}</button>
     </aside>
 
     <main className="customer-profile-content" style={{ flex: 1, minWidth: 0 }}>
@@ -74,33 +89,33 @@ export default function Profile() {
         {pages.map(page => navButton(page, true))}
       </nav>
       <div style={{ width: "min(100%, 1120px)", margin: "0 auto", padding: "clamp(22px, 4vw, 42px)" }}>
-        <div style={{ marginBottom: 25 }}><p style={{ margin: "0 0 5px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>CUSTOMER ACCOUNT</p><h1 style={{ margin: 0, fontFamily: "'Playfair Display',serif", color: "#244516", fontSize: "clamp(1.8rem, 4vw, 2.35rem)", fontWeight: 500 }}>{pageTitle}</h1></div>
-        {error && <p role="alert" style={{ padding: 13, borderRadius: 10, color: "#9D3029", background: "#FBEDEA" }}>{error}</p>}
+        <div style={{ marginBottom: 25 }}><p style={{ margin: "0 0 5px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "පාරිභෝගික ගිණුම" : "CUSTOMER ACCOUNT"}</p><h1 style={{ margin: 0, fontFamily: "'Playfair Display',serif", color: "#244516", fontSize: "clamp(1.8rem, 4vw, 2.35rem)", fontWeight: 500 }}>{pageTitle}</h1></div>
+        {error && <p role="alert" style={{ padding: 13, borderRadius: 10, color: "#9D3029", background: "#FBEDEA" }}>{si ? "ඔබගේ පැතිකඩ පූරණය කළ නොහැක. නැවත උත්සාහ කරන්න." : error}</p>}
 
         {activePage === "profile" && <section style={cardStyle}>
-          <SectionHeading icon={<CircleUserRound size={18} />} title="Profile details" subtitle="Your customer account information" />
+          <SectionHeading icon={<CircleUserRound size={18} />} title={si ? "පැතිකඩ විස්තර" : "Profile details"} subtitle={si ? "ඔබගේ පාරිභෝගික ගිණුම් තොරතුරු" : "Your customer account information"} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 15 }}>
-            <Info label="Full name" value={fullName} /><Info label="Email address" value={profile.email} /><Info label="Contact number" value={profile.phone || "Not provided"} />
-            {profile.createdAt && <Info label="Member since" value={date(profile.createdAt)} />}
+            <Info label={si ? "සම්පූර්ණ නම" : "Full name"} value={fullName} /><Info label={si ? "විද්‍යුත් තැපැල් ලිපිනය" : "Email address"} value={profile.email} /><Info label={si ? "දුරකථන අංකය" : "Contact number"} value={profile.phone || (si ? "සපයා නැත" : "Not provided")} />
+            {profile.createdAt && <Info label={si ? "සාමාජිකත්වය ආරම්භ කළ දිනය" : "Member since"} value={date(profile.createdAt)} />}
           </div>
         </section>}
 
         {activePage === "orders" && <section style={cardStyle}>
-          <SectionHeading icon={<Package size={18} />} title="Order details" subtitle="Products, delivery information, and order progress" />
-          {orders.length === 0 ? <EmptyMessage text="Your orders will appear here when you place one." /> : <div style={{ display: "grid", gap: 15 }}>
+          <SectionHeading icon={<Package size={18} />} title={si ? "ඇණවුම් විස්තර" : "Order details"} subtitle={si ? "භාණ්ඩ, බෙදාහැරීමේ තොරතුරු සහ ඇණවුම් තත්ත්වය" : "Products, delivery information, and order progress"} />
+          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබ ඇණවුමක් කළ විට එය මෙහි පෙන්වනු ඇත." : "Your orders will appear here when you place one."} /> : <div style={{ display: "grid", gap: 15 }}>
             {orders.map(order => <details key={order._id} style={{ overflow: "hidden", borderRadius: 13, background: "#FAF8F2", border: "1px solid rgba(45,80,22,.12)" }}>
               <summary style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "18px", color: "#244516", cursor: "pointer", listStyle: "none" }}>
-                <strong>Order #{order._id.slice(-7).toUpperCase()}</strong>
+                <strong>{si ? "ඇණවුම" : "Order"} #{order._id.slice(-7).toUpperCase()}</strong>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#71695E", fontSize: ".84rem" }}><CalendarDays size={14} /> {date(order.createdAt)}<ChevronDown size={16} aria-hidden="true" />
                 </span>
               </summary>
               <div style={{ padding: "0 18px 18px", borderTop: "1px solid rgba(45,80,22,.12)" }}>
-                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{item.name} <span style={{ color: "#71695E" }}>x {item.qty} · {formatOrderAmount(item.price, order)} each</span></span><strong>{formatOrderAmount(item.price * item.qty, order)}</strong></div>)}</div>
+                <div style={{ display: "grid", gap: 8, padding: "15px 0" }}>{order.products.map((item, index) => <div key={`${item.name}-${index}`} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, fontSize: ".9rem" }}><span>{productName(item)} <span style={{ color: "#71695E" }}>× {item.qty} · {formatOrderAmount(item.price, order)} {si ? " බැගින්" : "each"}</span></span><strong>{formatOrderAmount(item.price * item.qty, order)}</strong></div>)}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
-                  <div><MetaLabel>Order status</MetaLabel><Status value={order.orderStatus} /></div><div><MetaLabel>Delivery country</MetaLabel><span>{order.country}</span></div><div><MetaLabel>Contact number</MetaLabel><span>{order.customer.contactNumber}</span></div>
-                  <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Delivery address</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
-                  {order.additionalNote && <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Additional note</MetaLabel><span>{order.additionalNote}</span></div>}
-                  {order.paymentSlipUrl && <div><MetaLabel>Payment slip</MetaLabel><a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>View uploaded slip</a></div>}
+                  <div><MetaLabel>{si ? "ඇණවුම් තත්ත්වය" : "Order status"}</MetaLabel><Status value={translateStatus(order.orderStatus)} /></div><div><MetaLabel>{si ? "බෙදාහැරීමේ රට" : "Delivery country"}</MetaLabel><span>{displayCountry(order.country)}</span></div><div><MetaLabel>{si ? "දුරකථන අංකය" : "Contact number"}</MetaLabel><span>{order.customer.contactNumber}</span></div>
+                  <div style={{ gridColumn: "1 / -1" }}><MetaLabel>{si ? "බෙදාහැරීමේ ලිපිනය" : "Delivery address"}</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
+                  {order.additionalNote && <div style={{ gridColumn: "1 / -1" }}><MetaLabel>{si ? "අමතර සටහන" : "Additional note"}</MetaLabel><span>{order.additionalNote}</span></div>}
+                  {order.paymentSlipUrl && <div><MetaLabel>{si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}</MetaLabel><a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>{si ? "උඩුගත කළ රිසිට්පත බලන්න" : "View uploaded slip"}</a></div>}
                 </div>
               </div>
             </details>)}
@@ -108,11 +123,11 @@ export default function Profile() {
         </section>}
 
         {activePage === "payments" && <section style={cardStyle}>
-          <SectionHeading icon={<CreditCard size={18} />} title="Payment history" subtitle="Payment amount, status, and method for each order" />
-          {orders.length === 0 ? <EmptyMessage text="Payment details will appear here with your orders." /> : <div style={{ overflowX: "auto" }}>
+          <SectionHeading icon={<CreditCard size={18} />} title={si ? "ගෙවීම් ඉතිහාසය" : "Payment history"} subtitle={si ? "එක් එක් ඇණවුමේ මුදල, තත්ත්වය සහ ගෙවීමේ ක්‍රමය" : "Payment amount, status, and method for each order"} />
+          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබගේ ඇණවුම් සමඟ ගෙවීම් තොරතුරු මෙහි පෙන්වනු ඇත." : "Payment details will appear here with your orders."} /> : <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: ".88rem" }}>
-              <thead><tr>{["Order", "Date", "Amount", "Payment method", "Payment status"].map(item => <th key={item} style={tableHeadStyle}>{item}</th>)}</tr></thead>
-              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderAmount(order.products.reduce((total, item) => total + item.price * item.qty, 0), order)}</td><td style={tableCellStyle}>{order.paymentMethod || "Not selected"}</td><td style={tableCellStyle}><Status value={order.paymentStatus} /></td></tr>)}</tbody>
+              <thead><tr>{(si ? ["ඇණවුම", "දිනය", "මුදල", "ගෙවීමේ ක්‍රමය", "ගෙවීමේ තත්ත්වය"] : ["Order", "Date", "Amount", "Payment method", "Payment status"]).map(item => <th key={item} style={tableHeadStyle}>{item}</th>)}</tr></thead>
+              <tbody>{orders.map(order => <tr key={order._id}><td style={tableCellStyle}>#{order._id.slice(-7).toUpperCase()}</td><td style={tableCellStyle}>{date(order.createdAt)}</td><td style={tableCellStyle}>{formatOrderAmount(order.products.reduce((total, item) => total + item.price * item.qty, 0), order)}</td><td style={tableCellStyle}>{translatePaymentMethod(order.paymentMethod || "Not selected")}</td><td style={tableCellStyle}><Status value={translateStatus(order.paymentStatus)} /></td></tr>)}</tbody>
             </table>
           </div>}
         </section>}

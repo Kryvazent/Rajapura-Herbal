@@ -115,6 +115,9 @@ export function Navbar() {
   const location = useLocation();
   const { language, t } = useLanguage();
   const a11y = navAccessibility[language];
+  const cartTitle = language === "si" ? "කරත්තය" : "Shopping cart";
+  const profileTitle = language === "si" ? "පාරිභෝගික පැතිකඩ" : "Customer profile";
+  const signInTitle = language === "si" ? "පුරනය වන්න" : "Sign in";
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
@@ -264,8 +267,8 @@ export function Navbar() {
             {showCart && (
               <Link
                 to="/cart"
-                aria-label={`Shopping cart, ${cartCount} items`}
-                title="Shopping cart"
+                aria-label={`${cartTitle}, ${cartCount}`}
+                title={cartTitle}
                 style={{
                   position: "relative",
                   width: 40,
@@ -304,8 +307,8 @@ export function Navbar() {
             {showCart && (
               <Link
                 to={isCustomer ? "/profile" : "/account"}
-                aria-label={isCustomer ? "Customer profile" : "Sign in"}
-                title={isCustomer ? "Customer profile" : "Sign in"}
+                aria-label={isCustomer ? profileTitle : signInTitle}
+                title={isCustomer ? profileTitle : signInTitle}
                 style={{
                   marginLeft: 8,
                   color: "#2D5016",
@@ -333,14 +336,14 @@ export function Navbar() {
               <>
               <Link
                 to="/cart"
-                aria-label={`Shopping cart, ${cartCount} items`}
+                aria-label={`${cartTitle}, ${cartCount}`}
                 onClick={close}
                 style={{ position: "relative", display: "inline-flex", padding: 7, color: "#2D5016" }}
               >
                 <ShoppingCart size={21} />
                 {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{formatCartCount(cartCount)}</span>}
               </Link>
-              <Link to={isCustomer ? "/profile" : "/account"} onClick={close} aria-label={isCustomer ? "Customer profile" : "Sign in"} title={isCustomer ? "Customer profile" : "Sign in"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
+              <Link to={isCustomer ? "/profile" : "/account"} onClick={close} aria-label={isCustomer ? profileTitle : signInTitle} title={isCustomer ? profileTitle : signInTitle} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
                 {accountIcon}
               </Link>
               </>

@@ -5,8 +5,13 @@ import { ShoppingBag, ArrowRight, X, Upload, CreditCard, Receipt, CheckCircle2, 
 import axios from "axios";
 import { formatUSDPrice } from "../lib/price";
 import { useCustomerUploadThing } from "../lib/uploadthing";
+import { useLanguage } from "../i18n/LanguageContext";
+import type { Language } from "../i18n/LanguageContext";
 
 type Item = { product: Product; qty: number };
+const productDisplayName = (product: Product, language: Language) => language === "si"
+  ? product.translations?.name?.si?.trim() || product.sinhalaName?.trim() || product.name
+  : product.translations?.name?.en?.trim() || product.name;
 const itemUnitPrice = (product: Product): number | null => {
   const rawPrice = product.priceUSD || (product.price?.startsWith("USD ") ? product.price : "");
   if (!rawPrice) return null;
@@ -32,6 +37,8 @@ const getOrderErrorMessage = (error: any) => {
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const si = language === "si";
   const [items, setItems] = useState<Item[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [signedIn, setSignedIn] = useState(false);
@@ -218,7 +225,7 @@ export default function Cart() {
     }
     setCheckoutSubmitting(true);
     setCheckoutError("");
-    setOrderProgress(checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…");
+    setOrderProgress(si ? (checkoutPaymentMethod === "Payment slip" ? "ඔබගේ ඇණවුම සූදානම් කරමින්…" : "ඔබගේ ඇණවුම යවමින්…") : (checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…"));
     try {
       let paymentSlipUrl = "";
       let orderId: string | undefined;
@@ -244,12 +251,12 @@ export default function Cart() {
         const mimeExtension = paymentSlip.type === "application/pdf" ? ".pdf" : paymentSlip.type === "image/jpeg" ? ".jpg" : paymentSlip.type === "image/png" ? ".png" : paymentSlip.type === "image/webp" ? ".webp" : paymentSlip.type === "image/gif" ? ".gif" : ".img";
         paymentSlipFileName = `${orderId}${paymentSlip.type === "application/pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
         const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: paymentSlip.type, lastModified: paymentSlip.lastModified });
-        setOrderProgress("Uploading your payment slip…");
+        setOrderProgress(si ? "ඔබගේ ගෙවීම් රිසිට්පත උඩුගත කරමින්…" : "Uploading your payment slip…");
         const uploaded = await startUpload([renamedPaymentSlip]);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
         if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
       }
-      setOrderProgress("Submitting your order…");
+      setOrderProgress(si ? "ඔබගේ ඇණවුම යවමින්…" : "Submitting your order…");
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders`, {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
@@ -265,14 +272,16 @@ export default function Cart() {
       setPaymentSlipOpen(false);
       setOrderResult({
         success: true,
-        message: `${response.data.message ?? "Order placed successfully."}${checkoutPaymentMethod === "Online payment" ? " We’ll contact you with payment instructions." : " Your payment slip has been submitted."}`,
+        message: si
+          ? (checkoutPaymentMethod === "Online payment" ? "ඔබගේ ඇණවුම සාර්ථකව යවා ඇත. ගෙවීම් උපදෙස් සඳහා අපි ඔබ හා සම්බන්ධ වන්නෙමු." : "ඔබගේ ඇණවුම සාර්ථකයි. ගෙවීම් රිසිට්පත ලැබී ඇත.")
+          : `${response.data.message ?? "Order placed successfully."}${checkoutPaymentMethod === "Online payment" ? " We’ll contact you with payment instructions." : " Your payment slip has been submitted."}`,
       });
       setCartError("");
     } catch (error: any) {
       setCheckoutOpen(false);
       setOrderResult({
         success: false,
-        message: getOrderErrorMessage(error),
+        message: si ? "ඔබගේ ඇණවුම සම්පූර්ණ කළ නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න." : getOrderErrorMessage(error),
       });
     } finally {
       setCheckoutSubmitting(false);
@@ -379,7 +388,7 @@ export default function Cart() {
               textTransform: "uppercase",
             }}
           >
-            Your cart
+            {si ? "ඔබේ කරත්තය" : "Your cart"}
           </p>
           <h1
             style={{
@@ -389,10 +398,10 @@ export default function Cart() {
               fontSize: "clamp(1.6rem, 4vw, 2rem)",
             }}
           >
-            Your cart is empty
+            {si ? "ඔබේ කරත්තය හිස්" : "Your cart is empty"}
           </h1>
           <p style={{ margin: "0 auto 26px", maxWidth: 390, color: "#6B6257", lineHeight: 1.7 }}>
-            Find something good for you.
+            {si ? "ඔබට ගැළපෙන දෙයක් සොයා ගන්න." : "Find something good for you."}
           </p>
           <Link
             to="/products"
@@ -410,7 +419,7 @@ export default function Cart() {
               fontWeight: 700,
             }}
           >
-            Explore products <ArrowRight size={16} />
+            {si ? "නිෂ්පාදන බලන්න" : "Explore products"} <ArrowRight size={16} />
           </Link>
         </section>
       </main>
@@ -429,8 +438,8 @@ export default function Cart() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
       <section>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>Your cart</h1>
-        {items.length > 0 && <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#526746", fontSize: ".84rem", fontWeight: 700, cursor: "pointer" }}><input type="checkbox" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? items.map((item) => String(item.product._id)) : [])} style={{ width: 17, height: 17, accentColor: "#31551F" }} />Select all</label>}
+        <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>{si ? "ඔබේ කරත්තය" : "Your cart"}</h1>
+        {items.length > 0 && <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#526746", fontSize: ".84rem", fontWeight: 700, cursor: "pointer" }}><input type="checkbox" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? items.map((item) => String(item.product._id)) : [])} style={{ width: 17, height: 17, accentColor: "#31551F" }} />{si ? "සියල්ල තෝරන්න" : "Select all"}</label>}
       </div>
       {items.map((item) => (
         <article
@@ -460,8 +469,8 @@ export default function Cart() {
               borderRadius: 10,
             }}
           />
-          <strong style={{ flex: 1 }}>{item.product.name}</strong>
-          <span>{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || "Contact for price"}</span>
+          <strong style={{ flex: 1 }}>{productDisplayName(item.product, language)}</strong>
+          <span>{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || (si ? "මිල සඳහා විමසන්න" : "Contact for price")}</span>
           <div aria-label={`Quantity for ${item.product.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
             <button type="button" aria-label={`Decrease ${item.product.name} quantity`} disabled={item.qty <= 1} onClick={() => updateQuantity(item.product._id, item.qty - 1)} style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 9, color: "#2D5016", background: item.qty <= 1 ? "#E8E6DD" : "#E4EBD8", fontSize: "1.2rem", fontWeight: 700, cursor: item.qty <= 1 ? "not-allowed" : "pointer" }}>−</button>
             <input
@@ -499,36 +508,36 @@ export default function Cart() {
             }}
             style={{ padding: "9px 14px", border: "1px solid rgba(157,48,41,.3)", borderRadius: 22, color: "#8F2D26", background: "#FFF3F0", fontSize: ".86rem", fontWeight: 700, cursor: "pointer", transition: "background .2s, transform .2s" }}
           >
-            Remove
+            {si ? "ඉවත් කරන්න" : "Remove"}
           </button>
         </article>
       ))}
       </section>
       <aside style={{ position: "sticky", top: 24, padding: 24, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.12)", borderRadius: 18, boxShadow: "0 12px 32px rgba(45,80,22,.08)" }}>
-        <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>ORDER SUMMARY</p>
-        <h2 style={{ margin: "0 0 20px", fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>Payment details</h2>
+        <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "ඇණවුම් සාරාංශය" : "ORDER SUMMARY"}</p>
+        <h2 style={{ margin: "0 0 20px", fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>{si ? "ගෙවීම් විස්තර" : "Payment details"}</h2>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid rgba(45,80,22,.12)", color: "#6B6257", fontSize: ".92rem" }}>
-          <span>Selected items</span><strong style={{ color: "#2D5016" }}>{selectedItems.reduce((total, item) => total + item.qty, 0)}</strong>
+          <span>{si ? "තෝරාගත් භාණ්ඩ" : "Selected items"}</span><strong style={{ color: "#2D5016" }}>{selectedItems.reduce((total, item) => total + item.qty, 0)}</strong>
         </div>
         <div style={{ display: "grid", gap: 12, padding: "14px 0", borderBottom: "1px solid rgba(45,80,22,.12)" }}>
           {selectedPricedItems.map((item) => (
             <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, color: "#6B6257", fontSize: ".86rem" }}>
               <div>
-                <div style={{ color: "#334A28", fontWeight: 700 }}>{item.product.name}</div>
-                <div style={{ marginTop: 3 }}>{item.qty} × {item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice)}</div>
+                <div style={{ color: "#334A28", fontWeight: 700 }}>{productDisplayName(item.product, language)}</div>
+                <div style={{ marginTop: 3 }}>{item.qty} × {item.unitPrice === null ? (si ? "මිල සඳහා විමසන්න" : "Contact for price") : formatDollarAmount(item.unitPrice)}</div>
               </div>
               <strong style={{ flexShrink: 0, color: "#2D5016" }}>{item.unitPrice === null ? "—" : formatDollarAmount(item.unitPrice * item.qty)}</strong>
             </div>
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 18, padding: "16px 0 18px", borderBottom: "1px solid rgba(45,80,22,.12)", color: "#243D17", fontSize: "1rem" }}>
-          <strong>Estimated total</strong>
-          <strong>{selectedItems.length === 0 ? "Select items for checkout" : selectedEstimatedTotal === null ? "Contact for price" : formatDollarAmount(selectedEstimatedTotal)}</strong>
+          <strong>{si ? "ඇස්තමේන්තුගත මුළු එකතුව" : "Estimated total"}</strong>
+          <strong>{selectedItems.length === 0 ? (si ? "ගෙවීම සඳහා භාණ්ඩ තෝරන්න" : "Select items for checkout") : selectedEstimatedTotal === null ? (si ? "මිල සඳහා විමසන්න" : "Contact for price") : formatDollarAmount(selectedEstimatedTotal)}</strong>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "14px 0 18px", color: "#6B6257", fontSize: ".92rem" }}>
-          <span>Payment</span><strong style={{ color: "#2D5016" }}>{selectedItems.length === 0 ? "Select items" : hasContactPrice ? "Payment slip required" : "Choose at checkout"}</strong>
+          <span>{si ? "ගෙවීම" : "Payment"}</span><strong style={{ color: "#2D5016" }}>{selectedItems.length === 0 ? (si ? "භාණ්ඩ තෝරන්න" : "Select items") : hasContactPrice ? (si ? "ගෙවීම් රිසිට්පත අවශ්‍යයි" : "Payment slip required") : (si ? "ගෙවීමේදී තෝරන්න" : "Choose at checkout")}</strong>
         </div>
-        <button type="button" onClick={() => void openCheckout()} disabled={selectedItems.length === 0} style={{ width: "100%", padding: "12px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: selectedItems.length === 0 ? "#87947A" : "#2D5016", fontWeight: 700, cursor: selectedItems.length === 0 ? "not-allowed" : "pointer" }}>Continue to payment ({selectedItems.length})</button>
+        <button type="button" onClick={() => void openCheckout()} disabled={selectedItems.length === 0} style={{ width: "100%", padding: "12px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: selectedItems.length === 0 ? "#87947A" : "#2D5016", fontWeight: 700, cursor: selectedItems.length === 0 ? "not-allowed" : "pointer" }}>{si ? `ගෙවීමට ඉදිරියට (${selectedItems.length})` : `Continue to payment (${selectedItems.length})`}</button>
       </aside>
       </div>
       {orderResult && <div role="presentation" style={{ position: "fixed", inset: 0, zIndex: 1200, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.68)" }}>
@@ -537,10 +546,10 @@ export default function Cart() {
             {orderResult.success ? <CheckCircle2 size={30} /> : <X size={28} />}
           </span>
           <h2 id="order-result-title" style={{ margin: "0 0 10px", fontFamily: "'Playfair Display',serif", fontSize: "1.65rem", fontWeight: 500 }}>
-            {orderResult.success ? "Order placed successfully" : "Order could not be placed"}
+            {orderResult.success ? (si ? "ඇණවුම සාර්ථකයි" : "Order placed successfully") : (si ? "ඇණවුම සම්පූර්ණ කළ නොහැක" : "Order could not be placed")}
           </h2>
           <p id="order-result-message" style={{ margin: 0, color: "#71695E", lineHeight: 1.65 }}>{orderResult.message}</p>
-          {orderResult.success ? <button type="button" onClick={() => navigate("/profile", { replace: true, state: { section: "orders" } })} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>View my orders</button> : <button type="button" onClick={() => setOrderResult(null)} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>Return to cart</button>}
+          {orderResult.success ? <button type="button" onClick={() => navigate("/profile", { replace: true, state: { section: "orders" } })} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{si ? "මගේ ඇණවුම් බලන්න" : "View my orders"}</button> : <button type="button" onClick={() => setOrderResult(null)} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{si ? "කරත්තයට ආපසු යන්න" : "Return to cart"}</button>}
         </section>
       </div>}
       {checkoutOpen && <div role="presentation" onClick={() => { if (!checkoutSubmitting) { setCheckoutOpen(false); setPaymentSlipOpen(false); } }} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
@@ -549,17 +558,17 @@ export default function Cart() {
           <header style={{ position: "sticky", top: 0, zIndex: 2, padding: "25px clamp(22px,4vw,38px) 22px", color: "#F8F5EA", background: "linear-gradient(115deg,#203B14,#31551F 62%,#3B6227)", overflow: "hidden" }}>
             <div aria-hidden="true" style={{ position: "absolute", width: 210, height: 210, right: 38, top: -146, border: "1px solid rgba(226,204,135,.18)", borderRadius: "50%", boxShadow: "0 0 0 22px rgba(226,204,135,.035),0 0 0 46px rgba(226,204,135,.025)" }} />
             <button type="button" aria-label="Close checkout" onClick={() => { setCheckoutOpen(false); setPaymentSlipOpen(false); }} disabled={checkoutSubmitting} style={{ position: "absolute", top: 20, right: 20, zIndex: 1, display: "grid", placeItems: "center", width: 38, height: 38, border: "1px solid rgba(248,245,234,.24)", borderRadius: "50%", background: "rgba(255,255,255,.08)", color: "#F8F5EA", cursor: "pointer" }}><X size={18} /></button>
-            <p style={{ position: "relative", margin: "0 0 7px", color: "#DDBD65", fontSize: ".68rem", fontWeight: 800, letterSpacing: ".18em" }}>YOUR ORDER</p>
-            <h2 id="checkout-title" style={{ position: "relative", margin: "0 50px 15px 0", fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 500, lineHeight: 1.15 }}>Delivery and payment</h2>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, color: "rgba(248,245,234,.78)", fontSize: ".76rem", fontWeight: 700 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, borderRadius: "50%", color: "#243D17", background: "#DDBD65", fontSize: ".68rem" }}>1</span>Delivery</span><span style={{ width: 32, borderTop: "1px solid rgba(248,245,234,.35)" }} /><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, border: "1px solid rgba(248,245,234,.38)", borderRadius: "50%", fontSize: ".68rem" }}>2</span>Payment</span></div>
+            <p style={{ position: "relative", margin: "0 0 7px", color: "#DDBD65", fontSize: ".68rem", fontWeight: 800, letterSpacing: ".18em" }}>{si ? "ඔබගේ ඇණවුම" : "YOUR ORDER"}</p>
+            <h2 id="checkout-title" style={{ position: "relative", margin: "0 50px 15px 0", fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 500, lineHeight: 1.15 }}>{si ? "බෙදාහැරීම සහ ගෙවීම" : "Delivery and payment"}</h2>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, color: "rgba(248,245,234,.78)", fontSize: ".76rem", fontWeight: 700 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, borderRadius: "50%", color: "#243D17", background: "#DDBD65", fontSize: ".68rem" }}>1</span>{si ? "බෙදාහැරීම" : "Delivery"}</span><span style={{ width: 32, borderTop: "1px solid rgba(248,245,234,.35)" }} /><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, border: "1px solid rgba(248,245,234,.38)", borderRadius: "50%", fontSize: ".68rem" }}>2</span>{si ? "ගෙවීම" : "Payment"}</span></div>
           </header>
           {checkoutLoading ? <div role="status" aria-label="Loading saved delivery details" style={{ minHeight: 300, display: "grid", placeItems: "center" }}><div style={{ width: 36, height: 36, border: "3px solid rgba(45,80,22,.14)", borderTopColor: "#31551F", borderRadius: "50%", animation: "cart-spin .8s linear infinite" }} /><style>{"@keyframes cart-spin{to{transform:rotate(360deg)}}"}</style></div> : checkoutMessage ? <div style={{ minHeight: 330, display: "grid", placeItems: "center", padding: 28, textAlign: "center" }}><div><span style={{ width: 64, height: 64, margin: "0 auto 16px", display: "grid", placeItems: "center", borderRadius: "50%", color: "#31551F", background: "#E4ECD9" }}><CheckCircle2 size={34} /></span><h3 style={{ margin: "0 0 8px", fontFamily: "'Playfair Display',serif", fontSize: "1.55rem" }}>Order received</h3><p style={{ maxWidth: 420, margin: "0 auto", color: "#71695E", lineHeight: 1.65 }}>{checkoutMessage}</p><button type="button" onClick={() => setCheckoutOpen(false)} style={{ marginTop: 22, padding: "11px 28px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "#2D5016", fontWeight: 700, cursor: "pointer" }}>Done</button></div></div> : <form onSubmit={submitOrder} className="checkout-layout">
             <div className="checkout-pane">
-              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "#E8EDD9" }}><ShoppingBag size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Delivery details</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Where should we send your order?</span></div></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "#E8EDD9" }}><ShoppingBag size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>{si ? "බෙදාහැරීමේ විස්තර" : "Delivery details"}</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>{si ? "ඔබගේ ඇණවුම යැවිය යුත්තේ කොතැනටද?" : "Where should we send your order?"}</span></div></div>
               <div className="checkout-fields">
-                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Delivery address <span style={{ color: "#9A7048" }}>*</span></span><textarea className="checkout-control" required autoComplete="street-address" rows={3} value={checkoutDetails.address} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, address: event.target.value })} style={{ resize: "vertical" }} /></label>
+                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>{si ? "බෙදාහැරීමේ ලිපිනය" : "Delivery address"} <span style={{ color: "#9A7048" }}>*</span></span><textarea className="checkout-control" required autoComplete="street-address" rows={3} value={checkoutDetails.address} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, address: event.target.value })} style={{ resize: "vertical" }} /></label>
                 <div style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>
-                  <label htmlFor="checkout-country"><span>Country <span style={{ color: "#9A7048" }}>*</span></span></label>
+                  <label htmlFor="checkout-country"><span>{si ? "රට" : "Country"} <span style={{ color: "#9A7048" }}>*</span></span></label>
                   <div style={{ position: "relative" }}>
                     <input
                       id="checkout-country"
@@ -571,8 +580,8 @@ export default function Cart() {
                       aria-expanded={countryListOpen}
                       aria-controls="checkout-country-options"
                       aria-activedescendant={countryListOpen && matchingCountries[activeCountryIndex] ? `checkout-country-option-${activeCountryIndex}` : undefined}
-                      placeholder={countryLoading ? "Loading countries…" : "Search countries"}
-                      value={countryQuery}
+                      placeholder={countryLoading ? (si ? "රටවල් පූරණය වෙමින්…" : "Loading countries…") : (si ? "රටවල් සොයන්න" : "Search countries")}
+                      value={si && checkoutDetails.country === "Sri Lanka" ? "ශ්‍රී ලංකාව" : countryQuery}
                       disabled={countryLoading || Boolean(countryError)}
                       onFocus={() => setCountryListOpen(true)}
                       onBlur={() => setCountryListOpen(false)}
@@ -600,7 +609,7 @@ export default function Cart() {
                       style={{ paddingRight: 38 }}
                     />
                     <ChevronDown size={16} aria-hidden="true" style={{ position: "absolute", top: 14, right: 13, color: "#526746", pointerEvents: "none" }} />
-                    {countryListOpen && !countryLoading && !countryError && <div id="checkout-country-options" role="listbox" aria-label="Countries" style={{ position: "absolute", zIndex: 5, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: 220, overflowY: "auto", padding: 4, border: "1px solid #D8DCCB", borderRadius: 10, background: "#FFFEFC", boxShadow: "0 8px 20px rgba(36,69,22,.14)" }}>
+                    {countryListOpen && !countryLoading && !countryError && <div id="checkout-country-options" role="listbox" aria-label={si ? "රටවල්" : "Countries"} style={{ position: "absolute", zIndex: 5, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: 220, overflowY: "auto", padding: 4, border: "1px solid #D8DCCB", borderRadius: 10, background: "#FFFEFC", boxShadow: "0 8px 20px rgba(36,69,22,.14)" }}>
                       {matchingCountries.length > 0 ? matchingCountries.map((name, index) => <div
                         id={`checkout-country-option-${index}`}
                         key={name}
@@ -609,42 +618,42 @@ export default function Cart() {
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => selectCountry(name)}
                         style={{ padding: "9px 10px", borderRadius: 7, background: activeCountryIndex === index ? "#E8EDD9" : "transparent", color: "#283C1C", cursor: "pointer", fontWeight: 500 }}
-                      >{name}</div>) : <div style={{ padding: "9px 10px", color: "#71695E", fontWeight: 400 }}>No countries match your search.</div>}
+                      >{si && name === "Sri Lanka" ? "ශ්‍රී ලංකාව" : name}</div>) : <div style={{ padding: "9px 10px", color: "#71695E", fontWeight: 400 }}>{si ? "සෙවුමට ගැළපෙන රටවල් හමු නොවීය." : "No countries match your search."}</div>}
                     </div>}
                   </div>
-                  {countryLoading && <span role="status" style={{ color: "#71695E", fontSize: ".74rem", fontWeight: 400 }}>Loading country list…</span>}
+                  {countryLoading && <span role="status" style={{ color: "#71695E", fontSize: ".74rem", fontWeight: 400 }}>{si ? "රටවල් ලැයිස්තුව පූරණය වෙමින්…" : "Loading country list…"}</span>}
                   {countryError && <div role="alert" style={{ display: "flex", alignItems: "center", gap: 8, color: "#8F2D26", fontSize: ".74rem", fontWeight: 400 }}>
-                    <span>Could not load countries. {countryError}</span>
-                    <button type="button" onClick={() => setCountryRetry((retry) => retry + 1)} style={{ border: 0, padding: 0, color: "#31551F", background: "transparent", font: "inherit", fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>Retry</button>
+                    <span>{si ? "රටවල් පූරණය කළ නොහැක." : "Could not load countries."} {countryError}</span>
+                    <button type="button" onClick={() => setCountryRetry((retry) => retry + 1)} style={{ border: 0, padding: 0, color: "#31551F", background: "transparent", font: "inherit", fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>{si ? "නැවත උත්සාහ කරන්න" : "Retry"}</button>
                   </div>}
                 </div>
-                <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Contact number <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required type="tel" autoComplete="tel" value={checkoutDetails.contactNumber} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, contactNumber: event.target.value })} /></label>
-                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>Delivery note <span style={{ color: "#847A68", fontWeight: 400 }}>(optional)</span><textarea className="checkout-control" rows={2} maxLength={1000} value={checkoutDetails.additionalNote} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, additionalNote: event.target.value })} style={{ resize: "vertical" }} /></label>
+                <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>{si ? "දුරකථන අංකය" : "Contact number"} <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required type="tel" autoComplete="tel" value={checkoutDetails.contactNumber} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, contactNumber: event.target.value })} /></label>
+                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>{si ? "බෙදාහැරීමේ සටහන" : "Delivery note"} <span style={{ color: "#847A68", fontWeight: 400 }}>({si ? "විකල්ප" : "optional"})</span><textarea className="checkout-control" rows={2} maxLength={1000} value={checkoutDetails.additionalNote} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, additionalNote: event.target.value })} style={{ resize: "vertical" }} /></label>
               </div>
             </div>
             <div className="checkout-pane checkout-payment">
-              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "rgba(255,255,255,.62)" }}><CreditCard size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Payment method</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Choose one option</span></div></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "rgba(255,255,255,.62)" }}><CreditCard size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>{si ? "ගෙවීමේ ක්‍රමය" : "Payment method"}</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>{si ? "එක් ක්‍රමයක් තෝරන්න" : "Choose one option"}</span></div></div>
               <div role="group" aria-label="Payment method" className="checkout-methods">
                 <button type="button" aria-pressed={checkoutPaymentMethod === "Payment slip"} onClick={() => { setPaymentMethod("Payment slip"); setCheckoutError(""); setPaymentSlipOpen(true); }} className={`checkout-method${checkoutPaymentMethod === "Payment slip" ? " selected" : ""}`}>
                   <Receipt size={20} aria-hidden="true" />
-                  <strong style={{ display: "block", fontSize: ".85rem" }}>Payment slip</strong>
+                  <strong style={{ display: "block", fontSize: ".85rem" }}>{si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}</strong>
                 </button>
                 <button type="button" aria-pressed={checkoutPaymentMethod === "Online payment"} disabled={!canPayOnline} onClick={() => { setPaymentMethod("Online payment"); setPaymentSlipOpen(false); setCheckoutError(""); }} className={`checkout-method${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}>
                   <CreditCard size={20} aria-hidden="true" />
-                  <strong style={{ display: "block", fontSize: ".85rem" }}>Online payment</strong>
+                  <strong style={{ display: "block", fontSize: ".85rem" }}>{si ? "මාර්ගගත ගෙවීම" : "Online payment"}</strong>
                 </button>
               </div>
-              {checkoutPaymentMethod === "Payment slip" && !paymentSlipOpen && paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, marginTop: 13, padding: 10, border: "1px solid rgba(45,80,22,.14)", borderRadius: 13, background: "rgba(255,254,250,.8)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong title={paymentSlip.name} style={{ minWidth: 0, overflow: "hidden", color: "#405235", fontSize: ".76rem", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{paymentSlip.name}</strong><button type="button" onClick={() => setPaymentSlipOpen(true)} style={{ flexShrink: 0, padding: "5px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 8, color: "#31551F", background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>Change</button></div>
-                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 150, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 150, border: 0, borderRadius: 8, background: "#fff" }} />}
+              {checkoutPaymentMethod === "Payment slip" && !paymentSlipOpen && paymentSlip && paymentSlipPreviewUrl && <div aria-label={`${si ? "රිසිට්පතේ පෙරදසුන" : "Preview of"} ${paymentSlip.name}`} style={{ display: "grid", gap: 8, minWidth: 0, maxWidth: "100%", boxSizing: "border-box", overflow: "hidden", marginTop: 13, padding: 10, border: "1px solid rgba(45,80,22,.14)", borderRadius: 13, background: "rgba(255,254,250,.8)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}><strong title={paymentSlip.name} style={{ flex: 1, minWidth: 0, overflow: "hidden", color: "#405235", fontSize: ".76rem", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{paymentSlip.name}</strong><button type="button" onClick={() => setPaymentSlipOpen(true)} style={{ flexShrink: 0, padding: "5px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 8, color: "#31551F", background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>{si ? "වෙනස් කරන්න" : "Change"}</button></div>
+                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`${si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}: ${paymentSlip.name}`} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`${si ? "ගෙවීම් රිසිට්පතේ පෙරදසුන" : "Payment slip preview"}: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", border: 0, borderRadius: 8, background: "#fff" }} />}
               </div>}
               <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>Order summary</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} items</span></div>
-                <div style={{ display: "grid", gap: 8, maxHeight: 116, overflowY: "auto" }}>{selectedPricedItems.map((item) => <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#71695E", fontSize: ".76rem" }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.product.name} × {item.qty}</span><strong style={{ flexShrink: 0, color: "#405235", fontSize: ".76rem" }}>{item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice * item.qty)}</strong></div>)}</div>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 11, borderTop: "1px solid rgba(45,80,22,.12)", color: "#244516", fontSize: ".95rem" }}><strong>Estimated total</strong><strong>{selectedEstimatedTotal === null ? "Contact for price" : formatDollarAmount(selectedEstimatedTotal)}</strong></div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>{si ? "ඇණවුම් සාරාංශය" : "Order summary"}</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} {si ? "භාණ්ඩ" : "items"}</span></div>
+                <div style={{ display: "grid", gap: 8, maxHeight: 116, overflowY: "auto" }}>{selectedPricedItems.map((item) => <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#71695E", fontSize: ".76rem" }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productDisplayName(item.product, language)} × {item.qty}</span><strong style={{ flexShrink: 0, color: "#405235", fontSize: ".76rem" }}>{item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice * item.qty)}</strong></div>)}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 11, borderTop: "1px solid rgba(45,80,22,.12)", color: "#244516", fontSize: ".95rem" }}><strong>{si ? "ඇස්තමේන්තුගත මුළු එකතුව" : "Estimated total"}</strong><strong>{selectedEstimatedTotal === null ? (si ? "මිල සඳහා විමසන්න" : "Contact for price") : formatDollarAmount(selectedEstimatedTotal)}</strong></div>
               </div>
               {checkoutError && <p role="alert" style={{ margin: "13px 0 0", padding: "10px 12px", borderRadius: 10, color: "#8F2D26", background: "#FFF3F0", border: "1px solid #E6B6AE", fontSize: ".84rem" }}>{checkoutError}</p>}
-              <button type="submit" disabled={checkoutSubmitting || selectedItems.length === 0} style={{ width: "100%", marginTop: 15, padding: "14px 18px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "linear-gradient(110deg,#31591C,#244516)", boxShadow: "0 8px 18px rgba(36,69,22,.2)", fontWeight: 800, fontSize: ".91rem", cursor: checkoutSubmitting ? "wait" : "pointer", opacity: checkoutSubmitting || selectedItems.length === 0 ? .68 : 1 }}>{checkoutSubmitting ? checkoutPaymentMethod === "Payment slip" ? "Uploading slip and placing order…" : "Placing order…" : "Place order"}<span aria-hidden="true" style={{ marginLeft: 8 }}>→</span></button>
+              <button type="submit" disabled={checkoutSubmitting || selectedItems.length === 0} style={{ width: "100%", marginTop: 15, padding: "14px 18px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "linear-gradient(110deg,#31591C,#244516)", boxShadow: "0 8px 18px rgba(36,69,22,.2)", fontWeight: 800, fontSize: ".91rem", cursor: checkoutSubmitting ? "wait" : "pointer", opacity: checkoutSubmitting || selectedItems.length === 0 ? .68 : 1 }}>{checkoutSubmitting ? checkoutPaymentMethod === "Payment slip" ? (si ? "රිසිට්පත උඩුගත කර ඇණවුම යවමින්…" : "Uploading slip and placing order…") : (si ? "ඇණවුම යවමින්…" : "Placing order…") : (si ? "ඇණවුම තහවුරු කරන්න" : "Place order")}<span aria-hidden="true" style={{ marginLeft: 8 }}>→</span></button>
             </div>
           </form>}
         </section>
@@ -652,40 +661,40 @@ export default function Cart() {
       {checkoutOpen && paymentSlipOpen && <div role="presentation" onClick={() => setPaymentSlipOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1120, display: "grid", placeItems: "center", padding: 16, background: "rgba(15,28,9,.68)" }}>
         <section role="dialog" aria-modal="true" aria-labelledby="payment-slip-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 840px)", maxHeight: "min(92vh, 760px)", overflowY: "auto", border: "1px solid rgba(45,80,22,.2)", borderRadius: 22, background: "#FBF8F0", color: "#244516", boxShadow: "0 30px 80px rgba(0,0,0,.38)" }}>
           <header style={{ position: "sticky", top: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "18px 22px", borderBottom: "1px solid rgba(45,80,22,.12)", background: "#FBF8F0" }}>
-            <div><p style={{ margin: "0 0 4px", color: "#9A7048", fontSize: ".67rem", fontWeight: 800, letterSpacing: ".14em" }}>BANK TRANSFER</p><h2 id="payment-slip-title" style={{ margin: 0, fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>Payment slip</h2></div>
-            <button type="button" aria-label="Close payment slip details" onClick={() => setPaymentSlipOpen(false)} style={{ width: 38, height: 38, display: "grid", placeItems: "center", flexShrink: 0, border: "1px solid rgba(45,80,22,.16)", borderRadius: "50%", color: "#31551F", background: "#FFFEFA", cursor: "pointer" }}><X size={18} /></button>
+            <div><p style={{ margin: "0 0 4px", color: "#9A7048", fontSize: ".67rem", fontWeight: 800, letterSpacing: ".14em" }}>{si ? "බැංකු මාරු කිරීම" : "BANK TRANSFER"}</p><h2 id="payment-slip-title" style={{ margin: 0, fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>{si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}</h2></div>
+            <button type="button" aria-label={si ? "ගෙවීම් විස්තර වසන්න" : "Close payment slip details"} onClick={() => setPaymentSlipOpen(false)} style={{ width: 38, height: 38, display: "grid", placeItems: "center", flexShrink: 0, border: "1px solid rgba(45,80,22,.16)", borderRadius: "50%", color: "#31551F", background: "#FFFEFA", cursor: "pointer" }}><X size={18} /></button>
           </header>
           <div className="payment-slip-layout">
             <section className="payment-slip-column" aria-labelledby="bank-account-heading">
               <span aria-hidden="true" style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginBottom: 14, borderRadius: 14, color: "#31551F", background: "#E6ECD9" }}><CreditCard size={21} /></span>
-              <h3 id="bank-account-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>Transfer to this account</h3>
-              <p style={{ margin: "0 0 18px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>Complete your bank transfer, then upload a clear photo or PDF of the receipt.</p>
+              <h3 id="bank-account-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>{si ? "මෙම ගිණුමට මුදල් මාරු කරන්න" : "Transfer to this account"}</h3>
+              <p style={{ margin: "0 0 18px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>{si ? "බැංකු මාරුව සම්පූර්ණ කර, රිසිට්පතේ පැහැදිලි ඡායාරූපයක් හෝ PDF ගොනුවක් උඩුගත කරන්න." : "Complete your bank transfer, then upload a clear photo or PDF of the receipt."}</p>
               <dl style={{ display: "grid", gap: 0, margin: 0, padding: "4px 15px", border: "1px solid rgba(45,80,22,.12)", borderRadius: 14, background: "#FFFEFA" }}>
-                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Account name</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 800, lineHeight: 1.4 }}>Rajapura Herbal Drugs Co. (Pvt) Ltd</dd></div>
-                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Account number</dt><dd style={{ margin: "5px 0 0", color: "#244516", fontSize: "1.18rem", fontWeight: 800, letterSpacing: ".04em" }}>007410001661</dd></div>
-                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Bank</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>Sampath Bank</dd></div>
-                <div style={{ padding: "12px 0" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Branch / country</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>Monaragala, Sri Lanka</dd></div>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>{si ? "ගිණුමේ නම" : "Account name"}</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 800, lineHeight: 1.4 }}>Rajapura Herbal Drugs Co. (Pvt) Ltd</dd></div>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>{si ? "ගිණුම් අංකය" : "Account number"}</dt><dd style={{ margin: "5px 0 0", color: "#244516", fontSize: "1.18rem", fontWeight: 800, letterSpacing: ".04em" }}>007410001661</dd></div>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>{si ? "බැංකුව" : "Bank"}</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>Sampath Bank</dd></div>
+                <div style={{ padding: "12px 0" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>{si ? "ශාඛාව / රට" : "Branch / country"}</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>{si ? "මොනරාගල, ශ්‍රී ලංකාව" : "Monaragala, Sri Lanka"}</dd></div>
               </dl>
             </section>
 
             <section className="payment-slip-column" aria-labelledby="upload-slip-heading" style={{ borderLeft: "1px solid rgba(45,80,22,.1)", background: "linear-gradient(160deg,#F1F3E7,#E9EEDC)" }}>
               <span aria-hidden="true" style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginBottom: 14, borderRadius: 14, color: "#31551F", background: "rgba(255,255,255,.7)" }}><Upload size={21} /></span>
-              <h3 id="upload-slip-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>Upload your receipt</h3>
-              <p style={{ margin: "0 0 15px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>Accepted formats: image or PDF, up to 4 MB.</p>
+              <h3 id="upload-slip-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>{si ? "ඔබගේ රිසිට්පත උඩුගත කරන්න" : "Upload your receipt"}</h3>
+              <p style={{ margin: "0 0 15px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>{si ? "පිළිගන්නා ගොනු: රූපයක් හෝ PDF, උපරිමය 4 MB." : "Accepted formats: image or PDF, up to 4 MB."}</p>
               <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 68, padding: "12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.34)", borderRadius: 13, background: "rgba(255,254,250,.8)", color: "#2D5016", cursor: "pointer" }}>
                 <span style={{ width: 36, height: 36, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span>
-                <span style={{ display: "grid", gap: 4, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Choose a payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".72rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · select to replace` : "Browse files on your device"}</small></span>
-                <span style={{ flexShrink: 0, padding: "7px 10px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span>
+                <span style={{ display: "grid", gap: 4, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? (si ? "ගෙවීම් රිසිට්පතක් තෝරන්න" : "Choose a payment slip")}</strong><small style={{ color: "#71695E", fontSize: ".72rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · ${si ? "වෙනත් ගොනුවක් තෝරන්න" : "select to replace"}` : (si ? "ඔබගේ උපාංගයෙන් ගොනුවක් තෝරන්න" : "Browse files on your device")}</small></span>
+                <span style={{ flexShrink: 0, padding: "7px 10px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? (si ? "වෙනස් කරන්න" : "Change") : (si ? "තෝරන්න" : "Browse")}</span>
                 <input type="file" accept="image/*,application/pdf" onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
                   if (file.size > 4 * 1024 * 1024) {
-                    setCheckoutError("The payment slip must be 4 MB or smaller.");
+                    setCheckoutError(si ? "ගෙවීම් රිසිට්පත 4 MB හෝ ඊට අඩු විය යුතුය." : "The payment slip must be 4 MB or smaller.");
                     event.target.value = "";
                     return;
                   }
                   if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-                    setCheckoutError("Upload the payment slip as an image or PDF.");
+                    setCheckoutError(si ? "ගෙවීම් රිසිට්පත රූපයක් හෝ PDF ගොනුවක් ලෙස උඩුගත කරන්න." : "Upload the payment slip as an image or PDF.");
                     event.target.value = "";
                     return;
                   }
@@ -694,11 +703,11 @@ export default function Cart() {
                 }} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} />
               </label>
               {paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, marginTop: 14, padding: 10, border: "1px solid rgba(45,80,22,.16)", borderRadius: 12, background: "rgba(255,254,250,.85)" }}>
-                <strong style={{ color: "#405235", fontSize: ".76rem" }}>Receipt preview</strong>
+                <strong style={{ color: "#405235", fontSize: ".76rem" }}>{si ? "රිසිට්පතේ පෙරදසුන" : "Receipt preview"}</strong>
                 {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 230, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 230, border: 0, borderRadius: 8, background: "#fff" }} />}
               </div>}
               {checkoutError && <p role="alert" style={{ margin: "12px 0 0", padding: "9px 11px", border: "1px solid #E6B6AE", borderRadius: 9, color: "#8F2D26", background: "#FFF3F0", fontSize: ".8rem" }}>{checkoutError}</p>}
-              <button type="button" onClick={() => setPaymentSlipOpen(false)} style={{ width: "100%", marginTop: 16, padding: "12px 16px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{paymentSlip ? "Done" : "Choose slip later"}</button>
+              <button type="button" onClick={() => setPaymentSlipOpen(false)} style={{ width: "100%", marginTop: 16, padding: "12px 16px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{paymentSlip ? (si ? "හරි" : "Done") : (si ? "පසුව රිසිට්පත තෝරන්න" : "Choose slip later")}</button>
             </section>
           </div>
         </section>
@@ -708,7 +717,7 @@ export default function Cart() {
           <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />
           <div style={{ display: "grid", gap: 8 }}>
             <strong style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.25rem,3vw,1.7rem)", fontWeight: 500 }}>{orderProgress}</strong>
-            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>Please keep this window open while we finish processing your order.</span>
+            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>{si ? "ඔබගේ ඇණවුම සැකසීම අවසන් වන තෙක් මෙම කවුළුව විවෘතව තබන්න." : "Please keep this window open while we finish processing your order."}</span>
           </div>
           <div aria-hidden="true" style={{ width: "min(100%, 280px)", height: 5, overflow: "hidden", borderRadius: 5, background: "#E5EAD9" }}>
             <span style={{ display: "block", width: "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", animation: "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
