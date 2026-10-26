@@ -30,8 +30,8 @@ export const createCustomerOrder = async (req, res) => {
   if (![address, country, contactNumber].every((value) => typeof value === "string" && value.trim())) {
     return res.status(422).json({ success: false, message: "Address, country, and contact number are required" });
   }
-  if (paymentMethod !== "Payment slip") return res.status(422).json({ success: false, message: "Payment slip upload is required for checkout" });
-  if (typeof paymentSlipUrl !== "string" || !paymentSlipUrl.trim()) {
+  if (!["Payment slip", "Online payment"].includes(paymentMethod)) return res.status(422).json({ success: false, message: "Choose a valid payment method" });
+  if (paymentMethod === "Payment slip" && (typeof paymentSlipUrl !== "string" || !paymentSlipUrl.trim())) {
     return res.status(422).json({ success: false, message: "Upload your payment slip to continue" });
   }
   if (!Array.isArray(productIds) || productIds.length === 0 || productIds.length > 100 || productIds.some((id) => !mongoose.isValidObjectId(id))) {
