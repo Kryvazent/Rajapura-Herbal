@@ -8,14 +8,14 @@ export const getCheckoutDetails = async (req, res) => {
   try {
     const [customer, latestOrder] = await Promise.all([
       Customer.findById(req.session.userId),
-      Order.findOne({ customer: req.session.userId }).sort({ createdAt: -1 }).select("country contactNumber address"),
+      Order.findOne({ customer: req.session.userId }).sort({ createdAt: -1 }).select("country address"),
     ]);
     if (!customer || customer.status !== "ACTIVE") return res.status(404).json({ success: false, message: "Customer account not found" });
     res.json({ success: true, data: {
       customerName: customer.name,
       address: latestOrder?.address || customer.address,
       country: latestOrder?.country || customer.country,
-      contactNumber: latestOrder?.contactNumber || customer.contactNumber,
+      contactNumber: customer.contactNumber,
     }});
   } catch (error) {
     console.error("getCheckoutDetails error:", error);
@@ -56,7 +56,6 @@ export const createCustomerOrder = async (req, res) => {
       const price = Number(String(rawPrice).replace(/USD\s*/i, "").replace(/,/g, "").trim());
       return { product: product._id, name: product.name, qty, price: Number.isFinite(price) ? price : 0 };
     });
-    const customerName = customer.name;
     customer.contactNumber = contactNumber.trim();
     customer.country = country.trim();
     customer.address = address.trim();
@@ -64,9 +63,7 @@ export const createCustomerOrder = async (req, res) => {
 
     const order = await Order.create({
       customer: customer._id,
-      customerName,
       country: country.trim(),
-      contactNumber: contactNumber.trim(),
       address: address.trim(),
       additionalNote: additionalNote.trim(),
       products,
@@ -91,7 +88,9 @@ export const listCustomerOrders = async (req, res) => {
     if (!customer || customer.status !== "ACTIVE") {
       return res.status(401).json({ success: false, message: "Customer account is not available" });
     }
-    const orders = await Order.find({ customer: req.session.userId }).sort({ createdAt: -1 });
+    const orders = await Order.find({ customer: req.session.userId })
+      .sort({ createdAt: -1 })
+      .populate("customer", "name contactNumber");
     res.json({ success: true, data: orders });
   } catch (error) {
     console.error("listCustomerOrders error:", error);
@@ -100,7 +99,7 @@ export const listCustomerOrders = async (req, res) => {
 };
 
 export const listOrders = async (_req, res) => {
-  try { res.json({ success: true, data: await Order.find().sort({ createdAt: -1 }).populate("customer", "name email") }); }
+  try { res.json({ success: true, data: await Order.find().sort({ createdAt: -1 }).populate("customer", "name email contactNumber") }); }
   catch (error) { console.error("listOrders error:", error); res.status(500).json({ success: false, message: "Unable to load orders" }); }
 };
 

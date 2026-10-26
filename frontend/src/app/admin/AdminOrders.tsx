@@ -5,8 +5,7 @@ import { ClipboardList, RefreshCw } from "lucide-react";
 type Order = {
   _id: string;
   country: string;
-  customerName: string;
-  contactNumber: string;
+  customer: { name: string; email: string; contactNumber: string };
   address: string;
   additionalNote?: string;
   paymentSlipUrl?: string;
@@ -96,8 +95,8 @@ export default function AdminOrders() {
         <div style={{ display: "grid", gap: 14 }}>
           {orders.map((order) => (
             <article key={order._id} style={{ background: "#FBF9F3", border: "1px solid rgba(45,80,22,.14)", borderRadius: 16, padding: 20, boxShadow: "0 6px 20px rgba(39,54,22,.04)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><strong>{order.customerName} · {order.country}</strong><time>{new Date(order.createdAt).toLocaleDateString()}</time></div>
-              <p>{order.contactNumber} · {order.address}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><strong>{order.customer.name} · {order.country}</strong><time>{new Date(order.createdAt).toLocaleDateString()}</time></div>
+              <p>{order.customer.contactNumber} · {order.address}</p>
               {order.additionalNote && <p><strong>Customer note:</strong> {order.additionalNote}</p>}
               <ul>{order.products.map((product, index) => <li key={`${product.name}-${index}`}>{product.name} × {product.qty} · {product.price}</li>)}</ul>
               <div style={{ display: "flex", alignItems: "end", gap: 12, flexWrap: "wrap" }}>
