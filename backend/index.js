@@ -236,6 +236,7 @@ app.use("/auth/customer", customerSession);
 // UploadThing's Express adapter reads the request body itself. Mount it before
 // the JSON/urlencoded parsers, but after sessions so upload auth still works.
 app.use("/admin/uploadthing", uploadThingRouter);
+app.use("/user/uploadthing", uploadThingRouter);
 
 app.use(express.json({ limit: bodyLimit }));
 app.use(express.urlencoded({ limit: bodyLimit, extended: true }));

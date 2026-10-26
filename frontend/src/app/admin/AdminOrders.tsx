@@ -8,6 +8,8 @@ type Order = {
   customerName: string;
   contactNumber: string;
   address: string;
+  additionalNote?: string;
+  paymentSlipUrl?: string;
   products: { name: string; qty: number; price: number }[];
   orderStatus: string;
   paymentStatus: string;
@@ -96,11 +98,13 @@ export default function AdminOrders() {
             <article key={order._id} style={{ background: "#FBF9F3", border: "1px solid rgba(45,80,22,.14)", borderRadius: 16, padding: 20, boxShadow: "0 6px 20px rgba(39,54,22,.04)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><strong>{order.customerName} · {order.country}</strong><time>{new Date(order.createdAt).toLocaleDateString()}</time></div>
               <p>{order.contactNumber} · {order.address}</p>
+              {order.additionalNote && <p><strong>Customer note:</strong> {order.additionalNote}</p>}
               <ul>{order.products.map((product, index) => <li key={`${product.name}-${index}`}>{product.name} × {product.qty} · {product.price}</li>)}</ul>
               <div style={{ display: "flex", alignItems: "end", gap: 12, flexWrap: "wrap" }}>
                 {select("Order status", order.orderStatus, ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"], (value) => void update(order._id, "orderStatus", value))}
                 {select("Payment status", order.paymentStatus, ["Unpaid", "Paid", "Refunded"], (value) => void update(order._id, "paymentStatus", value))}
                 <span>Payment method: {order.paymentMethod}</span>
+                {order.paymentSlipUrl && <a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>View payment slip</a>}
               </div>
             </article>
           ))}

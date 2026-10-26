@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
       default: "ACTIVE"
     },
     phone: String,
+    country: { type: String, trim: true, default: "" },
     address: {
       street: String,
       city: String,

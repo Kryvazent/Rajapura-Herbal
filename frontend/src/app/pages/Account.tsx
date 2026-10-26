@@ -42,8 +42,8 @@ export default function Account() {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
       .then((data) => {
-        setCountry(data.country_code ?? null)
-        // setCountry('USA')
+        // setCountry(data.country_code ?? null)
+        setCountry('USA')
       })
       .catch(() => setCountry(null))
       .finally(() => setLocationChecked(true));

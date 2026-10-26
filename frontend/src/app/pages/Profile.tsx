@@ -5,7 +5,7 @@ import axios from "axios";
 
 const api = import.meta.env.VITE_BACKEND_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
-type Order = { _id: string; createdAt: string; country: string; contactNumber: string; address: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number }[] };
+type Order = { _id: string; createdAt: string; country: string; contactNumber: string; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number }[] };
 type PageId = "profile" | "orders" | "payments";
 
 const cardStyle: CSSProperties = { padding: 24, borderRadius: 16, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.1)", boxShadow: "0 5px 20px rgba(31,48,17,.045)" };
@@ -91,6 +91,8 @@ export default function Profile() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 12, paddingTop: 13, borderTop: "1px solid rgba(45,80,22,.12)" }}>
                 <div><MetaLabel>Order status</MetaLabel><Status value={order.orderStatus} /></div><div><MetaLabel>Delivery country</MetaLabel><span>{order.country}</span></div><div><MetaLabel>Contact number</MetaLabel><span>{order.contactNumber}</span></div>
                 <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Delivery address</MetaLabel><span style={{ display: "inline-flex", gap: 6, alignItems: "flex-start" }}><MapPin size={14} style={{ flexShrink: 0, marginTop: 2 }} />{order.address}</span></div>
+                {order.additionalNote && <div style={{ gridColumn: "1 / -1" }}><MetaLabel>Additional note</MetaLabel><span>{order.additionalNote}</span></div>}
+                {order.paymentSlipUrl && <div><MetaLabel>Payment slip</MetaLabel><a href={order.paymentSlipUrl} target="_blank" rel="noreferrer" style={{ color: "#2D5016", fontWeight: 700 }}>View uploaded slip</a></div>}
               </div>
             </article>)}
           </div>}

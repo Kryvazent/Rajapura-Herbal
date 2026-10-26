@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router";
 import { Product } from "../interfaces/productInterface";
-import { ShoppingBag, ArrowRight } from "lucide-react";
+import { ShoppingBag, ArrowRight, X, Upload, CreditCard, Receipt, CheckCircle2 } from "lucide-react";
 import axios from "axios";
 import { formatUSDPrice } from "../lib/price";
+import { useCustomerUploadThing } from "../lib/uploadthing";
 
 type Item = { product: Product; qty: number };
 const itemUnitPrice = (product: Product): number | null => {
@@ -17,17 +18,27 @@ const formatDollarAmount = (amount: number) =>
 
 export default function Cart() {
   const [items, setItems] = useState<Item[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   const [cartError, setCartError] = useState("");
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, string>>({});
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const paymentMethod = "Payment slip" as const;
+  const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
+  const [checkoutDetails, setCheckoutDetails] = useState({ address: "", country: "", contactNumber: "", additionalNote: "" });
+  const { startUpload } = useCustomerUploadThing("paymentSlip");
   useEffect(() => {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((d) => {
-        setCountry(d.country_code ?? null);
-        // setCountry("USA");
+        // setCountry(d.country_code ?? null);
+        setCountry("USA");
       })
       .catch(() => setCountry(null));
     fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/status`, {
@@ -85,9 +96,69 @@ export default function Cart() {
     save(items.map((item) => item.product._id === productId ? { ...item, qty: quantity } : item));
   };
   const pricedItems = items.map((item) => ({ ...item, unitPrice: itemUnitPrice(item.product) }));
-  const estimatedTotal = pricedItems.every((item) => item.unitPrice !== null)
-    ? pricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
+  const selectedItems = items.filter((item) => selectedIds.includes(String(item.product._id)));
+  const selectedPricedItems = pricedItems.filter((item) => selectedIds.includes(String(item.product._id)));
+  const selectedEstimatedTotal = selectedPricedItems.every((item) => item.unitPrice !== null)
+    ? selectedPricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
     : null;
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
+
+  const openCheckout = async () => {
+    if (selectedItems.length === 0) {
+      setCartError("Select at least one item to continue to payment.");
+      return;
+    }
+    setCheckoutOpen(true);
+    setCheckoutLoading(true);
+    setCheckoutError("");
+    setCheckoutMessage("");
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/checkout-details`, { withCredentials: true });
+      setCheckoutDetails({
+        address: response.data.data?.address ?? "",
+        country: response.data.data?.country ?? "",
+        contactNumber: response.data.data?.contactNumber ?? "",
+        additionalNote: "",
+      });
+    } catch (error: any) {
+      setCheckoutError(error.response?.data?.message ?? "Could not load your saved delivery details.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCheckoutSubmitting(true);
+    setCheckoutError("");
+    try {
+      let paymentSlipUrl = "";
+      if (paymentMethod === "Payment slip") {
+        if (!paymentSlip) throw new Error("Choose a payment slip image or PDF to upload.");
+        if (paymentSlip.size > 4 * 1024 * 1024) throw new Error("The payment slip must be 4 MB or smaller.");
+        if (!paymentSlip.type.startsWith("image/") && paymentSlip.type !== "application/pdf") throw new Error("Upload the payment slip as an image or PDF.");
+        const uploaded = await startUpload([paymentSlip]);
+        paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
+        if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
+      }
+      const selectedProductIds = selectedItems.map((item) => String(item.product._id));
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders`, {
+        ...checkoutDetails,
+        paymentMethod,
+        paymentSlipUrl,
+        productIds: selectedProductIds,
+      }, { withCredentials: true });
+      setItems((current) => current.filter((item) => !selectedProductIds.includes(String(item.product._id))));
+      setSelectedIds([]);
+      window.dispatchEvent(new Event("rajapura:cart-updated"));
+      setCheckoutMessage(response.data.message ?? "Order placed successfully.");
+      setCartError("");
+    } catch (error: any) {
+      setCheckoutError(error.response?.data?.message ?? error.message ?? "Unable to place your order.");
+    } finally {
+      setCheckoutSubmitting(false);
+    }
+  };
   useEffect(() => {
     const pending = Object.entries(quantityDrafts)
       .map(([productId, rawQty]) => [productId, Number(rawQty)] as const)
@@ -237,7 +308,10 @@ export default function Cart() {
       {cartError && <p role="alert" style={{ margin: "0 0 16px", padding: "12px 15px", borderRadius: 10, color: "#8F2D26", background: "#FFF3F0", border: "1px solid #E6B6AE" }}>{cartError}</p>}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
       <section>
-      <h1 style={{ fontFamily: "'Playfair Display',serif", marginTop: 0, marginBottom: 24 }}>Your cart</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+        <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>Your cart</h1>
+        {items.length > 0 && <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#526746", fontSize: ".84rem", fontWeight: 700, cursor: "pointer" }}><input type="checkbox" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? items.map((item) => String(item.product._id)) : [])} style={{ width: 17, height: 17, accentColor: "#31551F" }} />Select all</label>}
+      </div>
       {items.map((item) => (
         <article
           key={String(item.product._id)}
@@ -253,6 +327,9 @@ export default function Cart() {
             boxShadow: "0 5px 18px rgba(45,80,22,.045)",
           }}
         >
+          <label aria-label={`Select ${item.product.name} for checkout`} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
+            <input type="checkbox" checked={selectedIds.includes(String(item.product._id))} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...current, String(item.product._id)] : current.filter((id) => id !== String(item.product._id)))} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
+          </label>
           <img
             src={item.product.image}
             alt=""
@@ -296,9 +373,10 @@ export default function Cart() {
           <button
             type="button"
             aria-label={`Remove ${item.product.name} from cart`}
-            onClick={() =>
-              save(items.filter((i) => i.product._id !== item.product._id))
-            }
+            onClick={() => {
+              setSelectedIds((current) => current.filter((id) => id !== String(item.product._id)));
+              void save(items.filter((i) => i.product._id !== item.product._id));
+            }}
             style={{ padding: "9px 14px", border: "1px solid rgba(157,48,41,.3)", borderRadius: 22, color: "#8F2D26", background: "#FFF3F0", fontSize: ".86rem", fontWeight: 700, cursor: "pointer", transition: "background .2s, transform .2s" }}
           >
             Remove
@@ -310,10 +388,10 @@ export default function Cart() {
         <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>ORDER SUMMARY</p>
         <h2 style={{ margin: "0 0 20px", fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>Payment details</h2>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingBottom: 14, borderBottom: "1px solid rgba(45,80,22,.12)", color: "#6B6257", fontSize: ".92rem" }}>
-          <span>Items</span><strong style={{ color: "#2D5016" }}>{items.reduce((total, item) => total + item.qty, 0)}</strong>
+          <span>Selected items</span><strong style={{ color: "#2D5016" }}>{selectedItems.reduce((total, item) => total + item.qty, 0)}</strong>
         </div>
         <div style={{ display: "grid", gap: 12, padding: "14px 0", borderBottom: "1px solid rgba(45,80,22,.12)" }}>
-          {pricedItems.map((item) => (
+          {selectedPricedItems.map((item) => (
             <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, color: "#6B6257", fontSize: ".86rem" }}>
               <div>
                 <div style={{ color: "#334A28", fontWeight: 700 }}>{item.product.name}</div>
@@ -325,15 +403,52 @@ export default function Cart() {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 18, padding: "16px 0 18px", borderBottom: "1px solid rgba(45,80,22,.12)", color: "#243D17", fontSize: "1rem" }}>
           <strong>Estimated total</strong>
-          <strong>{estimatedTotal === null ? "Contact for price" : formatDollarAmount(estimatedTotal)}</strong>
+          <strong>{selectedItems.length === 0 ? "Select items for checkout" : selectedEstimatedTotal === null ? "Contact for price" : formatDollarAmount(selectedEstimatedTotal)}</strong>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "14px 0 18px", color: "#6B6257", fontSize: ".92rem" }}>
-          <span>Payment</span><strong style={{ color: "#2D5016" }}>On order confirmation</strong>
+          <span>Payment</span><strong style={{ color: "#2D5016" }}>Bank transfer</strong>
         </div>
-        <button type="button" disabled style={{ width: "100%", padding: "12px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 700, opacity: .75, cursor: "not-allowed" }}>Continue to payment</button>
-        <p style={{ margin: "14px 0 0", color: "#71695E", fontSize: ".84rem", lineHeight: 1.6 }}>Checkout is not available yet. Contact Rajapura Herbal to complete your order.</p>
+        <button type="button" onClick={() => void openCheckout()} disabled={selectedItems.length === 0} style={{ width: "100%", padding: "12px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: selectedItems.length === 0 ? "#87947A" : "#2D5016", fontWeight: 700, cursor: selectedItems.length === 0 ? "not-allowed" : "pointer" }}>Continue to payment ({selectedItems.length})</button>
       </aside>
       </div>
+      {checkoutOpen && <div role="presentation" onClick={() => !checkoutSubmitting && setCheckoutOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 960px)", maxHeight: "min(94vh, 900px)", overflowY: "auto", position: "relative", boxSizing: "border-box", border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "#FBF8F0", boxShadow: "0 32px 90px rgba(0,0,0,.34)", color: "#244516" }}>
+          <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-choice{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(45,80,22,.15);border-radius:15px;background:#FFFEFC;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.checkout-choice:hover{transform:translateY(-1px);border-color:rgba(45,80,22,.4)}.checkout-choice.selected{border-color:#41652E;background:#E3EBD5;box-shadow:inset 0 0 0 1px rgba(65,101,46,.13)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}}"}</style>
+          <header style={{ position: "relative", padding: "25px clamp(22px,4vw,38px) 22px", color: "#F8F5EA", background: "linear-gradient(115deg,#203B14,#31551F 62%,#3B6227)", overflow: "hidden" }}>
+            <div aria-hidden="true" style={{ position: "absolute", width: 210, height: 210, right: 38, top: -146, border: "1px solid rgba(226,204,135,.18)", borderRadius: "50%", boxShadow: "0 0 0 22px rgba(226,204,135,.035),0 0 0 46px rgba(226,204,135,.025)" }} />
+            <button type="button" aria-label="Close checkout" onClick={() => setCheckoutOpen(false)} disabled={checkoutSubmitting} style={{ position: "absolute", top: 20, right: 20, zIndex: 1, display: "grid", placeItems: "center", width: 38, height: 38, border: "1px solid rgba(248,245,234,.24)", borderRadius: "50%", background: "rgba(255,255,255,.08)", color: "#F8F5EA", cursor: "pointer" }}><X size={18} /></button>
+            <p style={{ position: "relative", margin: "0 0 7px", color: "#DDBD65", fontSize: ".68rem", fontWeight: 800, letterSpacing: ".18em" }}>YOUR ORDER</p>
+            <h2 id="checkout-title" style={{ position: "relative", margin: "0 50px 15px 0", fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 500, lineHeight: 1.15 }}>Delivery and payment</h2>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, color: "rgba(248,245,234,.78)", fontSize: ".76rem", fontWeight: 700 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, borderRadius: "50%", color: "#243D17", background: "#DDBD65", fontSize: ".68rem" }}>1</span>Delivery</span><span style={{ width: 32, borderTop: "1px solid rgba(248,245,234,.35)" }} /><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, border: "1px solid rgba(248,245,234,.38)", borderRadius: "50%", fontSize: ".68rem" }}>2</span>Payment</span></div>
+          </header>
+          {checkoutLoading ? <div role="status" aria-label="Loading saved delivery details" style={{ minHeight: 300, display: "grid", placeItems: "center" }}><div style={{ width: 36, height: 36, border: "3px solid rgba(45,80,22,.14)", borderTopColor: "#31551F", borderRadius: "50%", animation: "cart-spin .8s linear infinite" }} /><style>{"@keyframes cart-spin{to{transform:rotate(360deg)}}"}</style></div> : checkoutMessage ? <div style={{ minHeight: 330, display: "grid", placeItems: "center", padding: 28, textAlign: "center" }}><div><span style={{ width: 64, height: 64, margin: "0 auto 16px", display: "grid", placeItems: "center", borderRadius: "50%", color: "#31551F", background: "#E4ECD9" }}><CheckCircle2 size={34} /></span><h3 style={{ margin: "0 0 8px", fontFamily: "'Playfair Display',serif", fontSize: "1.55rem" }}>Order received</h3><p style={{ maxWidth: 420, margin: "0 auto", color: "#71695E", lineHeight: 1.65 }}>{checkoutMessage}</p><button type="button" onClick={() => setCheckoutOpen(false)} style={{ marginTop: 22, padding: "11px 28px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "#2D5016", fontWeight: 700, cursor: "pointer" }}>Done</button></div></div> : <form onSubmit={submitOrder} className="checkout-layout">
+            <div className="checkout-pane">
+              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "#E8EDD9" }}><ShoppingBag size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Delivery details</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Where should we send your order?</span></div></div>
+              <div className="checkout-fields">
+                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Delivery address <span style={{ color: "#9A7048" }}>*</span></span><textarea className="checkout-control" required autoComplete="street-address" rows={3} value={checkoutDetails.address} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, address: event.target.value })} style={{ resize: "vertical" }} /></label>
+                <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Country <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required autoComplete="country-name" value={checkoutDetails.country} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, country: event.target.value })} /></label>
+                <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Contact number <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required type="tel" autoComplete="tel" value={checkoutDetails.contactNumber} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, contactNumber: event.target.value })} /></label>
+                <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>Delivery note <span style={{ color: "#847A68", fontWeight: 400 }}>(optional)</span><textarea className="checkout-control" rows={2} maxLength={1000} value={checkoutDetails.additionalNote} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, additionalNote: event.target.value })} style={{ resize: "vertical" }} /></label>
+              </div>
+            </div>
+            <div className="checkout-pane checkout-payment">
+              <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "rgba(255,255,255,.62)" }}><CreditCard size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Payment method</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Choose one option</span></div></div>
+              <fieldset style={{ display: "grid", gap: 10, margin: 0, padding: 0, border: 0 }}>
+                <legend style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>Payment method</legend>
+                <div className="checkout-choice selected" style={{ cursor: "default" }}><span style={{ width: 35, height: 35, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 11, color: "#31551F", background: "#EDF1E3" }}><Receipt size={18} /></span><span style={{ display: "grid", gap: 4, flex: 1 }}><strong style={{ fontSize: ".85rem" }}>Bank transfer</strong><small style={{ color: "#71695E", fontSize: ".75rem", lineHeight: 1.45 }}>Upload the payment slip for these selected items</small></span><CheckCircle2 size={18} style={{ color: "#31551F" }} /></div>
+                <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 64, padding: "11px 12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.32)", borderRadius: 13, background: "rgba(255,254,250,.72)", color: "#2D5016", cursor: "pointer" }}><span style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span><span style={{ display: "grid", gap: 3, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Add payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".7rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · click to change` : "Image or PDF · max 4 MB"}</small></span><span style={{ flexShrink: 0, padding: "7px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span><input required type="file" accept="image/*,application/pdf" onChange={(event) => setPaymentSlip(event.target.files?.[0] ?? null)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} /></label>
+              </fieldset>
+              <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>Order summary</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} items</span></div>
+                <div style={{ display: "grid", gap: 8, maxHeight: 116, overflowY: "auto" }}>{selectedPricedItems.map((item) => <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#71695E", fontSize: ".76rem" }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.product.name} × {item.qty}</span><strong style={{ flexShrink: 0, color: "#405235", fontSize: ".76rem" }}>{item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice * item.qty)}</strong></div>)}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 11, borderTop: "1px solid rgba(45,80,22,.12)", color: "#244516", fontSize: ".95rem" }}><strong>Estimated total</strong><strong>{selectedEstimatedTotal === null ? "Contact for price" : formatDollarAmount(selectedEstimatedTotal)}</strong></div>
+              </div>
+              {checkoutError && <p role="alert" style={{ margin: "13px 0 0", padding: "10px 12px", borderRadius: 10, color: "#8F2D26", background: "#FFF3F0", border: "1px solid #E6B6AE", fontSize: ".84rem" }}>{checkoutError}</p>}
+              <button type="submit" disabled={checkoutSubmitting || items.length === 0} style={{ width: "100%", marginTop: 15, padding: "14px 18px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "linear-gradient(110deg,#31591C,#244516)", boxShadow: "0 8px 18px rgba(36,69,22,.2)", fontWeight: 800, fontSize: ".91rem", cursor: checkoutSubmitting ? "wait" : "pointer", opacity: checkoutSubmitting || items.length === 0 ? .68 : 1 }}>{checkoutSubmitting ? paymentMethod === "Payment slip" ? "Uploading slip and placing order…" : "Placing order…" : "Place order"}<span aria-hidden="true" style={{ marginLeft: 8 }}>→</span></button>
+            </div>
+          </form>}
+        </section>
+      </div>}
     </main>
   );
 }
