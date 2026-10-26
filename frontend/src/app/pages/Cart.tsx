@@ -9,6 +9,18 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { Language } from "../i18n/LanguageContext";
 
 type Item = { product: Product; qty: number };
+const paymentSlipKind = (file: File): "image" | "pdf" | null => {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (file.type.toLowerCase() === "application/pdf" || extension === "pdf") return "pdf";
+  if (file.type.toLowerCase().startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"].includes(extension ?? "")) return "image";
+  return null;
+};
+const paymentSlipMimeType = (file: File) => {
+  if (paymentSlipKind(file) === "pdf") return "application/pdf";
+  if (file.type.toLowerCase().startsWith("image/")) return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return ({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", bmp: "image/bmp", avif: "image/avif" } as Record<string, string>)[extension ?? ""] ?? "application/octet-stream";
+};
 const productDisplayName = (product: Product, language: Language) => language === "si"
   ? product.translations?.name?.si?.trim() || product.sinhalaName?.trim() || product.name
   : product.translations?.name?.en?.trim() || product.name;
@@ -234,7 +246,8 @@ export default function Cart() {
       if (checkoutPaymentMethod === "Payment slip") {
         if (!paymentSlip) throw new Error("Choose a payment slip image or PDF to upload.");
         if (paymentSlip.size > 4 * 1024 * 1024) throw new Error("The payment slip must be 4 MB or smaller.");
-        if (!paymentSlip.type.startsWith("image/") && paymentSlip.type !== "application/pdf") throw new Error("Upload the payment slip as an image or PDF.");
+        const slipKind = paymentSlipKind(paymentSlip);
+        if (!slipKind) throw new Error("Upload the payment slip as an image or PDF.");
         if (!pendingPaymentOrderId) {
           const preparation = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders/prepare`, {
             address: checkoutDetails.address,
@@ -248,9 +261,10 @@ export default function Cart() {
         }
         setPendingPaymentOrderId(orderId);
         const originalExtension = paymentSlip.name.match(/\.[a-z0-9]{1,8}$/i)?.[0];
-        const mimeExtension = paymentSlip.type === "application/pdf" ? ".pdf" : paymentSlip.type === "image/jpeg" ? ".jpg" : paymentSlip.type === "image/png" ? ".png" : paymentSlip.type === "image/webp" ? ".webp" : paymentSlip.type === "image/gif" ? ".gif" : ".img";
-        paymentSlipFileName = `${orderId}${paymentSlip.type === "application/pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
-        const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: paymentSlip.type, lastModified: paymentSlip.lastModified });
+        const mimeType = paymentSlipMimeType(paymentSlip);
+        const mimeExtension = mimeType === "application/pdf" ? ".pdf" : mimeType === "image/jpeg" ? ".jpg" : mimeType === "image/png" ? ".png" : mimeType === "image/webp" ? ".webp" : mimeType === "image/gif" ? ".gif" : mimeType === "image/bmp" ? ".bmp" : mimeType === "image/avif" ? ".avif" : ".img";
+        paymentSlipFileName = `${orderId}${slipKind === "pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
+        const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: mimeType, lastModified: paymentSlip.lastModified });
         setOrderProgress(si ? "ඔබගේ ගෙවීම් රිසිට්පත උඩුගත කරමින්…" : "Uploading your payment slip…");
         const uploaded = await startUpload([renamedPaymentSlip]);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
@@ -646,7 +660,7 @@ export default function Cart() {
               </div>
               {checkoutPaymentMethod === "Payment slip" && !paymentSlipOpen && paymentSlip && paymentSlipPreviewUrl && <div aria-label={`${si ? "රිසිට්පතේ පෙරදසුන" : "Preview of"} ${paymentSlip.name}`} style={{ display: "grid", gap: 8, minWidth: 0, maxWidth: "100%", boxSizing: "border-box", overflow: "hidden", marginTop: 13, padding: 10, border: "1px solid rgba(45,80,22,.14)", borderRadius: 13, background: "rgba(255,254,250,.8)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 }}><strong title={paymentSlip.name} style={{ flex: 1, minWidth: 0, overflow: "hidden", color: "#405235", fontSize: ".76rem", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{paymentSlip.name}</strong><button type="button" onClick={() => setPaymentSlipOpen(true)} style={{ flexShrink: 0, padding: "5px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 8, color: "#31551F", background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>{si ? "වෙනස් කරන්න" : "Change"}</button></div>
-                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`${si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}: ${paymentSlip.name}`} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`${si ? "ගෙවීම් රිසිට්පතේ පෙරදසුන" : "Payment slip preview"}: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", border: 0, borderRadius: 8, background: "#fff" }} />}
+                {paymentSlipKind(paymentSlip) === "image" ? <img src={paymentSlipPreviewUrl} alt={`${si ? "ගෙවීම් රිසිට්පත" : "Payment slip"}: ${paymentSlip.name}`} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`${si ? "ගෙවීම් රිසිට්පතේ පෙරදසුන" : "Payment slip preview"}: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", height: 150, boxSizing: "border-box", border: 0, borderRadius: 8, background: "#fff" }} />}
               </div>}
               <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>{si ? "ඇණවුම් සාරාංශය" : "Order summary"}</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} {si ? "භාණ්ඩ" : "items"}</span></div>
@@ -686,7 +700,7 @@ export default function Cart() {
                 <span style={{ width: 36, height: 36, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span>
                 <span style={{ display: "grid", gap: 4, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? (si ? "ගෙවීම් රිසිට්පතක් තෝරන්න" : "Choose a payment slip")}</strong><small style={{ color: "#71695E", fontSize: ".72rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · ${si ? "වෙනත් ගොනුවක් තෝරන්න" : "select to replace"}` : (si ? "ඔබගේ උපාංගයෙන් ගොනුවක් තෝරන්න" : "Browse files on your device")}</small></span>
                 <span style={{ flexShrink: 0, padding: "7px 10px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? (si ? "වෙනස් කරන්න" : "Change") : (si ? "තෝරන්න" : "Browse")}</span>
-                <input type="file" accept="image/*,application/pdf" onChange={(event) => {
+                <input type="file" accept="image/*,application/pdf,.pdf" onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
                   if (file.size > 4 * 1024 * 1024) {
@@ -694,7 +708,7 @@ export default function Cart() {
                     event.target.value = "";
                     return;
                   }
-                  if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+                  if (!paymentSlipKind(file)) {
                     setCheckoutError(si ? "ගෙවීම් රිසිට්පත රූපයක් හෝ PDF ගොනුවක් ලෙස උඩුගත කරන්න." : "Upload the payment slip as an image or PDF.");
                     event.target.value = "";
                     return;
@@ -705,7 +719,7 @@ export default function Cart() {
               </label>
               {paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, marginTop: 14, padding: 10, border: "1px solid rgba(45,80,22,.16)", borderRadius: 12, background: "rgba(255,254,250,.85)" }}>
                 <strong style={{ color: "#405235", fontSize: ".76rem" }}>{si ? "රිසිට්පතේ පෙරදසුන" : "Receipt preview"}</strong>
-                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 230, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 230, border: 0, borderRadius: 8, background: "#fff" }} />}
+                {paymentSlipKind(paymentSlip) === "image" ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 230, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 230, border: 0, borderRadius: 8, background: "#fff" }} />}
               </div>}
               {checkoutError && <p role="alert" style={{ margin: "12px 0 0", padding: "9px 11px", border: "1px solid #E6B6AE", borderRadius: 9, color: "#8F2D26", background: "#FFF3F0", fontSize: ".8rem" }}>{checkoutError}</p>}
               <button type="button" onClick={() => setPaymentSlipOpen(false)} style={{ width: "100%", marginTop: 16, padding: "12px 16px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{paymentSlip ? (si ? "හරි" : "Done") : (si ? "පසුව රිසිට්පත තෝරන්න" : "Choose slip later")}</button>
