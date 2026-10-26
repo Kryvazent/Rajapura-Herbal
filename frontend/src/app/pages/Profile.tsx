@@ -1,6 +1,6 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
-import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays, ChevronDown } from "lucide-react";
+import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays, ChevronDown, Search, X } from "lucide-react";
 import axios from "axios";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -8,6 +8,8 @@ const api = import.meta.env.VITE_BACKEND_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
 type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number; product?: { name?: string; sinhalaName?: string; price?: string; priceUSD?: string; priceLKR?: string; translations?: { name?: { en?: string; si?: string } } } | null }[] };
 type PageId = "profile" | "orders" | "payments";
+const orderStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"];
+const statusTranslations: Record<string, string> = { Pending: "අපේක්ෂිත", Processing: "සැකසෙමින්", Shipped: "යවා ඇත", Delivered: "බෙදා හැර ඇත", Cancelled: "අවලංගු කළා", Returned: "ආපසු ලබා දුන්නා", Unpaid: "නොගෙවූ", Paid: "ගෙවා ඇත", Refunded: "ආපසු ගෙවූ" };
 
 const cardStyle: CSSProperties = { padding: 24, borderRadius: 16, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.1)", boxShadow: "0 5px 20px rgba(31,48,17,.045)" };
 const sideLinkStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "12px 13px", margin: "2px 0", borderRadius: 9, color: "#E9EEDF", textDecoration: "none", fontSize: ".88rem" };
@@ -24,6 +26,42 @@ export default function Profile() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderDate, setOrderDate] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("All orders");
+
+  const orderStatusCounts = useMemo(() => orders.reduce<Record<string, number>>((counts, order) => {
+    counts[order.orderStatus] = (counts[order.orderStatus] ?? 0) + 1;
+    return counts;
+  }, {}), [orders]);
+  const filteredOrders = useMemo(() => {
+    const query = orderSearch.trim().toLocaleLowerCase(si ? "si-LK" : undefined);
+    return orders.filter((order) => {
+      if (orderStatusFilter !== "All orders" && order.orderStatus !== orderStatusFilter) return false;
+      const createdAt = new Date(order.createdAt);
+      if (orderDate && (Number.isNaN(createdAt.getTime()) || [
+        createdAt.getFullYear(),
+        String(createdAt.getMonth() + 1).padStart(2, "0"),
+        String(createdAt.getDate()).padStart(2, "0"),
+      ].join("-") !== orderDate)) return false;
+      if (!query) return true;
+      const dateSearchTerms = Number.isNaN(createdAt.getTime()) ? [] : [
+        createdAt.toISOString().slice(0, 10),
+        createdAt.toLocaleDateString(),
+        createdAt.toLocaleDateString(si ? "si-LK" : undefined, { year: "numeric", month: "short", day: "numeric" }),
+        createdAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+        createdAt.toLocaleDateString("en-GB"),
+      ];
+      const searchable = [
+        order._id,
+        order._id.slice(-7),
+        order.orderStatus,
+        si ? statusTranslations[order.orderStatus] : "",
+        ...dateSearchTerms,
+      ].filter(Boolean).join(" ").toLocaleLowerCase(si ? "si-LK" : undefined);
+      return searchable.includes(query);
+    });
+  }, [orders, orderDate, orderSearch, orderStatusFilter, si]);
 
   useEffect(() => {
     Promise.all([
@@ -52,8 +90,7 @@ export default function Profile() {
     ? item.product?.translations?.name?.si?.trim() || item.product?.sinhalaName?.trim() || item.name
     : item.product?.translations?.name?.en?.trim() || item.product?.name?.trim() || item.name;
   const translateStatus = (value: string) => {
-    const translations: Record<string, string> = { Pending: "අපේක්ෂිත", Processing: "සැකසෙමින්", Shipped: "යවා ඇත", Delivered: "බෙදා හැර ඇත", Cancelled: "අවලංගු කළා", Returned: "ආපසු ලබා දුන්නා", Unpaid: "නොගෙවූ", Paid: "ගෙවා ඇත", Refunded: "ආපසු ගෙවූ" };
-    return si ? translations[value] ?? value : value;
+    return si ? statusTranslations[value] ?? value : value;
   };
   const translatePaymentMethod = (value: string) => {
     const translations: Record<string, string> = { "Payment slip": "ගෙවීම් රිසිට්පත", "Online payment": "මාර්ගගත ගෙවීම", "Not selected": "තෝරා නැත" };
@@ -97,11 +134,16 @@ export default function Profile() {
     { id: "payments", label: si ? "ගෙවීම් ඉතිහාසය" : "Payment history", icon: <CreditCard size={17} /> },
   ];
   const pageTitle = activePage === "profile" ? (si ? `ආයුබෝවන්, ${profile.firstName}` : `Welcome, ${profile.firstName}`) : activePage === "orders" ? (si ? "ඔබගේ ඇණවුම්" : "Your orders") : (si ? "ගෙවීම් ඉතිහාසය" : "Payment history");
+  const clearOrderFilters = () => {
+    setOrderSearch("");
+    setOrderDate("");
+    setOrderStatusFilter("All orders");
+  };
 
   const navButton = (page: typeof pages[number], compact = false) => <button key={page.id} type="button" onClick={() => setActivePage(page.id)} aria-current={activePage === page.id ? "page" : undefined} className={`customer-profile-nav${activePage === page.id ? " active" : ""}`} style={{ ...sideLinkStyle, ...(compact ? { width: "auto", whiteSpace: "nowrap" as const, color: "#31591C", background: "rgba(139,195,74,.12)" } : { background: "transparent" }) }}>{page.icon}{page.label}</button>;
 
   return <div className="customer-profile-shell" style={{ display: "flex", overflow: "hidden", fontFamily: "'Lato',sans-serif", background: "#F0EDE6", color: "#2D5016" }}>
-    <style>{`.customer-profile-shell{height:calc(100vh - 105px);height:calc(100dvh - 105px)}.customer-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}.customer-profile-nav{border:0;cursor:pointer;text-align:left}.customer-profile-nav:hover{background:rgba(139,195,74,.11)!important}.customer-profile-nav.active{color:#F8F4E8!important;background:rgba(139,195,74,.19)!important;box-shadow:inset 3px 0 #8BC34A}@media(max-width:639px){.customer-profile-shell{height:calc(100vh - 72px);height:calc(100dvh - 72px)}}`}</style>
+    <style>{`.customer-profile-shell{height:calc(100vh - 105px);height:calc(100dvh - 105px)}.customer-profile-content{min-height:0;overflow-y:auto;overscroll-behavior:contain}.customer-profile-nav{border:0;cursor:pointer;text-align:left}.customer-profile-nav:hover{background:rgba(139,195,74,.11)!important}.customer-profile-nav.active{color:#F8F4E8!important;background:rgba(139,195,74,.19)!important;box-shadow:inset 3px 0 #8BC34A}@media(max-width:639px){.customer-profile-shell{height:calc(100vh - 72px);height:calc(100dvh - 72px)}.customer-profile-nav.active{color:#244516!important;background:#EAF0DA!important;box-shadow:inset 0 -3px #8BC34A}}`}</style>
     <aside className="hidden lg:flex" style={{ width: 248, flexShrink: 0, flexDirection: "column", padding: "26px 16px", background: "linear-gradient(180deg, #0E1A08 0%, #1A3009 100%)", color: "#FAF6EE" }}>
       <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, padding: "4px 10px 25px", color: "inherit", textDecoration: "none", borderBottom: "1px solid rgba(139,195,74,.17)" }}>
         <span style={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", color: "#8BC34A", border: "1px solid rgba(139,195,74,.35)", background: "rgba(139,195,74,.1)" }}><Leaf size={19} /></span>
@@ -131,8 +173,38 @@ export default function Profile() {
 
         {activePage === "orders" && <section style={cardStyle}>
           <SectionHeading icon={<Package size={18} />} title={si ? "ඇණවුම් විස්තර" : "Order details"} subtitle={si ? "භාණ්ඩ, බෙදාහැරීමේ තොරතුරු සහ ඇණවුම් තත්ත්වය" : "Products, delivery information, and order progress"} />
-          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබ ඇණවුමක් කළ විට එය මෙහි පෙන්වනු ඇත." : "Your orders will appear here when you place one."} /> : <div style={{ display: "grid", gap: 15 }}>
-            {orders.map(order => <details key={order._id} style={{ overflow: "hidden", borderRadius: 13, background: "#FAF8F2", border: "1px solid rgba(45,80,22,.12)" }}>
+          {orders.length === 0 ? <EmptyMessage text={si ? "ඔබ ඇණවුමක් කළ විට එය මෙහි පෙන්වනු ඇත." : "Your orders will appear here when you place one."} /> : <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, padding: "11px 14px", border: "1px solid rgba(45,80,22,.14)", borderRadius: 12, background: "#FAF8F2" }}>
+              <Search size={17} aria-hidden="true" style={{ flexShrink: 0, color: "#71695E" }} />
+              <input
+                type="search"
+                aria-label={si ? "ඇණවුම් අංකය, දිනය හෝ තත්ත්වය අනුව සොයන්න" : "Search orders by order ID, date, or status"}
+                value={orderSearch}
+                onChange={(event) => setOrderSearch(event.target.value)}
+                placeholder={si ? "ඇණවුම් අංකය, දිනය හෝ තත්ත්වය සොයන්න" : "Search by order ID, date, or status"}
+                style={{ width: "100%", minWidth: 0, padding: "5px 0", border: 0, outline: 0, color: "#2D5016", background: "transparent", font: "inherit" }}
+              />
+              {orderSearch && <button type="button" aria-label={si ? "සෙවුම හිස් කරන්න" : "Clear search"} onClick={() => setOrderSearch("")} style={{ display: "grid", placeItems: "center", padding: 5, border: 0, borderRadius: 7, color: "#526746", background: "#EEF1E7", cursor: "pointer" }}><X size={15} /></button>}
+            </div>
+            <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 15 }}>
+              <label style={{ display: "grid", gap: 5, color: "#71695E", fontSize: ".76rem", fontWeight: 700 }}>
+                {si ? "දිනය අනුව පෙරහන් කරන්න" : "Filter by date"}
+                <input type="date" aria-label={si ? "ඇණවුම් දිනය අනුව පෙරහන් කරන්න" : "Filter orders by date"} value={orderDate} onChange={(event) => setOrderDate(event.target.value)} style={{ padding: "9px 10px", border: "1px solid rgba(45,80,22,.16)", borderRadius: 9, color: "#2D5016", background: "#FFFEFA", font: "inherit" }} />
+              </label>
+              {(orderSearch || orderDate || orderStatusFilter !== "All orders") && <button type="button" onClick={clearOrderFilters} style={{ padding: "8px 11px", border: "1px solid rgba(45,80,22,.15)", borderRadius: 9, color: "#526746", background: "#FFFEFA", font: "inherit", fontSize: ".8rem", cursor: "pointer" }}>{si ? "පෙරහන් හිස් කරන්න" : "Clear filters"}</button>}
+            </div>
+            <div role="group" aria-label={si ? "ඇණවුම් තත්ත්වය අනුව පෙරහන් කරන්න" : "Filter orders by status"} style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 1px 12px", marginBottom: 5 }}>
+              {["All orders", ...orderStatuses].map((status) => {
+                const active = orderStatusFilter === status;
+                const count = status === "All orders" ? orders.length : orderStatusCounts[status] ?? 0;
+                const label = status === "All orders" ? (si ? "සියලුම ඇණවුම්" : status) : translateStatus(status);
+                return <button key={status} type="button" aria-pressed={active} onClick={() => setOrderStatusFilter(status)} style={{ display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0, padding: "8px 10px", border: `1px solid ${active ? "#31551F" : "rgba(45,80,22,.14)"}`, borderRadius: 999, color: active ? "#FFFEFA" : "#526746", background: active ? "#31551F" : "#FFFEFA", fontSize: ".78rem", fontWeight: 700, cursor: "pointer" }}>
+                  {label}<span style={{ minWidth: 18, padding: "1px 4px", borderRadius: 999, color: active ? "#244516" : "#526746", background: active ? "#E3EBD5" : "#EEF1E7", fontSize: ".68rem", textAlign: "center" }}>{count}</span>
+                </button>;
+              })}
+            </div>
+            {filteredOrders.length === 0 ? <EmptyMessage text={si ? "සෙවුමට ගැළපෙන ඇණවුම් හමු නොවීය." : "No orders match your search or filters."} /> : <div style={{ display: "grid", gap: 15 }}>
+            {filteredOrders.map(order => <details key={order._id} style={{ overflow: "hidden", borderRadius: 13, background: "#FAF8F2", border: "1px solid rgba(45,80,22,.12)" }}>
               <summary style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "18px", color: "#244516", cursor: "pointer", listStyle: "none" }}>
                 <strong>{si ? "ඇණවුම" : "Order"} #{order._id.slice(-7).toUpperCase()}</strong>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#71695E", fontSize: ".84rem" }}><CalendarDays size={14} /> {date(order.createdAt)}<ChevronDown size={16} aria-hidden="true" />
@@ -149,6 +221,7 @@ export default function Profile() {
               </div>
             </details>)}
           </div>}
+          </>}
         </section>}
 
         {activePage === "payments" && <section style={cardStyle}>
