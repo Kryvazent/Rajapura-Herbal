@@ -2,6 +2,7 @@ import Order from "../models/Order.js";
 import Customer from "../models/Customer.js";
 import Cart from "../models/Cart.js";
 import mongoose from "mongoose";
+import { sendOrderNotifications } from "../services/gmailService.js";
 
 export const getCheckoutDetails = async (req, res) => {
   if (req.session?.role !== "USER") return res.status(403).json({ success: false, message: "Customer account required" });
@@ -101,6 +102,8 @@ export const createCustomerOrder = async (req, res) => {
     });
     const remainingCartItems = cartItems.filter((item) => !requestedIds.has(item.product._id.toString()));
     await Cart.updateOne({ customer: customer._id }, { $set: { items: remainingCartItems.map((item) => ({ product: item.product._id, qty: item.qty })) } });
+    const emailResult = await sendOrderNotifications(order, customer, contactNumber.trim());
+    if (emailResult.failures.length) console.error(`Order ${order._id} email delivery failed:`, emailResult.failures);
     res.status(201).json({ success: true, data: order, message: "Order placed successfully" });
   } catch (error) {
     console.error("createCustomerOrder error:", error);
