@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router";
 import { Product } from "../interfaces/productInterface";
-import { ShoppingBag, ArrowRight, X, Upload, CreditCard, Receipt, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, ArrowRight, X, Upload, CreditCard, Receipt, CheckCircle2, ChevronDown } from "lucide-react";
 import axios from "axios";
 import { formatUSDPrice } from "../lib/price";
 import { useCustomerUploadThing } from "../lib/uploadthing";
@@ -31,8 +31,26 @@ export default function Cart() {
   const [checkoutError, setCheckoutError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"Payment slip" | "Online payment">("Payment slip");
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
+  const [paymentSlipPreviewUrl, setPaymentSlipPreviewUrl] = useState("");
   const [checkoutDetails, setCheckoutDetails] = useState({ address: "", country: "", contactNumber: "", additionalNote: "" });
+  const [countries, setCountries] = useState<string[]>([]);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [countryListOpen, setCountryListOpen] = useState(false);
+  const [countryLoading, setCountryLoading] = useState(true);
+  const [countryError, setCountryError] = useState("");
+  const [countryRetry, setCountryRetry] = useState(0);
+  const [activeCountryIndex, setActiveCountryIndex] = useState(0);
   const { startUpload } = useCustomerUploadThing("paymentSlip");
+  useEffect(() => {
+    if (!paymentSlip) {
+      setPaymentSlipPreviewUrl("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(paymentSlip);
+    setPaymentSlipPreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [paymentSlip]);
   useEffect(() => {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
@@ -75,6 +93,31 @@ export default function Cart() {
       })
       .finally(() => setAuthChecked(true));
   }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setCountryLoading(true);
+    setCountryError("");
+    fetch("https://countries.dev/countries", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Country service returned ${response.status}.`);
+        const data: unknown = await response.json();
+        if (!Array.isArray(data)) throw new Error("Country service returned an invalid response.");
+        const names = data
+          .map((entry) => (typeof entry?.name === "string" ? entry.name : null))
+          .filter((name): name is string => name !== null)
+          .sort((a, b) => a.localeCompare(b));
+        if (names.length === 0) throw new Error("Country service returned no countries.");
+        setCountries(names);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setCountryError(error instanceof Error ? error.message : "Unable to load countries.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCountryLoading(false);
+      });
+    return () => controller.abort();
+  }, [countryRetry]);
   const save = async (next: Item[]) => {
     const previous = items;
     setItems(next);
@@ -105,6 +148,12 @@ export default function Cart() {
     ? selectedPricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
     : null;
   const allSelected = items.length > 0 && selectedItems.length === items.length;
+  const matchingCountries = countries.filter((name) => name.toLocaleLowerCase().includes(countryQuery.trim().toLocaleLowerCase()));
+  const selectCountry = (name: string) => {
+    setCheckoutDetails((current) => ({ ...current, country: name }));
+    setCountryQuery(name);
+    setCountryListOpen(false);
+  };
 
   const openCheckout = async () => {
     if (selectedItems.length === 0) {
@@ -117,12 +166,14 @@ export default function Cart() {
     setCheckoutMessage("");
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/checkout-details`, { withCredentials: true });
+      const savedCountry = response.data.data?.country ?? "";
       setCheckoutDetails({
         address: response.data.data?.address ?? "",
-        country: response.data.data?.country ?? "",
+        country: savedCountry,
         contactNumber: response.data.data?.contactNumber ?? "",
         additionalNote: "",
       });
+      setCountryQuery(savedCountry);
     } catch (error: any) {
       setCheckoutError(error.response?.data?.message ?? "Could not load your saved delivery details.");
     } finally {
@@ -132,6 +183,10 @@ export default function Cart() {
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!countries.includes(checkoutDetails.country)) {
+      setCheckoutError("Select a country from the country list.");
+      return;
+    }
     setCheckoutSubmitting(true);
     setCheckoutError("");
     try {
@@ -429,7 +484,66 @@ export default function Cart() {
               <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "#E8EDD9" }}><ShoppingBag size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Delivery details</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Where should we send your order?</span></div></div>
               <div className="checkout-fields">
                 <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Delivery address <span style={{ color: "#9A7048" }}>*</span></span><textarea className="checkout-control" required autoComplete="street-address" rows={3} value={checkoutDetails.address} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, address: event.target.value })} style={{ resize: "vertical" }} /></label>
-                <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Country <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required autoComplete="country-name" value={checkoutDetails.country} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, country: event.target.value })} /></label>
+                <div style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>
+                  <label htmlFor="checkout-country"><span>Country <span style={{ color: "#9A7048" }}>*</span></span></label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="checkout-country"
+                      className="checkout-control"
+                      required
+                      autoComplete="country-name"
+                      role="combobox"
+                      aria-autocomplete="list"
+                      aria-expanded={countryListOpen}
+                      aria-controls="checkout-country-options"
+                      aria-activedescendant={countryListOpen && matchingCountries[activeCountryIndex] ? `checkout-country-option-${activeCountryIndex}` : undefined}
+                      placeholder={countryLoading ? "Loading countries…" : "Search countries"}
+                      value={countryQuery}
+                      disabled={countryLoading || Boolean(countryError)}
+                      onFocus={() => setCountryListOpen(true)}
+                      onBlur={() => setCountryListOpen(false)}
+                      onChange={(event) => {
+                        setCountryQuery(event.target.value);
+                        setCheckoutDetails((current) => ({ ...current, country: "" }));
+                        setActiveCountryIndex(0);
+                        setCountryListOpen(true);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "ArrowDown" && matchingCountries.length > 0) {
+                          event.preventDefault();
+                          setCountryListOpen(true);
+                          setActiveCountryIndex((current) => Math.min(current + 1, matchingCountries.length - 1));
+                        } else if (event.key === "ArrowUp" && matchingCountries.length > 0) {
+                          event.preventDefault();
+                          setActiveCountryIndex((current) => Math.max(current - 1, 0));
+                        } else if (event.key === "Enter" && countryListOpen && matchingCountries[activeCountryIndex]) {
+                          event.preventDefault();
+                          selectCountry(matchingCountries[activeCountryIndex]);
+                        } else if (event.key === "Escape") {
+                          setCountryListOpen(false);
+                        }
+                      }}
+                      style={{ paddingRight: 38 }}
+                    />
+                    <ChevronDown size={16} aria-hidden="true" style={{ position: "absolute", top: 14, right: 13, color: "#526746", pointerEvents: "none" }} />
+                    {countryListOpen && !countryLoading && !countryError && <div id="checkout-country-options" role="listbox" aria-label="Countries" style={{ position: "absolute", zIndex: 5, top: "calc(100% + 4px)", left: 0, right: 0, maxHeight: 220, overflowY: "auto", padding: 4, border: "1px solid #D8DCCB", borderRadius: 10, background: "#FFFEFC", boxShadow: "0 8px 20px rgba(36,69,22,.14)" }}>
+                      {matchingCountries.length > 0 ? matchingCountries.map((name, index) => <div
+                        id={`checkout-country-option-${index}`}
+                        key={name}
+                        role="option"
+                        aria-selected={checkoutDetails.country === name}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectCountry(name)}
+                        style={{ padding: "9px 10px", borderRadius: 7, background: activeCountryIndex === index ? "#E8EDD9" : "transparent", color: "#283C1C", cursor: "pointer", fontWeight: 500 }}
+                      >{name}</div>) : <div style={{ padding: "9px 10px", color: "#71695E", fontWeight: 400 }}>No countries match your search.</div>}
+                    </div>}
+                  </div>
+                  {countryLoading && <span role="status" style={{ color: "#71695E", fontSize: ".74rem", fontWeight: 400 }}>Loading country list…</span>}
+                  {countryError && <div role="alert" style={{ display: "flex", alignItems: "center", gap: 8, color: "#8F2D26", fontSize: ".74rem", fontWeight: 400 }}>
+                    <span>Could not load countries. {countryError}</span>
+                    <button type="button" onClick={() => setCountryRetry((retry) => retry + 1)} style={{ border: 0, padding: 0, color: "#31551F", background: "transparent", font: "inherit", fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}>Retry</button>
+                  </div>}
+                </div>
                 <label style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}><span>Contact number <span style={{ color: "#9A7048" }}>*</span></span><input className="checkout-control" required type="tel" autoComplete="tel" value={checkoutDetails.contactNumber} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, contactNumber: event.target.value })} /></label>
                 <label className="checkout-span" style={{ display: "grid", gap: 7, color: "#405235", fontSize: ".8rem", fontWeight: 700 }}>Delivery note <span style={{ color: "#847A68", fontWeight: 400 }}>(optional)</span><textarea className="checkout-control" rows={2} maxLength={1000} value={checkoutDetails.additionalNote} onChange={(event) => setCheckoutDetails({ ...checkoutDetails, additionalNote: event.target.value })} style={{ resize: "vertical" }} /></label>
               </div>
@@ -439,7 +553,13 @@ export default function Cart() {
               <fieldset style={{ display: "grid", gap: 10, margin: 0, padding: 0, border: 0 }}>
                 <legend style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>Payment method</legend>
                 <label className={`checkout-choice${checkoutPaymentMethod === "Payment slip" ? " selected" : ""}`}><input type="radio" name="paymentMethod" style={{ accentColor: "#31551F", width: 17, height: 17, flexShrink: 0, marginTop: 2 }} checked={checkoutPaymentMethod === "Payment slip"} onChange={() => setPaymentMethod("Payment slip")} /><span style={{ width: 35, height: 35, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 11, color: "#31551F", background: "#EDF1E3" }}><Receipt size={18} /></span><span style={{ display: "grid", gap: 4, flex: 1 }}><strong style={{ fontSize: ".85rem" }}>Payment slip</strong><small style={{ color: "#71695E", fontSize: ".75rem", lineHeight: 1.45 }}>Upload your bank transfer receipt</small></span></label>
-                {checkoutPaymentMethod === "Payment slip" && <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 64, padding: "11px 12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.32)", borderRadius: 13, background: "rgba(255,254,250,.72)", color: "#2D5016", cursor: "pointer" }}><span style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span><span style={{ display: "grid", gap: 3, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Add payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".7rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · click to change` : "Image or PDF · max 4 MB"}</small></span><span style={{ flexShrink: 0, padding: "7px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span><input required type="file" accept="image/*,application/pdf" onChange={(event) => setPaymentSlip(event.target.files?.[0] ?? null)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} /></label>}
+                {checkoutPaymentMethod === "Payment slip" && <>
+                  <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 64, padding: "11px 12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.32)", borderRadius: 13, background: "rgba(255,254,250,.72)", color: "#2D5016", cursor: "pointer" }}><span style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span><span style={{ display: "grid", gap: 3, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Add payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".7rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · click to change` : "Image or PDF · max 4 MB"}</small></span><span style={{ flexShrink: 0, padding: "7px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span><input required type="file" accept="image/*,application/pdf" onChange={(event) => setPaymentSlip(event.target.files?.[0] ?? null)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} /></label>
+                  {paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, padding: 10, border: "1px solid rgba(45,80,22,.16)", borderRadius: 12, background: "rgba(255,254,250,.8)" }}>
+                    <strong style={{ color: "#405235", fontSize: ".76rem" }}>Payment slip preview</strong>
+                    {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 280, border: 0, borderRadius: 8, background: "#fff" }} />}
+                  </div>}
+                </>}
                 {canPayOnline && <label className={`checkout-choice${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}><input type="radio" name="paymentMethod" style={{ accentColor: "#31551F", width: 17, height: 17, flexShrink: 0, marginTop: 2 }} checked={checkoutPaymentMethod === "Online payment"} onChange={() => setPaymentMethod("Online payment")} /><span style={{ width: 35, height: 35, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 11, color: "#31551F", background: "#EDF1E3" }}><CreditCard size={18} /></span><span style={{ display: "grid", gap: 4, flex: 1 }}><strong style={{ fontSize: ".85rem" }}>Online payment</strong><small style={{ color: "#71695E", fontSize: ".75rem", lineHeight: 1.45 }}>We’ll contact you with payment instructions after order confirmation</small></span></label>}
               </fieldset>
               <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>

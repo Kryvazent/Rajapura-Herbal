@@ -13,6 +13,9 @@ import authRoutes from './routes/authRoutes.js'
 import { uploadThingRouter } from './routes/uploadthing.js';
 import * as roleMiddleware from './middleware/roleMiddleware.js';
 
+import dns from "node:dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
