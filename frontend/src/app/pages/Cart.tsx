@@ -47,6 +47,7 @@ export default function Cart() {
   const [orderProgress, setOrderProgress] = useState("");
   const [orderResult, setOrderResult] = useState<{ success: boolean; message: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"Payment slip" | "Online payment">("Payment slip");
+  const [paymentSlipOpen, setPaymentSlipOpen] = useState(false);
   const [paymentSlip, setPaymentSlip] = useState<File | null>(null);
   const [paymentSlipPreviewUrl, setPaymentSlipPreviewUrl] = useState("");
   const [pendingPaymentOrderId, setPendingPaymentOrderId] = useState<string | null>(null);
@@ -205,6 +206,11 @@ export default function Cart() {
       setCheckoutError("Select a country from the country list.");
       return;
     }
+    if (checkoutPaymentMethod === "Payment slip" && !paymentSlip) {
+      setCheckoutError("Upload your bank transfer receipt before placing the order.");
+      setPaymentSlipOpen(true);
+      return;
+    }
     setCheckoutSubmitting(true);
     setCheckoutError("");
     setOrderProgress(checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…");
@@ -251,6 +257,7 @@ export default function Cart() {
       setSelectedIds([]);
       window.dispatchEvent(new Event("rajapura:cart-updated"));
       setCheckoutOpen(false);
+      setPaymentSlipOpen(false);
       setOrderResult({
         success: true,
         message: `${response.data.message ?? "Order placed successfully."}${checkoutPaymentMethod === "Online payment" ? " We’ll contact you with payment instructions." : " Your payment slip has been submitted."}`,
@@ -531,12 +538,12 @@ export default function Cart() {
           {orderResult.success ? <button type="button" onClick={() => navigate("/profile", { replace: true, state: { section: "orders" } })} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>View my orders</button> : <button type="button" onClick={() => setOrderResult(null)} style={{ width: "100%", marginTop: 24, padding: "13px 18px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>Return to cart</button>}
         </section>
       </div>}
-      {checkoutOpen && <div role="presentation" onClick={() => !checkoutSubmitting && setCheckoutOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
+      {checkoutOpen && <div role="presentation" onClick={() => { if (!checkoutSubmitting) { setCheckoutOpen(false); setPaymentSlipOpen(false); } }} style={{ position: "fixed", inset: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: 16, background: "rgba(20,35,10,.62)" }}>
         <section role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 960px)", maxHeight: "min(94vh, 900px)", overflowY: "auto", position: "relative", boxSizing: "border-box", border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "#FBF8F0", boxShadow: "0 32px 90px rgba(0,0,0,.34)", color: "#244516" }}>
-          <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{padding-bottom:20px;background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-choice{display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid rgba(45,80,22,.15);border-radius:15px;background:#FFFEFC;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.checkout-choice:hover{transform:translateY(-1px);border-color:rgba(45,80,22,.4)}.checkout-choice.selected{border-color:#41652E;background:#E3EBD5;box-shadow:inset 0 0 0 1px rgba(65,101,46,.13)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}}"}</style>
+          <style>{".checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr)}.checkout-pane{padding:clamp(22px,4vw,38px)}.checkout-payment{padding-bottom:20px;background:linear-gradient(160deg,#F1F3E7,#E9EEDC);border-left:1px solid rgba(45,80,22,.12)}.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.checkout-span{grid-column:1/-1}.checkout-control{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #D8DCCB;border-radius:11px;background:#FFFEFC;color:#283C1C;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}.checkout-control:focus{border-color:#65814E;box-shadow:0 0 0 3px rgba(101,129,78,.14)}.checkout-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}.checkout-method{display:grid;justify-items:start;gap:10px;min-height:112px;padding:14px;border:1px solid rgba(45,80,22,.15);border-radius:15px;background:#FFFEFC;color:#2D5016;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,transform .18s}.checkout-method:hover:not(:disabled){transform:translateY(-1px);border-color:rgba(45,80,22,.4)}.checkout-method.selected{border-color:#41652E;background:#E3EBD5;box-shadow:inset 0 0 0 1px rgba(65,101,46,.13)}.checkout-method:disabled{opacity:.52;cursor:not-allowed}.payment-slip-layout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:22px}.payment-slip-column{min-width:0;padding:clamp(18px,3vw,28px)}@media(max-width:680px){.checkout-layout{grid-template-columns:1fr}.checkout-payment{border-left:0;border-top:1px solid rgba(45,80,22,.12)}.checkout-fields{grid-template-columns:1fr}.checkout-span{grid-column:auto}.payment-slip-layout{grid-template-columns:1fr}}"}</style>
           <header style={{ position: "sticky", top: 0, zIndex: 2, padding: "25px clamp(22px,4vw,38px) 22px", color: "#F8F5EA", background: "linear-gradient(115deg,#203B14,#31551F 62%,#3B6227)", overflow: "hidden" }}>
             <div aria-hidden="true" style={{ position: "absolute", width: 210, height: 210, right: 38, top: -146, border: "1px solid rgba(226,204,135,.18)", borderRadius: "50%", boxShadow: "0 0 0 22px rgba(226,204,135,.035),0 0 0 46px rgba(226,204,135,.025)" }} />
-            <button type="button" aria-label="Close checkout" onClick={() => setCheckoutOpen(false)} disabled={checkoutSubmitting} style={{ position: "absolute", top: 20, right: 20, zIndex: 1, display: "grid", placeItems: "center", width: 38, height: 38, border: "1px solid rgba(248,245,234,.24)", borderRadius: "50%", background: "rgba(255,255,255,.08)", color: "#F8F5EA", cursor: "pointer" }}><X size={18} /></button>
+            <button type="button" aria-label="Close checkout" onClick={() => { setCheckoutOpen(false); setPaymentSlipOpen(false); }} disabled={checkoutSubmitting} style={{ position: "absolute", top: 20, right: 20, zIndex: 1, display: "grid", placeItems: "center", width: 38, height: 38, border: "1px solid rgba(248,245,234,.24)", borderRadius: "50%", background: "rgba(255,255,255,.08)", color: "#F8F5EA", cursor: "pointer" }}><X size={18} /></button>
             <p style={{ position: "relative", margin: "0 0 7px", color: "#DDBD65", fontSize: ".68rem", fontWeight: 800, letterSpacing: ".18em" }}>YOUR ORDER</p>
             <h2 id="checkout-title" style={{ position: "relative", margin: "0 50px 15px 0", fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 500, lineHeight: 1.15 }}>Delivery and payment</h2>
             <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, color: "rgba(248,245,234,.78)", fontSize: ".76rem", fontWeight: 700 }}><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, borderRadius: "50%", color: "#243D17", background: "#DDBD65", fontSize: ".68rem" }}>1</span>Delivery</span><span style={{ width: 32, borderTop: "1px solid rgba(248,245,234,.35)" }} /><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><span style={{ display: "grid", placeItems: "center", width: 22, height: 22, border: "1px solid rgba(248,245,234,.38)", borderRadius: "50%", fontSize: ".68rem" }}>2</span>Payment</span></div>
@@ -612,18 +619,17 @@ export default function Cart() {
             </div>
             <div className="checkout-pane checkout-payment">
               <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}><span style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: 12, color: "#31551F", background: "rgba(255,255,255,.62)" }}><CreditCard size={18} /></span><div><h3 style={{ margin: 0, fontSize: ".98rem", fontWeight: 800 }}>Payment method</h3><span style={{ color: "#847A68", fontSize: ".76rem" }}>Choose one option</span></div></div>
-              <fieldset style={{ display: "grid", gap: 10, margin: 0, padding: 0, border: 0 }}>
-                <legend style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>Payment method</legend>
-                <label className={`checkout-choice${checkoutPaymentMethod === "Payment slip" ? " selected" : ""}`}><input type="radio" name="paymentMethod" style={{ accentColor: "#31551F", width: 17, height: 17, flexShrink: 0, marginTop: 2 }} checked={checkoutPaymentMethod === "Payment slip"} onChange={() => setPaymentMethod("Payment slip")} /><span style={{ width: 35, height: 35, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 11, color: "#31551F", background: "#EDF1E3" }}><Receipt size={18} /></span><span style={{ display: "grid", gap: 4, flex: 1 }}><strong style={{ fontSize: ".85rem" }}>Payment slip</strong><small style={{ color: "#71695E", fontSize: ".75rem", lineHeight: 1.45 }}>Upload your bank transfer receipt</small></span></label>
-                {checkoutPaymentMethod === "Payment slip" && <>
-                  <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 64, padding: "11px 12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.32)", borderRadius: 13, background: "rgba(255,254,250,.72)", color: "#2D5016", cursor: "pointer" }}><span style={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span><span style={{ display: "grid", gap: 3, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Add payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".7rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · click to change` : "Image or PDF · max 4 MB"}</small></span><span style={{ flexShrink: 0, padding: "7px 9px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span><input required type="file" accept="image/*,application/pdf" onChange={(event) => setPaymentSlip(event.target.files?.[0] ?? null)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} /></label>
-                  {paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, padding: 10, border: "1px solid rgba(45,80,22,.16)", borderRadius: 12, background: "rgba(255,254,250,.8)" }}>
-                    <strong style={{ color: "#405235", fontSize: ".76rem" }}>Payment slip preview</strong>
-                    {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 280, border: 0, borderRadius: 8, background: "#fff" }} />}
-                  </div>}
-                </>}
-                {canPayOnline && <label className={`checkout-choice${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}><input type="radio" name="paymentMethod" style={{ accentColor: "#31551F", width: 17, height: 17, flexShrink: 0, marginTop: 2 }} checked={checkoutPaymentMethod === "Online payment"} onChange={() => setPaymentMethod("Online payment")} /><span style={{ width: 35, height: 35, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 11, color: "#31551F", background: "#EDF1E3" }}><CreditCard size={18} /></span><span style={{ display: "grid", gap: 4, flex: 1 }}><strong style={{ fontSize: ".85rem" }}>Online payment</strong><small style={{ color: "#71695E", fontSize: ".75rem", lineHeight: 1.45 }}>We’ll contact you with payment instructions after order confirmation</small></span></label>}
-              </fieldset>
+              <div role="group" aria-label="Payment method" className="checkout-methods">
+                <button type="button" aria-pressed={checkoutPaymentMethod === "Payment slip"} onClick={() => { setPaymentMethod("Payment slip"); setCheckoutError(""); setPaymentSlipOpen(true); }} className={`checkout-method${checkoutPaymentMethod === "Payment slip" ? " selected" : ""}`}>
+                  <Receipt size={20} aria-hidden="true" />
+                  <span><strong style={{ display: "block", fontSize: ".85rem" }}>Payment slip</strong><small style={{ display: "block", marginTop: 4, color: "#71695E", fontSize: ".73rem", lineHeight: 1.4 }}>View bank details and upload receipt</small></span>
+                </button>
+                <button type="button" aria-pressed={checkoutPaymentMethod === "Online payment"} disabled={!canPayOnline} onClick={() => { setPaymentMethod("Online payment"); setPaymentSlipOpen(false); setCheckoutError(""); }} className={`checkout-method${checkoutPaymentMethod === "Online payment" ? " selected" : ""}`}>
+                  <CreditCard size={20} aria-hidden="true" />
+                  <span><strong style={{ display: "block", fontSize: ".85rem" }}>Online payment</strong><small style={{ display: "block", marginTop: 4, color: "#71695E", fontSize: ".73rem", lineHeight: 1.4 }}>{canPayOnline ? "We’ll contact you with payment instructions" : "Unavailable for items with contact pricing"}</small></span>
+                </button>
+              </div>
+              {checkoutPaymentMethod === "Payment slip" ? <p style={{ margin: "11px 0 0", color: "#71695E", fontSize: ".76rem", lineHeight: 1.5 }}>{paymentSlip ? `Receipt attached: ${paymentSlip.name}` : "Open Payment slip to view bank account details and attach your receipt."}</p> : <p style={{ margin: "11px 0 0", color: "#71695E", fontSize: ".76rem", lineHeight: 1.5 }}>We’ll contact you with payment instructions after your order is confirmed.</p>}
               <div style={{ display: "grid", gap: 10, marginTop: 20, padding: 16, border: "1px solid rgba(45,80,22,.11)", borderRadius: 15, background: "rgba(255,254,250,.75)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}><strong style={{ color: "#405235", fontSize: ".82rem" }}>Order summary</strong><span style={{ padding: "3px 8px", borderRadius: 20, color: "#526746", background: "#E8EDD9", fontSize: ".7rem", fontWeight: 700 }}>{items.reduce((total, item) => total + item.qty, 0)} items</span></div>
                 <div style={{ display: "grid", gap: 8, maxHeight: 116, overflowY: "auto" }}>{selectedPricedItems.map((item) => <div key={item.product._id} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#71695E", fontSize: ".76rem" }}><span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.product.name} × {item.qty}</span><strong style={{ flexShrink: 0, color: "#405235", fontSize: ".76rem" }}>{item.unitPrice === null ? "Contact for price" : formatDollarAmount(item.unitPrice * item.qty)}</strong></div>)}</div>
@@ -633,6 +639,60 @@ export default function Cart() {
               <button type="submit" disabled={checkoutSubmitting || selectedItems.length === 0} style={{ width: "100%", marginTop: 15, padding: "14px 18px", border: 0, borderRadius: 30, color: "#FAF6EE", background: "linear-gradient(110deg,#31591C,#244516)", boxShadow: "0 8px 18px rgba(36,69,22,.2)", fontWeight: 800, fontSize: ".91rem", cursor: checkoutSubmitting ? "wait" : "pointer", opacity: checkoutSubmitting || selectedItems.length === 0 ? .68 : 1 }}>{checkoutSubmitting ? checkoutPaymentMethod === "Payment slip" ? "Uploading slip and placing order…" : "Placing order…" : "Place order"}<span aria-hidden="true" style={{ marginLeft: 8 }}>→</span></button>
             </div>
           </form>}
+        </section>
+      </div>}
+      {checkoutOpen && paymentSlipOpen && <div role="presentation" onClick={() => setPaymentSlipOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 1120, display: "grid", placeItems: "center", padding: 16, background: "rgba(15,28,9,.68)" }}>
+        <section role="dialog" aria-modal="true" aria-labelledby="payment-slip-title" onClick={(event) => event.stopPropagation()} style={{ width: "min(100%, 840px)", maxHeight: "min(92vh, 760px)", overflowY: "auto", border: "1px solid rgba(45,80,22,.2)", borderRadius: 22, background: "#FBF8F0", color: "#244516", boxShadow: "0 30px 80px rgba(0,0,0,.38)" }}>
+          <header style={{ position: "sticky", top: 0, zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "18px 22px", borderBottom: "1px solid rgba(45,80,22,.12)", background: "#FBF8F0" }}>
+            <div><p style={{ margin: "0 0 4px", color: "#9A7048", fontSize: ".67rem", fontWeight: 800, letterSpacing: ".14em" }}>BANK TRANSFER</p><h2 id="payment-slip-title" style={{ margin: 0, fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 500 }}>Payment slip</h2></div>
+            <button type="button" aria-label="Close payment slip details" onClick={() => setPaymentSlipOpen(false)} style={{ width: 38, height: 38, display: "grid", placeItems: "center", flexShrink: 0, border: "1px solid rgba(45,80,22,.16)", borderRadius: "50%", color: "#31551F", background: "#FFFEFA", cursor: "pointer" }}><X size={18} /></button>
+          </header>
+          <div className="payment-slip-layout">
+            <section className="payment-slip-column" aria-labelledby="bank-account-heading">
+              <span aria-hidden="true" style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginBottom: 14, borderRadius: 14, color: "#31551F", background: "#E6ECD9" }}><CreditCard size={21} /></span>
+              <h3 id="bank-account-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>Transfer to this account</h3>
+              <p style={{ margin: "0 0 18px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>Complete your bank transfer, then upload a clear photo or PDF of the receipt.</p>
+              <dl style={{ display: "grid", gap: 0, margin: 0, padding: "4px 15px", border: "1px solid rgba(45,80,22,.12)", borderRadius: 14, background: "#FFFEFA" }}>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Account name</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 800, lineHeight: 1.4 }}>Rajapura Herbal Drugs Co. (Pvt) Ltd</dd></div>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Account number</dt><dd style={{ margin: "5px 0 0", color: "#244516", fontSize: "1.18rem", fontWeight: 800, letterSpacing: ".04em" }}>007410001661</dd></div>
+                <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(45,80,22,.1)" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Bank</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>Sampath Bank</dd></div>
+                <div style={{ padding: "12px 0" }}><dt style={{ color: "#847A68", fontSize: ".72rem" }}>Branch / country</dt><dd style={{ margin: "4px 0 0", color: "#31551F", fontWeight: 700 }}>Monaragala, Sri Lanka</dd></div>
+              </dl>
+            </section>
+
+            <section className="payment-slip-column" aria-labelledby="upload-slip-heading" style={{ borderLeft: "1px solid rgba(45,80,22,.1)", background: "linear-gradient(160deg,#F1F3E7,#E9EEDC)" }}>
+              <span aria-hidden="true" style={{ width: 42, height: 42, display: "grid", placeItems: "center", marginBottom: 14, borderRadius: 14, color: "#31551F", background: "rgba(255,255,255,.7)" }}><Upload size={21} /></span>
+              <h3 id="upload-slip-heading" style={{ margin: "0 0 7px", fontSize: "1rem" }}>Upload your receipt</h3>
+              <p style={{ margin: "0 0 15px", color: "#71695E", fontSize: ".82rem", lineHeight: 1.55 }}>Accepted formats: image or PDF, up to 4 MB.</p>
+              <label style={{ position: "relative", display: "flex", alignItems: "center", gap: 11, minHeight: 68, padding: "12px", overflow: "hidden", border: "1px dashed rgba(45,80,22,.34)", borderRadius: 13, background: "rgba(255,254,250,.8)", color: "#2D5016", cursor: "pointer" }}>
+                <span style={{ width: 36, height: 36, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 10, background: "#E5ECD8" }}><Upload size={17} /></span>
+                <span style={{ display: "grid", gap: 4, minWidth: 0, flex: 1 }}><strong title={paymentSlip?.name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: ".79rem" }}>{paymentSlip?.name ?? "Choose a payment slip"}</strong><small style={{ color: "#71695E", fontSize: ".72rem" }}>{paymentSlip ? `${(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB · select to replace` : "Browse files on your device"}</small></span>
+                <span style={{ flexShrink: 0, padding: "7px 10px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 9, background: "#FFFEFA", fontSize: ".72rem", fontWeight: 700 }}>{paymentSlip ? "Change" : "Browse"}</span>
+                <input type="file" accept="image/*,application/pdf" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 4 * 1024 * 1024) {
+                    setCheckoutError("The payment slip must be 4 MB or smaller.");
+                    event.target.value = "";
+                    return;
+                  }
+                  if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+                    setCheckoutError("Upload the payment slip as an image or PDF.");
+                    event.target.value = "";
+                    return;
+                  }
+                  setPaymentSlip(file);
+                  setCheckoutError("");
+                }} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }} />
+              </label>
+              {paymentSlip && paymentSlipPreviewUrl && <div aria-label={`Preview of ${paymentSlip.name}`} style={{ display: "grid", gap: 8, marginTop: 14, padding: 10, border: "1px solid rgba(45,80,22,.16)", borderRadius: 12, background: "rgba(255,254,250,.85)" }}>
+                <strong style={{ color: "#405235", fontSize: ".76rem" }}>Receipt preview</strong>
+                {paymentSlip.type.startsWith("image/") ? <img src={paymentSlipPreviewUrl} alt={`Payment slip: ${paymentSlip.name}`} style={{ display: "block", width: "100%", maxHeight: 230, objectFit: "contain", borderRadius: 8, background: "#fff" }} /> : <iframe title={`Payment slip preview: ${paymentSlip.name}`} src={paymentSlipPreviewUrl} style={{ width: "100%", height: 230, border: 0, borderRadius: 8, background: "#fff" }} />}
+              </div>}
+              {checkoutError && <p role="alert" style={{ margin: "12px 0 0", padding: "9px 11px", border: "1px solid #E6B6AE", borderRadius: 9, color: "#8F2D26", background: "#FFF3F0", fontSize: ".8rem" }}>{checkoutError}</p>}
+              <button type="button" onClick={() => setPaymentSlipOpen(false)} style={{ width: "100%", marginTop: 16, padding: "12px 16px", border: 0, borderRadius: 28, color: "#FAF6EE", background: "#2D5016", fontWeight: 800, cursor: "pointer" }}>{paymentSlip ? "Done" : "Choose slip later"}</button>
+            </section>
+          </div>
         </section>
       </div>}
       {checkoutOpen && checkoutSubmitting && <div role="status" aria-live="polite" aria-label={orderProgress} style={{ position: "fixed", inset: 0, zIndex: 1150, display: "grid", placeItems: "center", padding: 16, boxSizing: "border-box", background: "rgba(13,25,8,.72)" }}>
