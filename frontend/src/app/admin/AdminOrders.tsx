@@ -46,6 +46,7 @@ export default function AdminOrders() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All orders");
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [updatingField, setUpdatingField] = useState<"orderStatus" | "paymentStatus" | null>(null);
 
   const load = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -64,6 +65,7 @@ export default function AdminOrders() {
 
   const update = async (id: string, field: "orderStatus" | "paymentStatus", value: string) => {
     setUpdatingOrderId(id);
+    setUpdatingField(field);
     setError("");
     try {
       await axios.patch(`${api}/admin/orders/${id}`, { [field]: value }, { withCredentials: true });
@@ -72,6 +74,7 @@ export default function AdminOrders() {
       setError("This order couldn’t be updated. Please try again.");
     } finally {
       setUpdatingOrderId(null);
+      setUpdatingField(null);
     }
   };
 
@@ -235,7 +238,7 @@ export default function AdminOrders() {
               <div style={{ display: "flex", alignItems: "end", gap: 12, flexWrap: "wrap" }}>
                 {select("Order status", order.orderStatus, orderStatuses, (value) => void update(order._id, "orderStatus", value), updating)}
                 {select("Payment status", order.paymentStatus, paymentStatuses, (value) => void update(order._id, "paymentStatus", value), updating)}
-                {updating && <span role="status" style={{ color: "#68775B", fontSize: ".8rem" }}>Saving update…</span>}
+                {updating && <span role="status" aria-live="polite" style={{ display: "inline-flex", alignItems: "center", gap: 9, minHeight: 42, padding: "8px 13px", border: "1px solid #C9D9B3", borderRadius: 11, color: "#31551F", background: "#EEF3E4", boxShadow: "0 3px 10px rgba(45,80,22,.08)", fontSize: ".84rem", fontWeight: 800 }}><RefreshCw size={16} aria-hidden="true" /><span>Saving {updatingField === "orderStatus" ? "order" : "payment"} status...</span></span>}
               </div>
             </div>
           </details>;
