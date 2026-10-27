@@ -32,7 +32,7 @@ export const loginValidators = [
     .withMessage("Password must be between 6 and 128 characters"),
 ];
 
-export const customerRegistrationValidators = [
+export const customerRegistrationIdentityValidators = [
   body("name")
     .trim()
     .notEmpty()
@@ -44,9 +44,16 @@ export const customerRegistrationValidators = [
     .isEmail()
     .withMessage("Enter a valid email address")
     .normalizeEmail(),
+];
+
+export const customerRegistrationValidators = [
+  ...customerRegistrationIdentityValidators,
   body("password")
     .isLength({ min: 8, max: 128 })
     .withMessage("Password must be between 8 and 128 characters"),
+  body("otp")
+    .matches(/^\d{6}$/)
+    .withMessage("Enter the 6-digit verification code"),
 ];
 
 

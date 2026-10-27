@@ -95,8 +95,8 @@ export default function Cart() {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((d) => {
-        // setCountry(d.country_code ?? null);
-        setCountry("USA");
+        setCountry(d.country_code ?? null);
+        // setCountry("USA");
       })
       .catch(() => setCountry(null));
     fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/status`, {

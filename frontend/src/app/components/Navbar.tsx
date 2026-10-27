@@ -126,9 +126,9 @@ export function Navbar() {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
       .then((data) => {
-        // setCountry(data.country_code ?? null)
+        setCountry(data.country_code ?? null)
         // console.log("IPAPI response:", data);
-        setCountry("USA")
+        // setCountry("USA")
       })
       .catch(() => setCountry(null));
 

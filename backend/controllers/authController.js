@@ -1,6 +1,9 @@
 import * as authService from "../services/authService.js";
 import User from "../models/User.js";
 import Customer from "../models/Customer.js";
+import CustomerEmailVerification from "../models/CustomerEmailVerification.js";
+import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { sendCustomerRegistrationOtp } from "../services/gmailService.js";
 
 const destroySession = (req) => {
   req.session?.destroy((err) => {
@@ -116,11 +119,72 @@ export const loginCustomer = async (req, res) => {
   }
 };
 
-export const registerCustomer = async (req, res) => {
-  const { name, email, password } = req.body;
-  const normalizedEmail = email.trim().toLowerCase();
+const hashRegistrationOtp = (salt, code) => createHash("sha256").update(`${salt}:${code}`).digest("hex");
+
+export const sendCustomerRegistrationCode = async (req, res) => {
+  const name = String(req.body?.name ?? "").trim();
+  const normalizedEmail = String(req.body?.email ?? "").trim().toLowerCase();
+  if (name.length < 2 || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return res.status(422).json({ success: false, message: "Enter a valid name and email address" });
+  }
 
   try {
+    if (await Customer.exists({ email: normalizedEmail })) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
+    const existing = await CustomerEmailVerification.findOne({ email: normalizedEmail });
+    if (existing && Date.now() - existing.lastSentAt.getTime() < 60_000) {
+      return res.status(429).json({ success: false, message: "Please wait a minute before requesting another code" });
+    }
+
+    const otp = String(randomInt(100000, 1000000));
+    const salt = randomBytes(16).toString("hex");
+    const verification = await CustomerEmailVerification.findOneAndUpdate(
+      { email: normalizedEmail },
+      { $set: { codeHash: hashRegistrationOtp(salt, otp), salt, expiresAt: new Date(Date.now() + 10 * 60_000), lastSentAt: new Date(), attempts: 0 } },
+      { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true },
+    );
+    const emailResult = await sendCustomerRegistrationOtp(normalizedEmail, name, otp);
+    if (!emailResult.success) {
+      await CustomerEmailVerification.deleteOne({ _id: verification._id });
+      console.error("Customer registration OTP email failed:", emailResult.reason);
+      return res.status(503).json({ success: false, message: "We could not send the verification email. Please try again later." });
+    }
+    return res.status(200).json({ success: true, message: "Verification code sent to your email" });
+  } catch (error) {
+    console.error("sendCustomerRegistrationCode error:", error);
+    return res.status(500).json({ success: false, message: "Unable to send a verification code" });
+  }
+};
+
+export const registerCustomer = async (req, res) => {
+  const { name, email, password, otp } = req.body;
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+
+  try {
+    const verification = await CustomerEmailVerification.findOne({ email: normalizedEmail });
+    if (!verification || verification.expiresAt <= new Date()) {
+      if (verification) await CustomerEmailVerification.deleteOne({ _id: verification._id });
+      return res.status(400).json({ success: false, message: "Your verification code expired. Request a new one." });
+    }
+    if (verification.attempts >= 5) {
+      await CustomerEmailVerification.deleteOne({ _id: verification._id });
+      return res.status(429).json({ success: false, message: "Too many incorrect codes. Request a new verification code." });
+    }
+    const submittedHash = hashRegistrationOtp(verification.salt, String(otp ?? ""));
+    const expectedHash = Buffer.from(verification.codeHash, "hex");
+    const actualHash = Buffer.from(submittedHash, "hex");
+    if (expectedHash.length !== actualHash.length || !timingSafeEqual(expectedHash, actualHash)) {
+      const attempt = await CustomerEmailVerification.findOneAndUpdate(
+        { _id: verification._id, attempts: { $lt: 5 } },
+        { $inc: { attempts: 1 } },
+      );
+      if (!attempt) return res.status(429).json({ success: false, message: "Too many incorrect codes. Request a new verification code." });
+      return res.status(400).json({ success: false, message: "The verification code is incorrect" });
+    }
+    const consumed = await CustomerEmailVerification.deleteOne({ _id: verification._id, codeHash: verification.codeHash });
+    if (consumed.deletedCount !== 1) return res.status(400).json({ success: false, message: "This verification code has already been used. Request a new one." });
+
     // Older customer migrations left a unique index on the removed `user` field.
     // MongoDB treats missing values as duplicates under that index, so it can
     // reject every new customer and incorrectly look like an email conflict.
