@@ -183,7 +183,7 @@ const authLimiter = rateLimit({
 });
 
 const registrationCodeLimiter = rateLimit({
-    // windowMs: 15 * 60 * 1000,
+    windowMs: 5 * 60 * 1000,
     limit: 5,
     standardHeaders: "draft-8",
     legacyHeaders: false,
