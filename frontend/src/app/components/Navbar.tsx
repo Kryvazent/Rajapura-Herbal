@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages, ShoppingCart, CircleUserRound } from "lucide-react";
@@ -133,7 +134,7 @@ export function Navbar() {
       .catch(() => setCountry(null));
 
     const updateCustomerStatus = () => {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/status`, { credentials: "include" })
+      fetch(`${API_BASE_URL}/auth/customer/status`, { credentials: "include" })
         .then((response) => response.json())
         .then(async (data) => {
           const customer = data.authenticated && data.role === "USER";
@@ -142,7 +143,7 @@ export function Navbar() {
             setCustomerInitial("");
             return;
           }
-          const profileResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/me`, { credentials: "include" });
+          const profileResponse = await fetch(`${API_BASE_URL}/auth/customer/me`, { credentials: "include" });
           const profileData = await profileResponse.json();
           const firstName = profileData.data?.firstName?.trim() ?? "";
           const lastName = profileData.data?.lastName?.trim() ?? "";
@@ -159,7 +160,7 @@ export function Navbar() {
     updateCustomerStatus();
 
     const updateCartCount = () => {
-      fetch(`${import.meta.env.VITE_BACKEND_URL}/user/cart`, { credentials: "include" })
+      fetch(`${API_BASE_URL}/user/cart`, { credentials: "include" })
         .then(async (response) => {
           if (!response.ok) return setCartCount(0);
           const result = await response.json();
@@ -202,7 +203,7 @@ export function Navbar() {
     setSigningOut(true);
     setSignOutError("");
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/logout`, {
+      const response = await fetch(`${API_BASE_URL}/auth/customer/logout`, {
         method: "POST",
         credentials: "include",
       });

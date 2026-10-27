@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "./api";
 import { generateReactHelpers } from "@uploadthing/react";
 
-const uploadThingUrl = `${import.meta.env.VITE_BACKEND_URL}/admin/uploadthing`;
+const uploadThingUrl = `${API_BASE_URL}/admin/uploadthing`;
 
 export const { useUploadThing } = generateReactHelpers<any>({
   url: uploadThingUrl,
@@ -15,7 +16,7 @@ export const { useUploadThing } = generateReactHelpers<any>({
   },
 });
 
-const customerUploadThingUrl = `${import.meta.env.VITE_BACKEND_URL}/user/uploadthing`;
+const customerUploadThingUrl = `${API_BASE_URL}/user/uploadthing`;
 
 export const { useUploadThing: useCustomerUploadThing } = generateReactHelpers<any>({
   url: customerUploadThingUrl,

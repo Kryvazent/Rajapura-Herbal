@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart, Share2, Check, LoaderCircle } from "lucide-react";
@@ -117,7 +118,7 @@ export default function Products() {
     setAddingProductId(productId);
     try {
       if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Enter a valid quantity.");
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
       window.dispatchEvent(new Event("rajapura:cart-updated"));
       setCartNotice({ success: true, message: language === "si" ? "කරත්තයට එක් කරන ලදී" : "Added to your cart" });
       closeProduct();
@@ -139,7 +140,7 @@ export default function Products() {
     setLoading(true);
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL +
+        API_BASE_URL +
           `/user/products-all?lang=${language}`,
       );
 

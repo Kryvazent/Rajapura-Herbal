@@ -23,9 +23,25 @@
     }
   ],
   "rewrites": [
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/full-text.txt", "destination": "/full-text.txt" },
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://rajapura-herbal-backend.vercel.app/:path*"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/full-text.txt",
+      "destination": "/full-text.txt"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }

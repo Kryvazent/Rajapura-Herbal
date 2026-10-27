@@ -1,10 +1,11 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { CircleUserRound, ClipboardList, CreditCard, LogOut, Package, Leaf, MapPin, CalendarDays, ChevronDown, Search, X } from "lucide-react";
 import axios from "axios";
 import { useLanguage } from "../i18n/LanguageContext";
 
-const api = import.meta.env.VITE_BACKEND_URL;
+const api = API_BASE_URL;
 type CustomerProfile = { firstName: string; lastName: string; email: string; phone?: string; createdAt?: string };
 type Order = { _id: string; createdAt: string; country: string; currency?: "USD" | "LKR"; customer: { name: string; contactNumber: string }; address: string; additionalNote?: string; paymentSlipUrl?: string; orderStatus: string; paymentStatus: string; paymentMethod: string; products: { name: string; qty: number; price: number; product?: { name?: string; sinhalaName?: string; price?: string; priceUSD?: string; priceLKR?: string; translations?: { name?: { en?: string; si?: string } } } | null }[] };
 type PageId = "profile" | "orders" | "payments";

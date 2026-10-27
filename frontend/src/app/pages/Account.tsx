@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../lib/api";
 import { ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 
-const api = import.meta.env.VITE_BACKEND_URL;
+const api = API_BASE_URL;
 
 const fieldStyle = {
   width: "100%",
@@ -54,7 +55,13 @@ export default function Account() {
   }, [verificationModalOpen]);
 
   const updateOtpDigit = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const entered = value.replace(/\D/g, "").slice(0, 6);
+    if (entered.length > 1) {
+      setOtpDigits(Array.from({ length: 6 }, (_, digitIndex) => entered[digitIndex] ?? ""));
+      otpInputs.current[Math.min(entered.length, 6) - 1]?.focus();
+      return;
+    }
+    const digit = entered.slice(-1);
     setOtpDigits((current) => current.map((item, itemIndex) => itemIndex === index ? digit : item));
     if (digit && index < 5) otpInputs.current[index + 1]?.focus();
   };
@@ -185,7 +192,7 @@ export default function Account() {
               autoComplete={index === 0 ? "one-time-code" : "off"}
               aria-label={`Verification digit ${index + 1}`}
               value={digit}
-              maxLength={1}
+              maxLength={index === 0 ? 6 : 1}
               onChange={(event) => updateOtpDigit(index, event.target.value)}
               onPaste={pasteOtp}
               onKeyDown={(event) => {
@@ -196,7 +203,10 @@ export default function Account() {
               style={{ width: "100%", minWidth: 0, height: 54, boxSizing: "border-box", padding: 0, border: `1.5px solid ${digit ? "#8BC34A" : "#D9DCCB"}`, borderRadius: 12, outlineColor: "#8BC34A", color: "#244516", background: "#FFFEFA", textAlign: "center", font: "700 1.35rem 'Lato',sans-serif", boxShadow: digit ? "0 3px 10px rgba(45,80,22,.07)" : "none" }}
             />)}
           </div>
-          <button type="button" disabled={busy} onClick={() => void requestVerificationCode()} style={{ display: "block", margin: "13px 0 0", padding: 0, border: 0, borderBottom: "1px solid #8BC34A", color: "#31551F", background: "transparent", font: "inherit", fontSize: ".82rem", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}>Resend verification code</button>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 13 }}>
+            <button type="button" disabled={busy || otp.length === 0} onClick={() => { setOtpDigits(["", "", "", "", "", ""]); otpInputs.current[0]?.focus(); }} style={{ padding: 0, border: 0, borderBottom: "1px solid #C9D9B3", color: otp.length === 0 ? "#9A9A8A" : "#526746", background: "transparent", font: "inherit", fontSize: ".82rem", fontWeight: 700, cursor: busy || otp.length === 0 ? "not-allowed" : "pointer" }}>Clear code</button>
+            <button type="button" disabled={busy} onClick={() => void requestVerificationCode()} style={{ padding: 0, border: 0, borderBottom: "1px solid #8BC34A", color: "#31551F", background: "transparent", font: "inherit", fontSize: ".82rem", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}>Resend verification code</button>
+          </div>
           {error && <p role="alert" style={{ margin: "16px 0 0", padding: "10px 12px", border: "1px solid #EBCBC5", borderRadius: 9, color: "#9D3029", background: "#FBEDEA", fontSize: ".88rem", lineHeight: 1.5 }}>{error}</p>}
           <button type="button" disabled={busy || otp.length !== 6} onClick={() => registrationForm.current?.requestSubmit()} style={{ ...primaryButtonStyle, width: "100%", marginTop: 22, opacity: busy || otp.length !== 6 ? .55 : 1, cursor: busy ? "wait" : otp.length === 6 ? "pointer" : "not-allowed" }}>{busy ? "Please wait…" : "Verify email & create account"}</button>
         </section>

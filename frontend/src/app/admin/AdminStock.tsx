@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 
-const api = import.meta.env.VITE_BACKEND_URL;
+const api = API_BASE_URL;
 type Prices = { lkr: string; usd: string };
 
 const editAmount = (value?: string) => {
