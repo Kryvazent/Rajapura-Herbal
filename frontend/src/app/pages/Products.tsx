@@ -183,7 +183,7 @@ export default function Products() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
-      <style>{"@keyframes product-cart-spin{to{transform:rotate(360deg)}}"}</style>
+      <style>{"@keyframes product-cart-spin{to{transform:rotate(360deg)}}.product-card--sinhala .product-card__footer{align-items:stretch!important;flex-direction:column;gap:8px}.product-card--sinhala .product-card__actions{display:grid!important;grid-template-columns:1fr;gap:8px!important;width:100%;margin:0!important}.product-card--sinhala .product-card__actions>button,.product-card--sinhala .product-card__actions>a{width:100%;min-height:42px;box-sizing:border-box;justify-content:center;white-space:normal;line-height:1.35;text-align:center}.product-card--sinhala .product-card__actions>span{justify-self:start}"}</style>
       {cartNotice && <div role="status" aria-live="polite" style={{ position: "fixed", right: 22, bottom: 22, zIndex: 120, display: "flex", alignItems: "center", gap: 10, maxWidth: "min(420px, calc(100vw - 32px))", padding: "13px 18px", borderRadius: 14, color: cartNotice.success ? "#FAF6EE" : "#7D241D", background: cartNotice.success ? "#244516" : "#FFF3F0", border: cartNotice.success ? "1px solid #8BC34A" : "1px solid #E6B6AE", boxShadow: "0 10px 30px rgba(20,35,10,.2)", fontWeight: 700 }}>
         {cartNotice.success ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}{cartNotice.message}
         {cartNotice.loginRequired && <Link to="/account" style={{ color: "inherit", textDecoration: "underline", fontWeight: 800 }}>{language === "si" ? "පුරනය වන්න" : "Sign in"}</Link>}
@@ -356,7 +356,7 @@ export default function Products() {
                   display: "flex",
                   flexDirection: "column",
                 }}
-                className="group hover:shadow-lg"
+                className={`product-card${language === "si" ? " product-card--sinhala" : ""} group hover:shadow-lg`}
                 onClick={() => openProduct(product)}
               >
                 <div
@@ -543,7 +543,7 @@ export default function Products() {
                   </div>
 
                   <div
-                    className="flex items-center justify-between"
+                    className="product-card__footer flex items-center justify-between"
                     style={{ marginTop: "auto" }}
                   >
                     <span
@@ -563,7 +563,7 @@ export default function Products() {
                     >
                       {productPriceLabel(product)}
                     </span>
-                    <div className="flex gap-2" style={{ margin: "6px 0 10px" }}>
+                    <div className="product-card__actions flex gap-2" style={{ margin: "6px 0 10px" }}>
                       {international ? (
                         (product.stock ?? 0) > 0 && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
