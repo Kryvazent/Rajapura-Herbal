@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { Link } from "react-router";
 import {
   Leaf,
@@ -25,7 +26,7 @@ export function Footer() {
 
   useEffect(() => {
     setCentres([]);
-    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/services?lang=${language}`)
+    axios.get(`${API_BASE_URL}/user/services?lang=${language}`)
       .then((response) => {
         const data = response.data;
         const list = Array.isArray(data) ? data : data?.services ?? data?.data ?? data?.items ?? [];

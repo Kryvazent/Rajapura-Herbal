@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { CalendarDays, ChevronDown, ClipboardList, CreditCard, MapPin, Package, RefreshCw, Search } from "lucide-react";
@@ -17,7 +18,7 @@ type Order = {
   createdAt: string;
 };
 
-const api = import.meta.env.VITE_BACKEND_URL;
+const api = API_BASE_URL;
 const orderStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"];
 const paymentStatuses = ["Processing", "Unpaid", "Paid", "Refunded"];
 const statusFilterOptions = ["All orders", ...orderStatuses];

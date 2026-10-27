@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
@@ -69,7 +70,7 @@ export default function AdminLayout() {
     const checkAuth = async () => {
       try {
         const res = await axios.get(
-          import.meta.env.VITE_BACKEND_URL + "/auth/admin/status",
+          API_BASE_URL + "/auth/admin/status",
           { withCredentials: true }
         );
 
@@ -108,7 +109,7 @@ export default function AdminLayout() {
 
         try {
           const profileRes = await axios.get(
-            import.meta.env.VITE_BACKEND_URL + "/auth/admin/me",
+            API_BASE_URL + "/auth/admin/me",
             { withCredentials: true }
           );
           if (profileRes.data?.data) {
@@ -154,7 +155,7 @@ export default function AdminLayout() {
   const handleLogout = async () => {
     try {
       await axios.post(
-        import.meta.env.VITE_BACKEND_URL + "/auth/admin/logout",
+        API_BASE_URL + "/auth/admin/logout",
         {},
         { withCredentials: true }
       );

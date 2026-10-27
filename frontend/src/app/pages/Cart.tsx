@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { Product } from "../interfaces/productInterface";
@@ -99,7 +100,7 @@ export default function Cart() {
         // setCountry("USA");
       })
       .catch(() => setCountry(null));
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/status`, {
+    fetch(`${API_BASE_URL}/auth/customer/status`, {
       credentials: "include",
     })
       .then((r) => r.json())
@@ -108,14 +109,14 @@ export default function Cart() {
         setSignedIn(customer);
         if (!customer) return;
 
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/cart`, { withCredentials: true });
+        const response = await axios.get(`${API_BASE_URL}/user/cart`, { withCredentials: true });
         let cartItems = response.data.data?.items ?? [];
         let canClearLegacyCart = true;
         if (cartItems.length === 0) {
           try {
             const legacyItems = JSON.parse(localStorage.getItem("rajapuraCart") || "[]");
             if (Array.isArray(legacyItems) && legacyItems.length) {
-              const migrated = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/user/cart`, {
+              const migrated = await axios.put(`${API_BASE_URL}/user/cart`, {
                 items: legacyItems.map((item: Item) => ({ productId: item.product._id, qty: item.qty })),
               }, { withCredentials: true });
               cartItems = migrated.data.data?.items ?? [];
@@ -163,7 +164,7 @@ export default function Cart() {
     setItems(next);
     setCartError("");
     try {
-      const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/user/cart`, {
+      const response = await axios.put(`${API_BASE_URL}/user/cart`, {
         items: next.map((item) => ({ productId: item.product._id, qty: item.qty })),
       }, { withCredentials: true });
       const savedItems = response.data.data?.items ?? [];
@@ -208,7 +209,7 @@ export default function Cart() {
     setCheckoutMessage("");
     setPaymentMethod("");
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/checkout-details`, { withCredentials: true });
+      const response = await axios.get(`${API_BASE_URL}/user/checkout-details`, { withCredentials: true });
       const savedCountry = response.data.data?.country ?? "";
       setCheckoutDetails({
         address: response.data.data?.address ?? "",
@@ -253,7 +254,7 @@ export default function Cart() {
         const slipKind = paymentSlipKind(paymentSlip);
         if (!slipKind) throw new Error("Upload the payment slip as an image or PDF.");
         if (!pendingPaymentOrderId) {
-          const preparation = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders/prepare`, {
+          const preparation = await axios.post(`${API_BASE_URL}/user/orders/prepare`, {
             address: checkoutDetails.address,
             country: checkoutDetails.country,
             contactNumber: checkoutDetails.contactNumber,
@@ -275,7 +276,7 @@ export default function Cart() {
         if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
       }
       setOrderProgress(si ? "ඔබගේ ඇණවුම යවමින්…" : "Submitting your order…");
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/orders`, {
+      const response = await axios.post(`${API_BASE_URL}/user/orders`, {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
         paymentMethod: checkoutPaymentMethod,

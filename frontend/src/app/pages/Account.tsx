@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../lib/api";
 import { ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 
-const api = import.meta.env.VITE_BACKEND_URL;
+const api = API_BASE_URL;
 
 const fieldStyle = {
   width: "100%",

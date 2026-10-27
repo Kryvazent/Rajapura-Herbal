@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { Link } from "react-router";
 import { Package, Store, MapPin, ChevronRight, TrendingUp, Leaf, ClipboardList, Clock3, Truck, BadgeCheck, CreditCard } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,7 +26,7 @@ export default function AdminDashboard() {
   const loadProducts = async () => {
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+        API_BASE_URL + "/user/products-all"
       );
       
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
@@ -39,7 +40,7 @@ export default function AdminDashboard() {
   const loadProvinces = async () => {
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/shops"
+        API_BASE_URL + "/user/shops"
       );
       
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
@@ -53,7 +54,7 @@ export default function AdminDashboard() {
   const loadOrders = async () => {
     setOrdersLoading(true);
     try {
-      const res = await axios.get(import.meta.env.VITE_BACKEND_URL + "/admin/orders", { withCredentials: true });
+      const res = await axios.get(API_BASE_URL + "/admin/orders", { withCredentials: true });
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
       setOrders(Array.isArray(data) ? data : []);
       setOrdersError(false);
