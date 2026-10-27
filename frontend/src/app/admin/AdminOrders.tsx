@@ -21,6 +21,7 @@ const api = import.meta.env.VITE_BACKEND_URL;
 const orderStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"];
 const paymentStatuses = ["Processing", "Unpaid", "Paid", "Refunded"];
 const statusFilterOptions = ["All orders", ...orderStatuses];
+const ordersPerPage = 10;
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -45,6 +46,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All orders");
+  const [currentPage, setCurrentPage] = useState(1);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [updatingField, setUpdatingField] = useState<"orderStatus" | "paymentStatus" | null>(null);
 
@@ -103,6 +105,12 @@ export default function AdminOrders() {
       return searchable.includes(query);
     });
   }, [orders, search, statusFilter]);
+  const pageCount = Math.max(1, Math.ceil(filteredOrders.length / ordersPerPage));
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * ordersPerPage, currentPage * ordersPerPage);
+
+  useEffect(() => {
+    if (currentPage > pageCount) setCurrentPage(pageCount);
+  }, [currentPage, pageCount]);
 
   const select = (
     label: string,
@@ -141,11 +149,11 @@ export default function AdminOrders() {
             type="search"
             aria-label="Search orders by customer, date, country, or order ID"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setCurrentPage(1); }}
             placeholder="Search customer, date, country, or order ID"
             style={{ width: "100%", minWidth: 0, padding: "5px 0", border: 0, outline: 0, color: "#2D5016", background: "transparent", font: "inherit" }}
           />
-          {search && <button type="button" onClick={() => setSearch("")} style={{ flexShrink: 0, padding: "5px 8px", border: 0, borderRadius: 7, color: "#526746", background: "#EEF1E7", fontSize: ".76rem", fontWeight: 700, cursor: "pointer" }}>Clear</button>}
+          {search && <button type="button" onClick={() => { setSearch(""); setCurrentPage(1); }} style={{ flexShrink: 0, padding: "5px 8px", border: 0, borderRadius: 7, color: "#526746", background: "#EEF1E7", fontSize: ".76rem", fontWeight: 700, cursor: "pointer" }}>Clear</button>}
         </div>
 
         <div role="group" aria-label="Filter orders by status" style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 1px 12px", marginBottom: 8 }}>
@@ -156,7 +164,7 @@ export default function AdminOrders() {
               key={status}
               type="button"
               aria-pressed={active}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => { setStatusFilter(status); setCurrentPage(1); }}
               style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0, padding: "9px 12px", border: `1px solid ${active ? "#31551F" : "rgba(45,80,22,.14)"}`, borderRadius: 999, color: active ? "#FFFEFA" : "#526746", background: active ? "#31551F" : "#FFFEFA", fontSize: ".8rem", fontWeight: 700, cursor: "pointer" }}
             >{status}<span style={{ minWidth: 20, padding: "2px 5px", borderRadius: 999, color: active ? "#244516" : "#526746", background: active ? "#E3EBD5" : "#EEF1E7", fontSize: ".7rem", textAlign: "center" }}>{count}</span></button>;
           })}
@@ -179,10 +187,10 @@ export default function AdminOrders() {
         <Search size={25} aria-hidden="true" />
         <strong style={{ color: "#31551F" }}>No matching orders</strong>
         <span>Try another search or choose a different status.</span>
-        <button type="button" onClick={() => { setSearch(""); setStatusFilter("All orders"); }} style={{ marginTop: 5, padding: "8px 13px", border: 0, borderRadius: 999, color: "#31551F", background: "#EAF0DA", fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+        <button type="button" onClick={() => { setSearch(""); setStatusFilter("All orders"); setCurrentPage(1); }} style={{ marginTop: 5, padding: "8px 13px", border: 0, borderRadius: 999, color: "#31551F", background: "#EAF0DA", fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
       </div> : <div style={{ display: "grid", gap: 11 }}>
-        <p style={{ margin: "0 0 2px", color: "#68775B", fontSize: ".82rem" }}>Showing <strong style={{ color: "#31551F" }}>{filteredOrders.length}</strong> of {orders.length} orders</p>
-        {filteredOrders.map((order) => {
+        <p style={{ margin: "0 0 2px", color: "#68775B", fontSize: ".82rem" }}>Showing <strong style={{ color: "#31551F" }}>{(currentPage - 1) * ordersPerPage + 1}-{Math.min(currentPage * ordersPerPage, filteredOrders.length)}</strong> of {filteredOrders.length} matching orders</p>
+        {paginatedOrders.map((order) => {
           const customerName = order.customer?.name || "Customer";
           const shortId = order._id.slice(-7).toUpperCase();
           const total = orderTotal(order);
@@ -243,6 +251,11 @@ export default function AdminOrders() {
             </div>
           </details>;
         })}
+        {pageCount > 1 && <nav aria-label="Orders pages" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 10, padding: "14px 16px", border: "1px solid rgba(45,80,22,.11)", borderRadius: 13, background: "#FFFEFA" }}>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} style={{ padding: "9px 14px", border: "1px solid rgba(45,80,22,.18)", borderRadius: 999, color: "#31551F", background: "#FFFEFA", fontWeight: 700, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? .45 : 1 }}>Previous</button>
+          <span aria-live="polite" style={{ minWidth: 86, color: "#526746", fontSize: ".84rem", fontWeight: 700, textAlign: "center" }}>Page {currentPage} of {pageCount}</span>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount} style={{ padding: "9px 14px", border: 0, borderRadius: 999, color: "#FFFEFA", background: "#31551F", fontWeight: 700, cursor: currentPage === pageCount ? "not-allowed" : "pointer", opacity: currentPage === pageCount ? .45 : 1 }}>Next</button>
+        </nav>}
       </div>}
     </section>
   );
