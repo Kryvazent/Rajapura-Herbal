@@ -99,8 +99,8 @@ export default function Products() {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((data) => {
-        // setCountry(data.country_code ?? null)
-        setCountry("USA")
+        setCountry(data.country_code ?? null)
+        // setCountry("USA")
       })
       .catch(() => setCountry(null));
   }, [language]);
