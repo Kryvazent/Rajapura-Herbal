@@ -182,9 +182,21 @@ const authLimiter = rateLimit({
     },
 });
 
+const registrationCodeLimiter = rateLimit({
+    // windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many verification code requests. Please try again later.",
+    },
+});
+
 app.use("/auth/admin/login", authLimiter);
 app.use("/auth/customer/login", authLimiter);
 app.use("/auth/customer/register", authLimiter);
+app.use("/auth/customer/register/send-code", registrationCodeLimiter);
 app.use(["/auth", "/admin", "/user"], apiLimiter);
 app.use(csrfOriginGuard);
 

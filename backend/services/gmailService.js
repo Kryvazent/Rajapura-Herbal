@@ -310,3 +310,47 @@ export async function sendOrderStatusNotification(order, customer, changes) {
     return { success: false, reason: error.message };
   }
 }
+
+export async function sendCustomerRegistrationOtp(email, name, otp) {
+  const user = process.env.GMAIL_USER?.trim();
+  const appPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || "Rajapura Herbal";
+  if (!user || !appPassword) {
+    return { success: false, reason: "Set GMAIL_USER and GMAIL_APP_PASSWORD." };
+  }
+
+  const subject = "Verify your Rajapura customer account";
+  const plainText = [
+    `Hello ${name},`,
+    "",
+    `Your Rajapura verification code is ${otp}.`,
+    "This code expires in 10 minutes and can only be used once.",
+    "If you did not request this code, you can ignore this email.",
+    "",
+    "Pure | Natural | Authentic Ayurvedic Heritage",
+    "www.rajapuraherbal.lk",
+  ].join("\n");
+  const html = `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#f1eee6;color:#35432c;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f1eee6;padding:28px 12px;"><tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#fffdf8;border:1px solid #e5e0d3;border-radius:18px;overflow:hidden;">
+        <tr><td style="height:6px;background:#d4a017;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="padding:24px 28px;background:#244516;color:#fffdf5;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:1.5px;font-weight:bold;">RAJAPURA</div><div style="margin-top:4px;color:#d9c98f;font-size:10px;letter-spacing:2px;">HERBAL COMPANY</div></td></tr>
+        <tr><td style="padding:30px 28px;text-align:center;">
+          <div style="margin-bottom:9px;color:#9a6942;font-size:11px;font-weight:bold;letter-spacing:1.8px;">CUSTOMER ACCOUNT</div>
+          <h1 style="margin:0;color:#244516;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:normal;line-height:1.25;">Verify your email</h1>
+          <p style="margin:12px 0 22px;color:#71695e;font-size:14px;line-height:1.7;">Hello ${escapeHtml(name)}, enter this code to finish creating your account.</p>
+          <div style="display:inline-block;padding:15px 24px;border:1px solid #dfe4d2;border-radius:13px;background:#f2f4e9;color:#244516;font-size:30px;font-weight:bold;letter-spacing:8px;">${escapeHtml(otp)}</div>
+          <p style="margin:18px 0 0;color:#71695e;font-size:13px;line-height:1.7;">This code expires in <strong style="color:#31551f;">10 minutes</strong> and can only be used once.</p>
+          <p style="margin:16px 0 0;color:#81796c;font-size:12px;line-height:1.6;">If you did not request this code, you can ignore this email.</p>
+        </td></tr>
+        <tr><td align="center" style="padding:20px 24px;border-top:1px solid #e9e5da;background:#f8f6ef;color:#81796c;font-size:11px;line-height:1.7;">Pure &middot; Natural &middot; Authentic Ayurvedic Heritage<br><a href="https://www.rajapuraherbal.lk" style="color:#31551f;text-decoration:none;font-weight:bold;">www.rajapuraherbal.lk</a></td></tr>
+      </table>
+    </td></tr></table></body></html>`;
+
+  try {
+    await sendGmailMessage({ user, appPassword, fromName, to: email, subject, plainText, html });
+    return { success: true };
+  } catch (error) {
+    return { success: false, reason: error.message };
+  }
+}
