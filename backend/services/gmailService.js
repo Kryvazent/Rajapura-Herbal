@@ -260,3 +260,53 @@ export async function sendOrderNotifications(order, customer, contactNumber) {
     failures: results.filter((result) => !result.success),
   };
 }
+
+export async function sendOrderStatusNotification(order, customer, changes) {
+  const user = process.env.GMAIL_USER?.trim();
+  const appPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || "Rajapura Herbal";
+  if (!user || !appPassword) {
+    return { success: false, reason: "Set GMAIL_USER and GMAIL_APP_PASSWORD." };
+  }
+  if (!customer?.email) return { success: false, reason: "Customer email is not available." };
+
+  const orderCode = order._id.toString().slice(-7).toUpperCase();
+  const statusRows = Object.entries(changes).map(([field, change]) => {
+    const label = field === "orderStatus" ? "Order status" : "Payment status";
+    return `<tr><td style="padding:12px;border-bottom:1px solid #e9e5da;color:#766f62;font-size:13px;">${label}</td><td align="right" style="padding:12px;border-bottom:1px solid #e9e5da;color:#29451c;font-size:13px;font-weight:bold;">${escapeHtml(change.previous)} &rarr; ${escapeHtml(change.current)}</td></tr>`;
+  }).join("");
+  const statusText = Object.entries(changes).map(([field, change]) =>
+    `${field === "orderStatus" ? "Order status" : "Payment status"}: ${change.previous} -> ${change.current}`);
+  const subject = `Rajapura order #${orderCode} status update`;
+  const plainText = [
+    `Hello ${customer.name},`,
+    "",
+    `There is an update to your Rajapura order #${orderCode}.`,
+    ...statusText,
+    "",
+    "View your order details in your Rajapura customer account.",
+    "Pure | Natural | Authentic Ayurvedic Heritage",
+    "www.rajapuraherbal.lk",
+  ].join("\n");
+  const html = `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#f1eee6;color:#35432c;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f1eee6;padding:28px 12px;"><tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fffdf8;border:1px solid #e5e0d3;border-radius:18px;overflow:hidden;">
+        <tr><td style="height:6px;background:#d4a017;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="padding:24px 28px;background:#244516;color:#fffdf5;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:1.5px;font-weight:bold;">RAJAPURA</div><div style="margin-top:4px;color:#d9c98f;font-size:10px;letter-spacing:2px;">HERBAL COMPANY</div></td></tr>
+        <tr><td style="padding:28px;"><div style="margin-bottom:9px;color:#9a6942;font-size:11px;font-weight:bold;letter-spacing:1.8px;">ORDER UPDATE</div>
+          <h1 style="margin:0;color:#244516;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:normal;line-height:1.25;">Your order status has changed</h1>
+          <p style="margin:12px 0 18px;color:#71695e;font-size:14px;line-height:1.7;">Hello ${escapeHtml(customer.name)}, there is an update to your order.</p>
+          <div style="display:inline-block;margin-bottom:16px;padding:9px 13px;border:1px solid #dfe4d2;border-radius:20px;background:#f2f4e9;color:#31551f;font-size:13px;font-weight:bold;">Order #${orderCode}</div>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e8e4d9;border-radius:12px;background:#fffefa;"><tr><td colspan="2" style="padding:14px 12px 4px;color:#8b5e3c;font-size:10px;font-weight:bold;letter-spacing:1.5px;">STATUS CHANGES</td></tr>${statusRows}</table>
+        </td></tr>
+        <tr><td align="center" style="padding:20px 24px;border-top:1px solid #e9e5da;background:#f8f6ef;color:#81796c;font-size:11px;line-height:1.7;">Pure &middot; Natural &middot; Authentic Ayurvedic Heritage<br><a href="https://www.rajapuraherbal.lk" style="color:#31551f;text-decoration:none;font-weight:bold;">www.rajapuraherbal.lk</a></td></tr>
+      </table>
+    </td></tr></table></body></html>`;
+
+  try {
+    await sendGmailMessage({ user, appPassword, fromName, to: customer.email, subject, plainText, html });
+    return { success: true };
+  } catch (error) {
+    return { success: false, reason: error.message };
+  }
+}

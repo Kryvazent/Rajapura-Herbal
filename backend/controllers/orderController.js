@@ -2,7 +2,7 @@ import Order from "../models/Order.js";
 import Customer from "../models/Customer.js";
 import Cart from "../models/Cart.js";
 import mongoose from "mongoose";
-import { sendOrderNotifications } from "../services/gmailService.js";
+import { sendOrderNotifications, sendOrderStatusNotification } from "../services/gmailService.js";
 
 export const getCheckoutDetails = async (req, res) => {
   if (req.session?.role !== "USER") return res.status(403).json({ success: false, message: "Customer account required" });
@@ -167,8 +167,20 @@ export const updateOrder = async (req, res) => {
   const allowed = ["orderStatus", "paymentStatus", "paymentMethod"];
   const updates = Object.fromEntries(Object.entries(req.body || {}).filter(([key]) => allowed.includes(key)));
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+    const order = await Order.findById(req.params.id).populate("customer", "name email contactNumber");
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    const changes = {};
+    for (const field of ["orderStatus", "paymentStatus"]) {
+      if (Object.hasOwn(updates, field) && order[field] !== updates[field]) {
+        changes[field] = { previous: order[field], current: updates[field] };
+      }
+    }
+    Object.assign(order, updates);
+    await order.save();
+    if (Object.keys(changes).length > 0) {
+      const emailResult = await sendOrderStatusNotification(order, order.customer, changes);
+      if (!emailResult.success) console.error(`Order ${order._id} status email failed:`, emailResult.reason);
+    }
     res.json({ success: true, data: order });
   } catch (error) { res.status(422).json({ success: false, message: "Invalid order update" }); }
 };
