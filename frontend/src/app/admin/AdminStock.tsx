@@ -111,10 +111,17 @@ export default function AdminStock() {
           const prices = priceValues[id] ?? { lkr: "", usd: "" };
           return (
             <div key={id} style={{ background: "linear-gradient(110deg, #FFFEFA 0%, #FAF6EE 100%)", border: "1px solid rgba(45,80,22,.13)", borderRadius: 16, padding: "17px 20px", display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", boxShadow: "0 6px 20px rgba(39,54,22,.045)" }}>
-              <div style={{ flex: "1 1 230px", minWidth: 180 }}>
+            <div style={{ flex: "1 1 260px", minWidth: 220, display: "flex", alignItems: "center", gap: 12 }}>
+              <img
+                src={product.image}
+                alt={product.name}
+                style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 10, objectFit: "cover", border: "1px solid rgba(45,80,22,.12)", background: "#F0EDE6" }}
+              />
+              <div style={{ minWidth: 0 }}>
                 <strong style={{ display: "block", color: "#244516", fontSize: ".98rem", lineHeight: 1.4 }}>{product.name}</strong>
                 <span style={{ display: "block", color: "#9A7048", marginTop: 4, fontSize: ".78rem" }}>{product.category}</span>
               </div>
+            </div>
               <span style={{ color: (product.stock ?? 0) > 0 ? "#365C20" : "#875A32", background: (product.stock ?? 0) > 0 ? "#EEF2DF" : "#F3EBDD", border: "1px solid rgba(45,80,22,.12)", borderRadius: 999, padding: "8px 12px", fontWeight: 700, fontSize: ".82rem", whiteSpace: "nowrap" }}>{product.stock ?? 0} available</span>
               <label style={labelStyle}>LKR price
                 <input aria-label={`LKR price for ${product.name}`} inputMode="decimal" value={prices.lkr} onChange={(event) => setPriceValues((current) => ({ ...current, [id]: { ...prices, lkr: event.target.value } }))} placeholder="e.g. 5000" style={inputStyle} />

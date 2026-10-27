@@ -26,8 +26,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["ADMIN", "USER", "STAFF"],
-      default: "USER",
+      required: true,
+      enum: ["ADMIN", "STAFF"],
       index: true
     },
     status: {
@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
       default: "ACTIVE"
     },
     phone: String,
+    country: { type: String, trim: true, default: "" },
     address: {
       street: String,
       city: String,

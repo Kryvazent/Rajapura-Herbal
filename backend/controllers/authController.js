@@ -1,5 +1,6 @@
 import * as authService from "../services/authService.js";
 import User from "../models/User.js";
+import Customer from "../models/Customer.js";
 
 const destroySession = (req) => {
   req.session?.destroy((err) => {
@@ -73,23 +74,68 @@ const loginWithAllowedRoles = async (req, res, allowedRoles) => {
 export const loginAdmin = (req, res) =>
   loginWithAllowedRoles(req, res, ["ADMIN", "STAFF"]);
 
-export const loginCustomer = (req, res) =>
-  loginWithAllowedRoles(req, res, ["USER"]);
+export const loginCustomer = async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(422).json({ success: false, message: "Username and password are required" });
+  }
+
+  try {
+    const customer = await Customer.findOne({ email: username.trim().toLowerCase() });
+    if (!customer || !(await customer.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+    if (customer.status !== "ACTIVE") {
+      return res.status(403).json({ success: false, message: "Your account has been disabled. Contact support." });
+    }
+
+    req.session.regenerate((regenErr) => {
+      if (regenErr) {
+        console.error("Customer login session error:", regenErr);
+        return res.status(500).json({ success: false, message: "Session setup failed" });
+      }
+      req.session.role = "USER";
+      req.session.userId = customer._id;
+      req.session.mustChangePassword = customer.mustChangePassword;
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error("Customer login session save error:", saveErr);
+          return res.status(500).json({ success: false, message: "Session save failed" });
+        }
+        res.status(200).json({
+          success: true,
+          message: "Logged in successfully",
+          role: "USER",
+          mustChangePassword: customer.mustChangePassword,
+        });
+      });
+    });
+  } catch (error) {
+    console.error("Customer login error:", error);
+    res.status(500).json({ success: false, message: "An error occurred during login" });
+  }
+};
 
 export const registerCustomer = async (req, res) => {
   const { name, email, password } = req.body;
-  const nameParts = name.trim().split(/\s+/);
-  const firstName = nameParts.shift();
-  const lastName = nameParts.join(" ");
+  const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const user = await User.create({
-      firstName,
-      lastName,
-      email: email.trim().toLowerCase(),
+    // Older customer migrations left a unique index on the removed `user` field.
+    // MongoDB treats missing values as duplicates under that index, so it can
+    // reject every new customer and incorrectly look like an email conflict.
+    const customerIndexes = await Customer.collection.indexes().catch((indexError) => {
+      if (indexError.code === 26 || indexError.codeName === "NamespaceNotFound") return [];
+      throw indexError;
+    });
+    if (customerIndexes.some((index) => index.name === "user_1")) {
+      await Customer.collection.dropIndex("user_1");
+    }
+
+    const customer = await Customer.create({
+      name: name.trim(),
+      email: normalizedEmail,
       password,
-      role: "USER",
-      status: "ACTIVE",
     });
 
     req.session.regenerate((regenerateError) => {
@@ -98,7 +144,7 @@ export const registerCustomer = async (req, res) => {
         return res.status(500).json({ success: false, message: "Account created, but sign in failed. Please sign in." });
       }
 
-      req.session.userId = user._id;
+      req.session.userId = customer._id;
       req.session.role = "USER";
       req.session.mustChangePassword = false;
       req.session.save((saveError) => {
@@ -110,12 +156,14 @@ export const registerCustomer = async (req, res) => {
           success: true,
           message: "Customer account created",
           role: "USER",
-          data: { _id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email },
+          data: { _id: customer._id, name: customer.name, email: customer.email },
         });
       });
     });
   } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    if (error.code === 11000 && (error.keyPattern?.email || error.keyValue?.email || /email_1/.test(error.message ?? ""))) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
     if (error.name === "ValidationError") {
       return res.status(422).json({ success: false, message: Object.values(error.errors).map((item) => item.message).join(". ") });
     }
@@ -154,11 +202,24 @@ export const status = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(req.session.userId).select("role status flags");
-    const isAllowed =
-      user && user.status === "ACTIVE" && ["ADMIN", "STAFF", "USER"].includes(user.role);
+    if (req.portal === "customer" || req.session.role === "USER") {
+      const customer = await Customer.findById(req.session.userId).select("status mustChangePassword");
+      if (!customer || customer.status !== "ACTIVE") {
+        destroySession(req);
+        return res.status(200).json({ success: true, authenticated: false });
+      }
+      req.session.role = "USER";
+      req.session.mustChangePassword = customer.mustChangePassword;
+      return res.status(200).json({
+        success: true,
+        authenticated: true,
+        role: "USER",
+        mustChangePassword: customer.mustChangePassword,
+      });
+    }
 
-    if (!isAllowed) {
+    const user = await User.findById(req.session.userId).select("role status flags");
+    if (!user || user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
       destroySession(req);
       return res.status(200).json({ success: true, authenticated: false });
     }
@@ -202,24 +263,24 @@ export const changePassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF", "USER"].includes(user.role)) {
+    const isCustomer = req.portal === "customer" || req.session.role === "USER";
+    const account = isCustomer ? await Customer.findById(userId) : await User.findById(userId);
+    if (!account) return res.status(404).json({ success: false, message: "Account not found" });
+    const permittedRoles = isCustomer ? account.status === "ACTIVE" : account.status === "ACTIVE" && ["ADMIN", "STAFF"].includes(account.role);
+    if (!permittedRoles) {
       destroySession(req);
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    const isMatch = await user.comparePassword(currentPassword);
+    const isMatch = await account.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Current password is incorrect" });
     }
 
-    user.password = newPassword;
-    user.flags = { ...user.flags, mustChangePassword: false };
-    await user.save();
+    account.password = newPassword;
+    if (isCustomer) account.mustChangePassword = false;
+    else account.flags = { ...account.flags, mustChangePassword: false };
+    await account.save();
 
     
     req.session.mustChangePassword = false;
@@ -243,11 +304,27 @@ export const getMe = async (req, res) => {
     return res.status(401).json({ success: false, message: "Not logged in" });
   }
   try {
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+    if (req.portal === "customer" || req.session.role === "USER") {
+      const customer = await Customer.findById(userId).select("-password");
+      if (!customer || customer.status !== "ACTIVE") {
+        destroySession(req);
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      req.session.role = "USER";
+      const [firstName = "", ...lastNameParts] = customer.name.split(/\s+/);
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...customer.toObject(),
+          role: "USER",
+          firstName,
+          lastName: lastNameParts.join(" "),
+          phone: customer.contactNumber,
+        },
+      });
     }
-    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF", "USER"].includes(user.role)) {
+    const user = await User.findById(userId).select("-password");
+    if (!user || user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
       destroySession(req);
       return res.status(403).json({ success: false, message: "Access denied" });
     }

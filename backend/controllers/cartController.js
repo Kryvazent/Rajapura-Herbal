@@ -1,21 +1,18 @@
 import mongoose from "mongoose";
 import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
-import User from "../models/User.js";
+import Customer from "../models/Customer.js";
 
 export const requireCustomer = async (req, res, next) => {
   if (!req.session?.userId) {
     return res.status(401).json({ success: false, message: "Sign in to use your cart." });
   }
   try {
-    const user = await User.findById(req.session.userId).select("role status");
-    if (!user || user.status !== "ACTIVE") {
+    const customer = await Customer.findById(req.session.userId).select("status");
+    if (!customer || customer.status !== "ACTIVE") {
       return res.status(401).json({ success: false, message: "Your session is no longer valid. Please sign in again." });
     }
-    if (user.role !== "USER") {
-      return res.status(403).json({ success: false, message: "A customer account is required to use the cart." });
-    }
-    req.customer = user;
+    req.customer = customer;
     req.session.role = "USER";
     next();
   } catch (error) {

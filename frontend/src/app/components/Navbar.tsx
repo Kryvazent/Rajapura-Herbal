@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Menu, X, Leaf, ChevronRight, ChevronDown, Check, Languages, ShoppingCart, CircleUserRound } from "lucide-react";
 import Logo from "./Logo";
 import { LANGUAGES, LANGUAGE_LABELS, useLanguage } from "../i18n/LanguageContext";
@@ -113,16 +113,22 @@ export function Navbar() {
   const [isCustomer, setIsCustomer] = useState(false);
   const [customerInitial, setCustomerInitial] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
   const { language, t } = useLanguage();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const a11y = navAccessibility[language];
+  const cartTitle = language === "si" ? "කරත්තය" : "Shopping cart";
+  const profileTitle = language === "si" ? "පාරිභෝගික පැතිකඩ" : "Customer profile";
+  const signInTitle = language === "si" ? "පුරනය වන්න" : "Sign in";
 
   useEffect(() => {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
       .then((data) => {
-        setCountry(data.country_code ?? null)
+        // setCountry(data.country_code ?? null)
         // console.log("IPAPI response:", data);
-        // setCountry("USA")
+        setCountry("USA")
       })
       .catch(() => setCountry(null));
 
@@ -192,6 +198,24 @@ export function Navbar() {
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
   const close = () => setMenuOpen(false);
+  const signOut = async () => {
+    setSigningOut(true);
+    setSignOutError("");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/customer/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(t("signOutError"));
+      window.dispatchEvent(new Event("rajapura:auth-updated"));
+      close();
+      navigate("/account", { replace: true });
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : t("signOutError"));
+    } finally {
+      setSigningOut(false);
+    }
+  };
   const accountIcon = isCustomer && customerInitial
     ? <span aria-hidden="true" style={{ width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: "50%", color: "#2D5016", background: "transparent", fontSize: ".82rem", fontWeight: 700 }}>{customerInitial}</span>
     : <CircleUserRound size={20} strokeWidth={1.8} />;
@@ -264,8 +288,8 @@ export function Navbar() {
             {showCart && (
               <Link
                 to="/cart"
-                aria-label={`Shopping cart, ${cartCount} items`}
-                title="Shopping cart"
+                aria-label={`${cartTitle}, ${cartCount}`}
+                title={cartTitle}
                 style={{
                   position: "relative",
                   width: 40,
@@ -304,8 +328,9 @@ export function Navbar() {
             {showCart && (
               <Link
                 to={isCustomer ? "/profile" : "/account"}
-                aria-label={isCustomer ? "Customer profile" : "Sign in"}
-                title={isCustomer ? "Customer profile" : "Sign in"}
+                state={isCustomer ? { section: "profile" } : undefined}
+                aria-label={isCustomer ? profileTitle : signInTitle}
+                title={isCustomer ? profileTitle : signInTitle}
                 style={{
                   marginLeft: 8,
                   color: "#2D5016",
@@ -333,14 +358,14 @@ export function Navbar() {
               <>
               <Link
                 to="/cart"
-                aria-label={`Shopping cart, ${cartCount} items`}
+                aria-label={`${cartTitle}, ${cartCount}`}
                 onClick={close}
                 style={{ position: "relative", display: "inline-flex", padding: 7, color: "#2D5016" }}
               >
                 <ShoppingCart size={21} />
                 {cartCount > 0 && <span style={{ position: "absolute", top: 0, right: 0, minWidth: 15, height: 15, padding: "0 3px", display: "grid", placeItems: "center", borderRadius: 20, background: "#D4A017", color: "#1A3009", fontSize: 9, fontWeight: 800 }}>{formatCartCount(cartCount)}</span>}
               </Link>
-              <Link to={isCustomer ? "/profile" : "/account"} onClick={close} aria-label={isCustomer ? "Customer profile" : "Sign in"} title={isCustomer ? "Customer profile" : "Sign in"} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
+              <Link to={isCustomer ? "/profile" : "/account"} state={isCustomer ? { section: "profile" } : undefined} onClick={close} aria-label={isCustomer ? profileTitle : signInTitle} title={isCustomer ? profileTitle : signInTitle} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 7, color: "#2D5016", textDecoration: "none", border: "1px solid rgba(45,80,22,.18)", borderRadius: "50%", width: 38, height: 38, boxSizing: "border-box" }}>
                 {accountIcon}
               </Link>
               </>
@@ -461,6 +486,12 @@ export function Navbar() {
           >
             {t("nearest")}
           </Link>
+          {isCustomer && <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+            <button type="button" onClick={() => void signOut()} disabled={signingOut} style={{ width: "100%", padding: "12px 20px", border: "1px solid rgba(139,94,60,.25)", borderRadius: 50, color: "#6B4423", background: "#FFFEFA", font: "inherit", fontSize: ".9rem", fontWeight: 700, cursor: signingOut ? "wait" : "pointer", opacity: signingOut ? .65 : 1 }}>
+              {signingOut ? t("signingOut") : t("signOut")}
+            </button>
+            {signOutError && <p role="alert" style={{ margin: 0, color: "#9D3029", fontSize: ".8rem", textAlign: "center" }}>{signOutError}</p>}
+          </div>}
         </div>
       </div>
       <style>{`

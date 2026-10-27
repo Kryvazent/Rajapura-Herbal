@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 import { useLanguage } from "../i18n/LanguageContext";
-import { localizedPages, pages, seoNotFound, SITE_NAME } from "../i18n/translations/seo";
+import { localizedPages, pages, seoNotFound, SITE_NAME, utilityPages } from "../i18n/translations/seo";
 
 const DEFAULT_IMAGE = "/rajapura-product-collection.jpg";
 const SITE_URL =
@@ -29,13 +29,16 @@ export default function SEO() {
   const { language } = useLanguage();
 
   useEffect(() => {
-    const translated = language === "en" ? pages : localizedPages[language] as Record<string, { title: string; description: string }>;
-    const metadata = translated[location.pathname] ?? seoNotFound[language];
+    const pathname = location.pathname.replace(/\/+$/, "") || "/";
+    const translated: Record<string, { title: string; description: string }> = language === "en"
+      ? pages
+      : localizedPages[language] as Record<string, { title: string; description: string }>;
+    const metadata = translated[pathname] ?? pages[pathname] ?? utilityPages[pathname] ?? seoNotFound[language];
     const canonicalUrl = SITE_URL
-      ? `${SITE_URL}${location.pathname === "/" ? "" : location.pathname}`
+      ? `${SITE_URL}${pathname === "/" ? "" : pathname}`
       : window.location.href.split("#")[0].split("?")[0];
     const imageUrl = SITE_URL ? `${SITE_URL}${DEFAULT_IMAGE}` : DEFAULT_IMAGE;
-    const robots = pages[location.pathname] ? "index, follow" : "noindex, follow";
+    const robots = pages[pathname] ? "index, follow" : "noindex, follow";
 
     document.title = metadata.title;
     setMeta('meta[name="description"]', "content", metadata.description);

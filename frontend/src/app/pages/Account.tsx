@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import axios from "axios";
+import { Eye, EyeOff } from "lucide-react";
 
 const api = import.meta.env.VITE_BACKEND_URL;
 
@@ -33,6 +34,7 @@ export default function Account() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
@@ -42,8 +44,8 @@ export default function Account() {
     fetch("https://ipapi.co/json/")
       .then((response) => response.json())
       .then((data) => {
-        setCountry(data.country_code ?? null)
-        // setCountry('USA')
+        // setCountry(data.country_code ?? null)
+        setCountry('USA')
       })
       .catch(() => setCountry(null))
       .finally(() => setLocationChecked(true));
@@ -105,7 +107,7 @@ export default function Account() {
             <form onSubmit={submit} style={{ display: "grid", gap: 16, marginTop: 27 }}>
               {registering && <label style={labelStyle}>Name<input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={e => setName(e.target.value)} style={fieldStyle} /></label>}
               <label style={labelStyle}>Email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} style={fieldStyle} /></label>
-              <label style={labelStyle}>Password<input required minLength={registering ? 8 : 1} maxLength={128} type="password" autoComplete={registering ? "new-password" : "current-password"} value={password} onChange={e => setPassword(e.target.value)} style={fieldStyle} />{registering && <small style={{ color: "#777064", fontWeight: 400 }}>Use at least 8 characters.</small>}</label>
+              <label style={labelStyle}>Password<div style={{ position: "relative" }}><input required minLength={registering ? 8 : 1} maxLength={128} type={showPassword ? "text" : "password"} autoComplete={registering ? "new-password" : "current-password"} value={password} onChange={e => setPassword(e.target.value)} style={{ ...fieldStyle, paddingRight: 48 }} /><button type="button" onClick={() => setShowPassword(current => !current)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} style={{ position: "absolute", top: "50%", right: 12, transform: "translateY(-50%)", display: "grid", placeItems: "center", width: 30, height: 30, padding: 0, border: 0, borderRadius: 7, color: "#526746", background: "transparent", cursor: "pointer" }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>{registering && <small style={{ color: "#777064", fontWeight: 400 }}>Use at least 8 characters.</small>}</label>
               {error && <p role="alert" style={{ color: "#9D3029", background: "#FBEDEA", border: "1px solid #EBCBC5", borderRadius: 9, padding: "10px 12px", margin: 0, fontSize: ".92rem" }}>{error}</p>}
               <button disabled={busy} style={{ ...primaryButtonStyle, opacity: busy ? .75 : 1, cursor: busy ? "wait" : "pointer" }}>{busy ? "Please wait…" : registering ? "Create account" : "Sign in"}</button>
             </form>
