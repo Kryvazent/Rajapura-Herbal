@@ -66,6 +66,8 @@ export default function Cart() {
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [orderProgress, setOrderProgress] = useState("");
+  const [paymentSlipUploadProgress, setPaymentSlipUploadProgress] = useState(0);
+  const [isUploadingPaymentSlip, setIsUploadingPaymentSlip] = useState(false);
   const [orderResult, setOrderResult] = useState<{ success: boolean; message: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"" | "Payment slip" | "Online payment">("");
   const [paymentSlipOpen, setPaymentSlipOpen] = useState(false);
@@ -81,7 +83,10 @@ export default function Cart() {
   const [countryError, setCountryError] = useState("");
   const [countryRetry, setCountryRetry] = useState(0);
   const [activeCountryIndex, setActiveCountryIndex] = useState(0);
-  const { startUpload } = useCustomerUploadThing("paymentSlip");
+  const { startUpload } = useCustomerUploadThing("paymentSlip", {
+    uploadProgressGranularity: "fine",
+    onUploadProgress: (progress) => setPaymentSlipUploadProgress(Math.round(progress)),
+  });
   useEffect(() => {
     if (!paymentSlip) {
       setPaymentSlipPreviewUrl("");
@@ -274,7 +279,10 @@ export default function Cart() {
         const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: mimeType, lastModified: paymentSlip.lastModified });
         setOrderProgress(si ? "ඔබගේ ගෙවීම් රිසිට්පත උඩුගත කරමින්…" : "Uploading your payment slip…");
         checkoutStage = "upload payment slip";
+        setPaymentSlipUploadProgress(0);
+        setIsUploadingPaymentSlip(true);
         const uploaded = await startUpload([renamedPaymentSlip]);
+        setIsUploadingPaymentSlip(false);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
         if (!paymentSlipUrl) {
           console.error("Payment slip upload returned no file URL", { fileRoute: "paymentSlip", resultCount: uploaded?.length ?? 0 });
@@ -319,6 +327,7 @@ export default function Cart() {
         message: si ? "ඔබගේ ඇණවුම සම්පූර්ණ කළ නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න." : getOrderErrorMessage(error),
       });
     } finally {
+      setIsUploadingPaymentSlip(false);
       setCheckoutSubmitting(false);
       setOrderProgress("");
     }
@@ -796,13 +805,19 @@ export default function Cart() {
       </div>}
       {checkoutOpen && checkoutSubmitting && <div role="status" aria-live="polite" aria-label={orderProgress} style={{ position: "fixed", inset: 0, zIndex: 1150, display: "grid", placeItems: "center", padding: 16, boxSizing: "border-box", background: "rgba(13,25,8,.72)" }}>
         <div style={{ width: "min(100%, 960px)", height: "min(94vh, 900px)", boxSizing: "border-box", display: "grid", alignContent: "center", justifyItems: "center", gap: 18, padding: 28, border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "rgba(251,248,240,.97)", color: "#244516", textAlign: "center", boxShadow: "0 32px 90px rgba(0,0,0,.34)" }}>
-          <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />
+          {isUploadingPaymentSlip ? <div role="progressbar" aria-label={si ? "ප්‍රගතිය" : "Payment slip upload progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={paymentSlipUploadProgress} style={{ position: "relative", width: 66, height: 66, display: "grid", placeItems: "center", color: "#31551F" }}>
+            <svg aria-hidden="true" viewBox="0 0 66 66" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+              <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(49,85,31,.15)" strokeWidth="5" />
+              <circle cx="33" cy="33" r="28" fill="none" stroke="#5E8B36" strokeWidth="5" strokeLinecap="round" strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - paymentSlipUploadProgress / 100)} style={{ transition: "stroke-dashoffset .18s ease" }} />
+            </svg>
+            <span style={{ fontSize: ".9rem", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{paymentSlipUploadProgress}%</span>
+          </div> : <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />}
           <div style={{ display: "grid", gap: 8 }}>
             <strong style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.25rem,3vw,1.7rem)", fontWeight: 500 }}>{orderProgress}</strong>
-            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>{si ? "ඔබගේ ඇණවුම සැකසීම අවසන් වන තෙක් මෙම කවුළුව විවෘතව තබන්න." : "Please keep this window open while we finish processing your order."}</span>
+            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>{isUploadingPaymentSlip ? (si ? `ගෙවීම් රිසිට්පත ${paymentSlipUploadProgress}% උඩුගත කර ඇත` : `${paymentSlipUploadProgress}% uploaded`) : si ? "ඔබගේ ඇණවුම සැකසීම අවසන් වන තෙක් මෙම කවුළුව විවෘතව තබන්න." : "Please keep this window open while we finish processing your order."}</span>
           </div>
           <div aria-hidden="true" style={{ width: "min(100%, 280px)", height: 5, overflow: "hidden", borderRadius: 5, background: "#E5EAD9" }}>
-            <span style={{ display: "block", width: "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", animation: "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
+            <span style={{ display: "block", width: isUploadingPaymentSlip ? `${paymentSlipUploadProgress}%` : "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", transition: isUploadingPaymentSlip ? "width .18s ease" : undefined, animation: isUploadingPaymentSlip ? undefined : "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
           </div>
           <style>{"@keyframes checkout-progress-spin{to{transform:rotate(360deg)}}@keyframes checkout-progress-bar{from{transform:translateX(-15%)}to{transform:translateX(155%)}}"}</style>
         </div>
