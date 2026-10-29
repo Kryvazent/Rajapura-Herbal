@@ -66,6 +66,10 @@ export default function Cart() {
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [orderProgress, setOrderProgress] = useState("");
+  const [paymentSlipUploadProgress, setPaymentSlipUploadProgress] = useState(0);
+  const [isUploadingPaymentSlip, setIsUploadingPaymentSlip] = useState(false);
+  const [isFinalizingPaymentSlipUpload, setIsFinalizingPaymentSlipUpload] = useState(false);
+  const [paymentSlipUploadComplete, setPaymentSlipUploadComplete] = useState(false);
   const [orderResult, setOrderResult] = useState<{ success: boolean; message: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"" | "Payment slip" | "Online payment">("");
   const [paymentSlipOpen, setPaymentSlipOpen] = useState(false);
@@ -81,7 +85,13 @@ export default function Cart() {
   const [countryError, setCountryError] = useState("");
   const [countryRetry, setCountryRetry] = useState(0);
   const [activeCountryIndex, setActiveCountryIndex] = useState(0);
-  const { startUpload } = useCustomerUploadThing("paymentSlip");
+  const { startUpload } = useCustomerUploadThing("paymentSlip", {
+    uploadProgressGranularity: "fine",
+    onUploadProgress: (progress) => {
+      setPaymentSlipUploadProgress(Math.min(99, Math.round(progress)));
+      setIsFinalizingPaymentSlipUpload(progress >= 100);
+    },
+  });
   useEffect(() => {
     if (!paymentSlip) {
       setPaymentSlipPreviewUrl("");
@@ -242,7 +252,10 @@ export default function Cart() {
     }
     setCheckoutSubmitting(true);
     setCheckoutError("");
+    setPaymentSlipUploadComplete(false);
+    setIsFinalizingPaymentSlipUpload(false);
     setOrderProgress(si ? (checkoutPaymentMethod === "Payment slip" ? "ඔබගේ ඇණවුම සූදානම් කරමින්…" : "ඔබගේ ඇණවුම යවමින්…") : (checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…"));
+    let checkoutStage = "prepare order";
     try {
       let paymentSlipUrl = "";
       let orderId: string | undefined;
@@ -254,6 +267,7 @@ export default function Cart() {
         const slipKind = paymentSlipKind(paymentSlip);
         if (!slipKind) throw new Error("Upload the payment slip as an image or PDF.");
         if (!pendingPaymentOrderId) {
+          checkoutStage = "prepare payment order";
           const preparation = await axios.post(`${API_BASE_URL}/user/orders/prepare`, {
             address: checkoutDetails.address,
             country: checkoutDetails.country,
@@ -271,11 +285,22 @@ export default function Cart() {
         paymentSlipFileName = `${orderId}${slipKind === "pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
         const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: mimeType, lastModified: paymentSlip.lastModified });
         setOrderProgress(si ? "ඔබගේ ගෙවීම් රිසිට්පත උඩුගත කරමින්…" : "Uploading your payment slip…");
+        checkoutStage = "upload payment slip";
+        setPaymentSlipUploadProgress(0);
+        setIsUploadingPaymentSlip(true);
         const uploaded = await startUpload([renamedPaymentSlip]);
-        paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
-        if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
+        paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? uploaded?.[0]?.appUrl ?? uploaded?.[0]?.serverData?.url ?? "";
+        if (!paymentSlipUrl) {
+          console.error("Payment slip upload returned no file URL", { fileRoute: "paymentSlip", resultCount: uploaded?.length ?? 0 });
+          throw new Error("The payment slip could not be uploaded. Please try again.");
+        }
+        setPaymentSlipUploadProgress(100);
+        setPaymentSlipUploadComplete(true);
+        setIsFinalizingPaymentSlipUpload(false);
+        setIsUploadingPaymentSlip(false);
       }
       setOrderProgress(si ? "ඔබගේ ඇණවුම යවමින්…" : "Submitting your order…");
+      checkoutStage = "submit order";
       const response = await axios.post(`${API_BASE_URL}/user/orders`, {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
@@ -298,12 +323,22 @@ export default function Cart() {
       });
       setCartError("");
     } catch (error: any) {
+      console.error("Checkout request failed", {
+        stage: checkoutStage,
+        name: error?.name,
+        message: error?.message,
+        status: error?.status ?? error?.response?.status,
+        data: error?.data ?? error?.response?.data,
+        cause: error?.cause?.message ?? error?.cause,
+      });
       setCheckoutOpen(false);
       setOrderResult({
         success: false,
         message: si ? "ඔබගේ ඇණවුම සම්පූර්ණ කළ නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න." : getOrderErrorMessage(error),
       });
     } finally {
+      setIsUploadingPaymentSlip(false);
+      setIsFinalizingPaymentSlipUpload(false);
       setCheckoutSubmitting(false);
       setOrderProgress("");
     }
@@ -488,10 +523,17 @@ export default function Cart() {
         <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>{si ? "ඔබේ කරත්තය" : "Your cart"}</h1>
         {items.length > 0 && <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#526746", fontSize: ".84rem", fontWeight: 700, cursor: "pointer" }}><input type="checkbox" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? items.map((item) => String(item.product._id)) : [])} style={{ width: 17, height: 17, accentColor: "#31551F" }} />{si ? "සියල්ල තෝරන්න" : "Select all"}</label>}
       </div>
-      {items.map((item) => (
-        <article
-          key={String(item.product._id)}
+      {items.map((item) => {
+        const productId = String(item.product._id);
+        const isSelected = selectedIds.includes(productId);
+        const toggleSelection = () => setSelectedIds((current) =>
+          current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]
+        );
+
+        return <article
+          key={productId}
           className="cart-item"
+          onClick={toggleSelection}
           style={{
             display: "flex",
             alignItems: "center",
@@ -499,13 +541,14 @@ export default function Cart() {
             padding: 16,
             margin: "12px 0",
             background: "#FFFEFA",
-            border: "1px solid rgba(45,80,22,.1)",
+            border: isSelected ? "1px solid rgba(49,85,31,.58)" : "1px solid rgba(45,80,22,.1)",
             borderRadius: 16,
-            boxShadow: "0 5px 18px rgba(45,80,22,.045)",
+            boxShadow: isSelected ? "0 5px 18px rgba(45,80,22,.09), inset 0 0 0 1px rgba(49,85,31,.08)" : "0 5px 18px rgba(45,80,22,.045)",
+            cursor: "pointer",
           }}
         >
-          <label className="cart-item-select" aria-label={`Select ${item.product.name} for checkout`} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
-            <input type="checkbox" checked={selectedIds.includes(String(item.product._id))} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...current, String(item.product._id)] : current.filter((id) => id !== String(item.product._id)))} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
+          <label className="cart-item-select" aria-label={`Select ${item.product.name} for checkout`} onClick={(event) => event.stopPropagation()} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
+            <input type="checkbox" checked={isSelected} onChange={toggleSelection} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
           </label>
           <img
             className="cart-item-image"
@@ -522,7 +565,7 @@ export default function Cart() {
             <strong className="cart-item-name" style={{ flex: 1 }}>{productDisplayName(item.product, language)}</strong>
             <span className="cart-item-price">{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || (si ? "මිල සඳහා විමසන්න" : "Contact for price")}</span>
           </div>
-          <div className="cart-item-quantity" aria-label={`Quantity for ${item.product.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
+          <div className="cart-item-quantity" aria-label={`Quantity for ${item.product.name}`} onClick={(event) => event.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
             <button type="button" aria-label={`Decrease ${item.product.name} quantity`} disabled={item.qty <= 1} onClick={() => updateQuantity(item.product._id, item.qty - 1)} style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 9, color: "#2D5016", background: item.qty <= 1 ? "#E8E6DD" : "#E4EBD8", fontSize: "1.2rem", fontWeight: 700, cursor: item.qty <= 1 ? "not-allowed" : "pointer" }}>−</button>
             <input
               type="number"
@@ -554,7 +597,8 @@ export default function Cart() {
             className="cart-item-remove"
             type="button"
             aria-label={`Remove ${item.product.name} from cart`}
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation();
               setSelectedIds((current) => current.filter((id) => id !== String(item.product._id)));
               void save(items.filter((i) => i.product._id !== item.product._id));
             }}
@@ -562,8 +606,8 @@ export default function Cart() {
           >
             {si ? "ඉවත් කරන්න" : "Remove"}
           </button>
-        </article>
-      ))}
+        </article>;
+      })}
       </section>
       <aside className="cart-order-summary" style={{ position: "sticky", top: 24, padding: 24, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.12)", borderRadius: 18, boxShadow: "0 12px 32px rgba(45,80,22,.08)" }}>
         <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "ඇණවුම් සාරාංශය" : "ORDER SUMMARY"}</p>
@@ -781,13 +825,19 @@ export default function Cart() {
       </div>}
       {checkoutOpen && checkoutSubmitting && <div role="status" aria-live="polite" aria-label={orderProgress} style={{ position: "fixed", inset: 0, zIndex: 1150, display: "grid", placeItems: "center", padding: 16, boxSizing: "border-box", background: "rgba(13,25,8,.72)" }}>
         <div style={{ width: "min(100%, 960px)", height: "min(94vh, 900px)", boxSizing: "border-box", display: "grid", alignContent: "center", justifyItems: "center", gap: 18, padding: 28, border: "1px solid rgba(45,80,22,.2)", borderRadius: 26, background: "rgba(251,248,240,.97)", color: "#244516", textAlign: "center", boxShadow: "0 32px 90px rgba(0,0,0,.34)" }}>
-          <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />
+          {isUploadingPaymentSlip || paymentSlipUploadComplete ? <div role="progressbar" aria-label={si ? "ප්‍රගතිය" : "Payment slip upload progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={paymentSlipUploadProgress} style={{ position: "relative", width: 66, height: 66, display: "grid", placeItems: "center", color: "#31551F" }}>
+            <svg aria-hidden="true" viewBox="0 0 66 66" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+              <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(49,85,31,.15)" strokeWidth="5" />
+              <circle cx="33" cy="33" r="28" fill="none" stroke="#5E8B36" strokeWidth="5" strokeLinecap="round" strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - paymentSlipUploadProgress / 100)} style={{ transition: "stroke-dashoffset .18s ease" }} />
+            </svg>
+            <span style={{ fontSize: ".9rem", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{paymentSlipUploadProgress}%</span>
+          </div> : <span aria-hidden="true" style={{ width: 54, height: 54, border: "5px solid rgba(49,85,31,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "checkout-progress-spin .75s linear infinite" }} />}
           <div style={{ display: "grid", gap: 8 }}>
             <strong style={{ fontFamily: "'Playfair Display',serif", fontSize: "clamp(1.25rem,3vw,1.7rem)", fontWeight: 500 }}>{orderProgress}</strong>
-            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>{si ? "ඔබගේ ඇණවුම සැකසීම අවසන් වන තෙක් මෙම කවුළුව විවෘතව තබන්න." : "Please keep this window open while we finish processing your order."}</span>
+            <span style={{ color: "#71695E", fontSize: ".92rem", lineHeight: 1.6 }}>{paymentSlipUploadComplete ? (si ? "ගෙවීම් රිසිට්පත උඩුගත කිරීම සම්පූර්ණයි (100%)" : "Payment slip upload complete (100%)") : isFinalizingPaymentSlipUpload ? (si ? "ගොනුව යවා ඇත. UploadThing තහවුරු කරන තෙක් රැඳී සිටින්න…" : "File sent. Waiting for UploadThing to finish…") : isUploadingPaymentSlip ? (si ? `ගෙවීම් රිසිට්පත ${paymentSlipUploadProgress}% උඩුගත කර ඇත` : `${paymentSlipUploadProgress}% uploaded`) : si ? "ඔබගේ ඇණවුම සැකසීම අවසන් වන තෙක් මෙම කවුළුව විවෘතව තබන්න." : "Please keep this window open while we finish processing your order."}</span>
           </div>
           <div aria-hidden="true" style={{ width: "min(100%, 280px)", height: 5, overflow: "hidden", borderRadius: 5, background: "#E5EAD9" }}>
-            <span style={{ display: "block", width: "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", animation: "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
+            <span style={{ display: "block", width: isUploadingPaymentSlip || paymentSlipUploadComplete ? `${paymentSlipUploadProgress}%` : "42%", height: "100%", borderRadius: 5, background: "linear-gradient(90deg,#31551F,#8BC34A)", transition: isUploadingPaymentSlip || paymentSlipUploadComplete ? "width .18s ease" : undefined, animation: isUploadingPaymentSlip || paymentSlipUploadComplete ? undefined : "checkout-progress-bar 1.2s ease-in-out infinite alternate" }} />
           </div>
           <style>{"@keyframes checkout-progress-spin{to{transform:rotate(360deg)}}@keyframes checkout-progress-bar{from{transform:translateX(-15%)}to{transform:translateX(155%)}}"}</style>
         </div>
