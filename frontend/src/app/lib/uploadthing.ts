@@ -1,13 +1,22 @@
 import { API_BASE_URL } from "./api";
 import { generateReactHelpers } from "@uploadthing/react";
 
+const isRequestToEndpoint = (input: RequestInfo | URL, endpoint: string) => {
+  try {
+    const requestUrl = new URL(input instanceof Request ? input.url : input.toString(), window.location.origin);
+    const endpointUrl = new URL(endpoint, window.location.origin);
+    return requestUrl.origin === endpointUrl.origin && requestUrl.pathname === endpointUrl.pathname;
+  } catch {
+    return false;
+  }
+};
+
 const uploadThingUrl = `${API_BASE_URL}/admin/uploadthing`;
 
 export const { useUploadThing } = generateReactHelpers<any>({
   url: uploadThingUrl,
   fetch: (input, init) => {
-    const requestUrl = input instanceof Request ? input.url : input.toString();
-    const isBackendUploadRoute = requestUrl.startsWith(uploadThingUrl);
+    const isBackendUploadRoute = isRequestToEndpoint(input, uploadThingUrl);
 
     return fetch(input, {
       ...init,
@@ -21,10 +30,9 @@ const customerUploadThingUrl = `${API_BASE_URL}/user/uploadthing`;
 export const { useUploadThing: useCustomerUploadThing } = generateReactHelpers<any>({
   url: customerUploadThingUrl,
   fetch: (input, init) => {
-    const requestUrl = input instanceof Request ? input.url : input.toString();
     return fetch(input, {
       ...init,
-      credentials: requestUrl.startsWith(customerUploadThingUrl) ? "include" : "omit",
+      credentials: isRequestToEndpoint(input, customerUploadThingUrl) ? "include" : "omit",
     });
   },
 });
