@@ -34,6 +34,32 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+const allowedOriginSet = new Set(allowedOrigins);
+if (isProduction) {
+    // The public storefront is served on both hostnames. Keep these production
+    // origins available even if the hosting provider's FRONTEND_URL is stale.
+    allowedOriginSet.add("https://rajapuraherbal.lk");
+    allowedOriginSet.add("https://www.rajapuraherbal.lk");
+}
+// Treat the apex and www hostnames as the same configured storefront. Browsers
+// send the exact page origin, which may differ from the single hostname in
+// FRONTEND_URL even though both hostnames serve this app.
+for (const origin of allowedOrigins) {
+    try {
+        const url = new URL(origin);
+        if (url.hostname.startsWith("www.")) {
+            url.hostname = url.hostname.slice(4);
+        } else if (!/localhost|127\.0\.0\.1/i.test(url.hostname)) {
+            url.hostname = `www.${url.hostname}`;
+        }
+        allowedOriginSet.add(url.origin);
+    } catch (error){
+        // Invalid entries remain in allowedOrigins for existing validation behavior.
+        console.warn("Invalid FRONTEND_URL entry ignored:", origin);
+        console.warn("Error parsing FRONTEND_URL entry:", error);
+    }
+}
+const isAllowedFrontendOrigin = (origin) => allowedOriginSet.has(origin);
 const hasLocalFrontendOrigin = allowedOrigins.some((origin) =>
     /localhost|127\.0\.0\.1/i.test(origin)
 );
@@ -108,10 +134,14 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        if (isAllowedFrontendOrigin(origin)) {
             return callback(null, true);
         }
 
+        console.warn("CORS origin rejected", {
+            origin,
+            allowedOrigins: [...allowedOriginSet],
+        });
         return callback(new Error("Not allowed by CORS"));
     },
     credentials: true
@@ -144,10 +174,17 @@ const csrfOriginGuard = (req, res, next) => {
 
     const sourceOrigin = requestOrigin || refererOrigin;
 
-    if (sourceOrigin && allowedOrigins.includes(sourceOrigin)) {
+    if (sourceOrigin && isAllowedFrontendOrigin(sourceOrigin)) {
         return next();
     }
 
+    console.warn("Request origin rejected by CSRF guard", {
+        method: req.method,
+        path: req.originalUrl,
+        origin: requestOrigin || null,
+        refererOrigin: refererOrigin || null,
+        allowedOrigins: [...allowedOriginSet],
+    });
     return res.status(403).json({
         success: false,
         message: "Request origin is not allowed",
@@ -312,7 +349,14 @@ app.get("/health", async (req, res) => {
 
 // Global error handler — logs unhandled errors and returns JSON
 app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err && err.stack ? err.stack : err);
+    console.error("Unhandled request error:", {
+        method: req.method,
+        path: req.originalUrl,
+        origin: req.get("origin") || null,
+        status: err && err.status ? err.status : 500,
+        message: err && err.message ? err.message : "Internal server error",
+        stack: err && err.stack ? err.stack : undefined,
+    });
     const status = err && err.status ? err.status : 500;
     const message = err && err.message ? err.message : 'Internal server error';
     const payload = { success: false, message };
