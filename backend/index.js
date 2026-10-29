@@ -34,6 +34,24 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+const allowedOriginSet = new Set(allowedOrigins);
+// Treat the apex and www hostnames as the same configured storefront. Browsers
+// send the exact page origin, which may differ from the single hostname in
+// FRONTEND_URL even though both hostnames serve this app.
+for (const origin of allowedOrigins) {
+    try {
+        const url = new URL(origin);
+        if (url.hostname.startsWith("www.")) {
+            url.hostname = url.hostname.slice(4);
+        } else if (!/localhost|127\.0\.0\.1/i.test(url.hostname)) {
+            url.hostname = `www.${url.hostname}`;
+        }
+        allowedOriginSet.add(url.origin);
+    } catch {
+        // Invalid entries remain in allowedOrigins for existing validation behavior.
+    }
+}
+const isAllowedFrontendOrigin = (origin) => allowedOriginSet.has(origin);
 const hasLocalFrontendOrigin = allowedOrigins.some((origin) =>
     /localhost|127\.0\.0\.1/i.test(origin)
 );
@@ -108,7 +126,7 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        if (isAllowedFrontendOrigin(origin)) {
             return callback(null, true);
         }
 
@@ -144,7 +162,7 @@ const csrfOriginGuard = (req, res, next) => {
 
     const sourceOrigin = requestOrigin || refererOrigin;
 
-    if (sourceOrigin && allowedOrigins.includes(sourceOrigin)) {
+    if (sourceOrigin && isAllowedFrontendOrigin(sourceOrigin)) {
         return next();
     }
 
