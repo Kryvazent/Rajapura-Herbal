@@ -10,8 +10,8 @@ const userSchema = new mongoose.Schema(
     },
     lastName: {
       type: String,
-      required: true,
-      trim: true
+      default: "",
+      trim: true,
     },
     email: {
       type: String,
@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
       default: "ACTIVE"
     },
     phone: String,
+    country: { type: String, trim: true, default: "" },
     address: {
       street: String,
       city: String,

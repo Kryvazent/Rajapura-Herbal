@@ -82,6 +82,17 @@ export const uploadRouter = {
       console.debug('serviceVideo file object:', file);
       return { uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url };
     }),
+  paymentSlip: f(
+    { image: { maxFileSize: "4MB", maxFileCount: 1 }, pdf: { maxFileSize: "4MB", maxFileCount: 1 } },
+    { awaitServerData: false }
+  )
+    .middleware(({ req }) => {
+      if (!req.session?.userId || req.session?.role !== "USER") {
+        throw new UploadThingError({ code: "UNAUTHORIZED", message: "Sign in with a customer account to upload a payment slip." });
+      }
+      return { userId: req.session.userId, role: req.session.role };
+    })
+    .onUploadComplete(({ file, metadata }) => ({ uploadedBy: metadata.userId, url: file.ufsUrl ?? file.url })),
 };
 
 const uploadThingRouteHandler = createRouteHandler({

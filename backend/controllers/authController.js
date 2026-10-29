@@ -7,7 +7,7 @@ const destroySession = (req) => {
   });
 };
 
-export const login = async (req, res) => {
+const loginWithAllowedRoles = async (req, res, allowedRoles) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -31,17 +31,14 @@ export const login = async (req, res) => {
       });
     }
 
-    if (!["ADMIN", "STAFF"].includes(user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin privileges required.",
-      });
-    }
-
     const isMatch = await user.comparePassword(password);
     // const isMatch = true; // For testing purposes, bypass password check. Remove this line in production.
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ success: false, message: "This account belongs to a different sign-in portal." });
     }
 
     req.session.regenerate((regenErr) => {
@@ -73,7 +70,62 @@ export const login = async (req, res) => {
   }
 };
 
+export const loginAdmin = (req, res) =>
+  loginWithAllowedRoles(req, res, ["ADMIN", "STAFF"]);
+
+export const loginCustomer = (req, res) =>
+  loginWithAllowedRoles(req, res, ["USER"]);
+
+export const registerCustomer = async (req, res) => {
+  const { name, email, password } = req.body;
+  const nameParts = name.trim().split(/\s+/);
+  const firstName = nameParts.shift();
+  const lastName = nameParts.join(" ");
+
+  try {
+    const user = await User.create({
+      firstName,
+      lastName,
+      email: email.trim().toLowerCase(),
+      password,
+      role: "USER",
+      status: "ACTIVE",
+    });
+
+    req.session.regenerate((regenerateError) => {
+      if (regenerateError) {
+        console.error("Customer registration session error:", regenerateError);
+        return res.status(500).json({ success: false, message: "Account created, but sign in failed. Please sign in." });
+      }
+
+      req.session.userId = user._id;
+      req.session.role = "USER";
+      req.session.mustChangePassword = false;
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Customer registration session save error:", saveError);
+          return res.status(500).json({ success: false, message: "Account created, but sign in failed. Please sign in." });
+        }
+        res.status(201).json({
+          success: true,
+          message: "Customer account created",
+          role: "USER",
+          data: { _id: user._id, firstName: user.firstName, lastName: user.lastName, email: user.email },
+        });
+      });
+    });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    if (error.name === "ValidationError") {
+      return res.status(422).json({ success: false, message: Object.values(error.errors).map((item) => item.message).join(". ") });
+    }
+    console.error("Customer registration error:", error);
+    res.status(500).json({ success: false, message: "Unable to create your account" });
+  }
+};
+
 export const logout = (req, res) => {
+  const sessionCookie = req.session?.cookie;
   req.session.destroy((err) => {
     if (err) {
       console.error("Logout error:", err);
@@ -86,10 +138,11 @@ export const logout = (req, res) => {
       process.env.RAILWAY_PUBLIC_DOMAIN ||
       process.env.RAILWAY_STATIC_URL
     );
-    res.clearCookie("connect.sid", {
+    res.clearCookie(req.portalSessionCookieName || "connect.sid", {
+      path: sessionCookie?.path || "/",
       httpOnly: true,
-      secure: isHosted,
-      sameSite: isHosted ? "none" : "lax",
+      secure: sessionCookie?.secure ?? isHosted,
+      sameSite: sessionCookie?.sameSite ?? (isHosted ? "none" : "lax"),
     });
     res.status(200).json({ success: true, message: "Logged out successfully" });
   });
@@ -103,7 +156,7 @@ export const status = async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select("role status flags");
     const isAllowed =
-      user && user.status === "ACTIVE" && ["ADMIN", "STAFF"].includes(user.role);
+      user && user.status === "ACTIVE" && ["ADMIN", "STAFF", "USER"].includes(user.role);
 
     if (!isAllowed) {
       destroySession(req);
@@ -154,7 +207,7 @@ export const changePassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
+    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF", "USER"].includes(user.role)) {
       destroySession(req);
       return res.status(403).json({ success: false, message: "Access denied" });
     }
@@ -194,7 +247,7 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF"].includes(user.role)) {
+    if (user.status !== "ACTIVE" || !["ADMIN", "STAFF", "USER"].includes(user.role)) {
       destroySession(req);
       return res.status(403).json({ success: false, message: "Access denied" });
     }

@@ -34,7 +34,8 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
 const hasLocalFrontendOrigin = allowedOrigins.some((origin) =>
     /localhost|127\.0\.0\.1/i.test(origin)
 );
-const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
+// const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000;
+const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS) || 0 * 60 * 1000;
 const apiRateLimitMax = Number(process.env.RATE_LIMIT_MAX) || 300;
 const authRateLimitMax = Number(process.env.AUTH_RATE_LIMIT_MAX) || 10;
 const bodyLimit = process.env.BODY_LIMIT || "1mb";
@@ -178,7 +179,9 @@ const authLimiter = rateLimit({
     },
 });
 
-app.use("/auth/login", authLimiter);
+app.use("/auth/admin/login", authLimiter);
+app.use("/auth/customer/login", authLimiter);
+app.use("/auth/customer/register", authLimiter);
 app.use(["/auth", "/admin", "/user"], apiLimiter);
 app.use(csrfOriginGuard);
 
@@ -209,11 +212,31 @@ if (mongoUrl) {
     console.error("MONGO_URL is missing. Session persistence and database routes will not work.");
 }
 
-app.use(session(sessionConfig));
+const createPortalSession = (portal, cookieName) => {
+    const middleware = session({
+        ...sessionConfig,
+        name: cookieName,
+        cookie: { ...sessionConfig.cookie },
+    });
+    return (req, res, next) => {
+        req.portal = portal;
+        req.portalSessionCookieName = cookieName;
+        middleware(req, res, next);
+    };
+};
+
+const adminSession = createPortalSession("admin", "rajapura.admin.sid");
+const customerSession = createPortalSession("customer", "rajapura.customer.sid");
+
+app.use("/admin", adminSession);
+app.use("/user", customerSession);
+app.use("/auth/admin", adminSession);
+app.use("/auth/customer", customerSession);
 
 // UploadThing's Express adapter reads the request body itself. Mount it before
 // the JSON/urlencoded parsers, but after sessions so upload auth still works.
 app.use("/admin/uploadthing", uploadThingRouter);
+app.use("/user/uploadthing", uploadThingRouter);
 
 app.use(express.json({ limit: bodyLimit }));
 app.use(express.urlencoded({ limit: bodyLimit, extended: true }));

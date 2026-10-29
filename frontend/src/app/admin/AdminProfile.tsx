@@ -356,7 +356,7 @@ export default function AdminProfile() {
     const fetchProfile = async () => {
       try {
         setLoadingProfile(true);
-        const res = await axios.get(`${API_URL}/auth/me`, {
+        const res = await axios.get(`${API_URL}/auth/admin/me`, {
           withCredentials: true,
         });
         const data: Profile = res.data.data;
@@ -421,7 +421,7 @@ export default function AdminProfile() {
     }
     try {
       setSavingProfile(true);
-      const res = await axios.put(`${API_URL}/auth/me`, profileForm, {
+      const res = await axios.put(`${API_URL}/auth/admin/me`, profileForm, {
         withCredentials: true,
       });
       const updated: Profile = res.data.data;
@@ -472,7 +472,7 @@ export default function AdminProfile() {
     try {
       setSavingPassword(true);
       await axios.post(
-        `${API_URL}/auth/change-password`,
+        `${API_URL}/auth/admin/change-password`,
         {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,

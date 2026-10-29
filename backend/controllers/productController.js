@@ -1,4 +1,5 @@
 import * as productService from "../services/productService.js";
+import Product from "../models/Product.js";
 import { deleteUploadThingFileByUrl } from "../services/uploadthingService.js";
 import { localizeProducts } from "../utils/localize.js";
 
@@ -178,5 +179,35 @@ export const updateProduct = async (req, res) => {
     }
     const { status, message, errors } = formatMongooseError(error);
     res.status(status).json({ success: false, message, errors });
+  }
+};
+
+export const updateStock = async (req, res) => {
+  const stock = Number(req.body?.stock);
+  if (!Number.isInteger(stock) || stock < 0) return res.status(422).json({ success: false, message: "Stock must be a non-negative whole number" });
+  const { priceLKR, priceUSD } = req.body ?? {};
+  for (const [field, value] of [["priceLKR", priceLKR], ["priceUSD", priceUSD]]) {
+    if (value !== undefined && (typeof value !== "string" || value.length > 50)) {
+      return res.status(422).json({ success: false, message: `${field} must be text under 50 characters` });
+    }
+  }
+  try {
+    const updates = { stock };
+    if (priceLKR !== undefined) {
+      updates.priceLKR = priceLKR.trim();
+      updates.price = priceLKR.trim();
+    }
+    if (priceUSD !== undefined) updates.priceUSD = priceUSD.trim();
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    );
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    res.json({ success: true, data: product });
+  } catch (error) {
+    if (error.name === "CastError") return res.status(422).json({ success: false, message: "Invalid product ID" });
+    console.error("updateStock error:", error);
+    res.status(500).json({ success: false, message: "Unable to update stock" });
   }
 };

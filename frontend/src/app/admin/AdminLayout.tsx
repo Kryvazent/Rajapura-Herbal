@@ -12,6 +12,8 @@ import {
   Leaf,
   CircleHelp,
   UsersRound,
+  ClipboardList,
+  Boxes,
 } from "lucide-react";
 import axios from "axios";
 import ChangePasswordModal from "./ChangePasswordModal";
@@ -24,6 +26,8 @@ const ADMIN_TOUR_STORAGE_KEY = "rajapuraAdminTourCompleted";
 const navItems = [
   { to: adminPath("dashboard"), label: "Dashboard", icon: LayoutDashboard },
   { to: adminPath("products"), label: "Products", icon: Package },
+  { to: adminPath("stock"), label: "Stock", icon: Boxes },
+  { to: adminPath("orders"), label: "Orders", icon: ClipboardList },
   { to: adminPath("stores"), label: "Stores", icon: Store },
   { to: adminPath("services"), label: "Services", icon: Sparkles },
   { to: adminPath("team"), label: "Team", icon: UsersRound },
@@ -65,7 +69,7 @@ export default function AdminLayout() {
     const checkAuth = async () => {
       try {
         const res = await axios.get(
-          import.meta.env.VITE_BACKEND_URL + "/auth/status",
+          import.meta.env.VITE_BACKEND_URL + "/auth/admin/status",
           { withCredentials: true }
         );
 
@@ -85,6 +89,14 @@ export default function AdminLayout() {
           return;
         }
 
+        if (!["ADMIN", "STAFF"].includes(res.data.role)) {
+          localStorage.removeItem("adminAuth");
+          localStorage.removeItem("adminRole");
+          setIsLoading(false);
+          navigate(adminPath());
+          return;
+        }
+
         const nextRole = res.data.role ?? localStorage.getItem("adminRole") ?? "";
         setRole(nextRole);
         localStorage.setItem("adminRole", nextRole);
@@ -96,7 +108,7 @@ export default function AdminLayout() {
 
         try {
           const profileRes = await axios.get(
-            import.meta.env.VITE_BACKEND_URL + "/auth/me",
+            import.meta.env.VITE_BACKEND_URL + "/auth/admin/me",
             { withCredentials: true }
           );
           if (profileRes.data?.data) {
@@ -142,7 +154,7 @@ export default function AdminLayout() {
   const handleLogout = async () => {
     try {
       await axios.post(
-        import.meta.env.VITE_BACKEND_URL + "/auth/logout",
+        import.meta.env.VITE_BACKEND_URL + "/auth/admin/logout",
         {},
         { withCredentials: true }
       );
