@@ -15,6 +15,11 @@ const backendUrl =
 const callbackOrigin = backendUrl.replace(/\/$/, "");
 const adminCallbackUrl = callbackOrigin ? `${callbackOrigin}/admin/uploadthing` : undefined;
 const customerCallbackUrl = callbackOrigin ? `${callbackOrigin}/user/uploadthing` : undefined;
+// Vercel functions can exit after sending their response, so await UploadThing
+// callback work there instead of leaving it as a detached background promise.
+const handleUploadThingDaemonPromise = process.env.VERCEL || process.env.NODE_ENV === "production"
+  ? "await"
+  : "void";
 
 export const uploadRouter = {
   productImage: f(
@@ -89,6 +94,8 @@ export const uploadRouter = {
 export const customerUploadRouter = {
   paymentSlip: f(
     { image: { maxFileSize: "4MB", maxFileCount: 1 }, pdf: { maxFileSize: "4MB", maxFileCount: 1 } },
+    // Match productImage: return after the storage upload, without waiting for
+    // the asynchronous server callback to return data the client doesn't use.
     { awaitServerData: false }
   )
     .middleware(async ({ req }) => {
@@ -108,7 +115,7 @@ const uploadThingRouteHandler = createRouteHandler({
   config: {
     ...(uploadThingToken && { token: uploadThingToken }),
     ...(adminCallbackUrl && { callbackUrl: adminCallbackUrl }),
-    handleDaemonPromise: "void",
+    handleDaemonPromise: handleUploadThingDaemonPromise,
   },
 });
 
@@ -117,7 +124,7 @@ const customerUploadThingRouteHandler = createRouteHandler({
   config: {
     ...(paymentUploadThingToken && { token: paymentUploadThingToken }),
     ...(customerCallbackUrl && { callbackUrl: customerCallbackUrl }),
-    handleDaemonPromise: "void",
+    handleDaemonPromise: handleUploadThingDaemonPromise,
   },
 });
 
