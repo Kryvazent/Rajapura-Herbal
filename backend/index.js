@@ -53,8 +53,10 @@ for (const origin of allowedOrigins) {
             url.hostname = `www.${url.hostname}`;
         }
         allowedOriginSet.add(url.origin);
-    } catch {
+    } catch (error){
         // Invalid entries remain in allowedOrigins for existing validation behavior.
+        console.warn("Invalid FRONTEND_URL entry ignored:", origin);
+        console.warn("Error parsing FRONTEND_URL entry:", error);
     }
 }
 const isAllowedFrontendOrigin = (origin) => allowedOriginSet.has(origin);
