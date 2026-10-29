@@ -125,6 +125,14 @@ export default function Products() {
       setQty(1);
     } catch (error) {
       const requestError = error as any;
+      console.error("Add-to-cart request failed", {
+        method: requestError.config?.method?.toUpperCase(),
+        url: requestError.config?.url,
+        status: requestError.response?.status,
+        statusText: requestError.response?.statusText,
+        response: requestError.response?.data,
+        message: requestError.message,
+      });
       const loginRequired = requestError.response?.status === 401;
       setCartNotice({
         success: false,

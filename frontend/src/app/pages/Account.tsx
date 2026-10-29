@@ -136,6 +136,14 @@ export default function Account() {
       window.dispatchEvent(new Event("rajapura:auth-updated"));
       navigate("/profile", { replace: true });
     } catch (e: any) {
+      console.error("Customer account request failed", {
+        method: e.config?.method?.toUpperCase(),
+        url: e.config?.url,
+        status: e.response?.status,
+        statusText: e.response?.statusText,
+        response: e.response?.data,
+        message: e.message,
+      });
       setError(e.response?.data?.message ?? e.message ?? "Unable to complete your request.");
     } finally {
       setBusy(false);

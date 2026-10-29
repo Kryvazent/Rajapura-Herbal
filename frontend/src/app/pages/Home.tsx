@@ -41,6 +41,14 @@ export default function Home() {
       setCartNotice({ success: true, message: language === "si" ? "ඔබේ කරත්තයට එක් කළා" : "Added to your cart" });
     } catch (error) {
       const requestError = error as any;
+      console.error("Add-to-cart request failed", {
+        method: requestError.config?.method?.toUpperCase(),
+        url: requestError.config?.url,
+        status: requestError.response?.status,
+        statusText: requestError.response?.statusText,
+        response: requestError.response?.data,
+        message: requestError.message,
+      });
       setCartNotice({
         success: false,
         message: requestError.response?.data?.message ?? (error instanceof Error ? error.message : "Could not add this product to your cart."),

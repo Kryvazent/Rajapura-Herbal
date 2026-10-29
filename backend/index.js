@@ -35,6 +35,12 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
     .map((origin) => origin.trim())
     .filter(Boolean);
 const allowedOriginSet = new Set(allowedOrigins);
+if (isProduction) {
+    // The public storefront is served on both hostnames. Keep these production
+    // origins available even if the hosting provider's FRONTEND_URL is stale.
+    allowedOriginSet.add("https://rajapuraherbal.lk");
+    allowedOriginSet.add("https://www.rajapuraherbal.lk");
+}
 // Treat the apex and www hostnames as the same configured storefront. Browsers
 // send the exact page origin, which may differ from the single hostname in
 // FRONTEND_URL even though both hostnames serve this app.
@@ -130,6 +136,10 @@ app.use(cors({
             return callback(null, true);
         }
 
+        console.warn("CORS origin rejected", {
+            origin,
+            allowedOrigins: [...allowedOriginSet],
+        });
         return callback(new Error("Not allowed by CORS"));
     },
     credentials: true
@@ -166,6 +176,13 @@ const csrfOriginGuard = (req, res, next) => {
         return next();
     }
 
+    console.warn("Request origin rejected by CSRF guard", {
+        method: req.method,
+        path: req.originalUrl,
+        origin: requestOrigin || null,
+        refererOrigin: refererOrigin || null,
+        allowedOrigins: [...allowedOriginSet],
+    });
     return res.status(403).json({
         success: false,
         message: "Request origin is not allowed",
@@ -330,7 +347,14 @@ app.get("/health", async (req, res) => {
 
 // Global error handler — logs unhandled errors and returns JSON
 app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err && err.stack ? err.stack : err);
+    console.error("Unhandled request error:", {
+        method: req.method,
+        path: req.originalUrl,
+        origin: req.get("origin") || null,
+        status: err && err.status ? err.status : 500,
+        message: err && err.message ? err.message : "Internal server error",
+        stack: err && err.stack ? err.stack : undefined,
+    });
     const status = err && err.status ? err.status : 500;
     const message = err && err.message ? err.message : 'Internal server error';
     const payload = { success: false, message };
