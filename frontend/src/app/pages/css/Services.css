@@ -40,7 +40,7 @@
     }
 
     .services-hero h1 {
-        font-size: 2.8rem
+        font-size: 2.8rem;
         line-height: 1.02;
     }
 
@@ -756,5 +756,296 @@
 @keyframes service-spin {
     to {
         transform: rotate(360deg)
+    }
+}
+
+@media (max-width: 640px) {
+    .services-page {
+        overflow-x: clip;
+    }
+
+    .services-hero {
+        min-height: 0;
+        flex-direction: column;
+        align-items: stretch;
+        padding-top: 76px;
+        background-position: center;
+    }
+
+    .services-hero__content {
+        width: calc(100% - 36px);
+        padding: 28px 0 32px;
+    }
+
+    .services-eyebrow,
+    .services-kicker {
+        font-size: .69rem;
+        letter-spacing: .13em;
+    }
+
+    .services-hero h1 {
+        margin: 15px 0 14px;
+        font-size: clamp(2rem, 9vw, 2.8rem);
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+    }
+
+    .services-hero__content > p {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    .services-hero__actions {
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .services-hero__actions .service-button {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    .services-hero__trust {
+        position: relative;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: calc(100% - 36px);
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 0 16px;
+        border-top: 1px solid rgba(255, 255, 255, .25);
+    }
+
+    .services-hero__trust span {
+        justify-content: flex-start;
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+        gap: 7px;
+        padding: 10px 11px;
+        border: 1px solid rgba(255, 255, 255, .18);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .07);
+        font-size: .72rem;
+        line-height: 1.35;
+    }
+
+    .services-hero__trust span:last-child {
+        border: 1px solid rgba(255, 255, 255, .18);
+    }
+
+    .services-hero__trust svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+    }
+
+    .services-intro {
+        width: calc(100% - 36px);
+        gap: 15px;
+        padding: 52px 0 34px;
+    }
+
+    .services-intro h2,
+    .section-heading h2,
+    .experience-copy h2 {
+        font-size: clamp(1.8rem, 8vw, 2.5rem);
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+    }
+
+    .services-intro > p {
+        font-size: .92rem;
+        line-height: 1.75;
+    }
+
+    .treatment-showcase {
+        width: calc(100% - 32px);
+        margin-bottom: 56px;
+    }
+
+    .treatment-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .treatment-card,
+    .treatment-card:nth-child(n) {
+        grid-column: auto;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: 1.12 / 1;
+    }
+
+    .treatment-card__content {
+        inset: auto 16px 16px;
+        gap: 10px;
+    }
+
+    .treatment-card h3 {
+        font-size: 1.25rem;
+        overflow-wrap: anywhere;
+    }
+
+    .experience-section {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        padding: 16px;
+    }
+
+    .experience-video {
+        width: 100%;
+        min-height: 0;
+        max-height: none;
+        aspect-ratio: 16 / 10;
+        border-radius: 14px;
+    }
+
+    .experience-video__label {
+        left: 12px;
+        bottom: 12px;
+        padding: 8px 10px;
+    }
+
+    .experience-copy {
+        padding: 30px 8px 24px;
+        font-size: .94rem;
+    }
+
+    .experience-copy h2 {
+        margin: 12px 0 16px;
+    }
+
+    .experience-copy > p {
+        font-size: .94rem;
+        line-height: 1.7;
+    }
+
+    .experience-copy ul {
+        margin-top: 18px;
+        gap: 12px;
+    }
+
+    .experience-copy li {
+        align-items: flex-start;
+        font-size: .88rem;
+        line-height: 1.55;
+    }
+
+    .locations-section {
+        padding: 58px 16px;
+    }
+
+    .section-heading {
+        margin-bottom: 30px;
+    }
+
+    .section-heading p {
+        font-size: .92rem;
+    }
+
+    .location-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+    }
+
+    .location-card__image {
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    .location-card__body {
+        padding: 20px;
+        gap: 14px;
+    }
+
+    .location-card__title h3 {
+        font-size: 1.25rem;
+        overflow-wrap: anywhere;
+    }
+
+    .location-card__actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .location-card__actions .service-button {
+        width: 100%;
+        overflow-wrap: anywhere;
+        text-align: center;
+    }
+
+    .location-address {
+        align-items: flex-start;
+        overflow-wrap: anywhere;
+    }
+
+    .location-services > div {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .services-empty {
+        padding: 42px 20px;
+    }
+
+    .booking-banner {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 20px;
+        padding: 52px 20px;
+    }
+
+    .booking-banner .service-button {
+        width: 100%;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 380px) {
+    .services-hero__content,
+    .services-hero__trust,
+    .services-intro {
+        width: calc(100% - 28px);
+    }
+
+    .treatment-card__content {
+        inset: auto 12px 12px;
+    }
+
+    .treatment-card__icon {
+        min-width: 34px;
+        width: 34px;
+        height: 34px;
+        font-size: 1.1rem;
+    }
+
+    .location-card__body {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 760px) {
+    .services-intro {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .services-intro > div,
+    .services-intro > p {
+        width: 100%;
+        max-width: none;
+    }
+
+    .services-intro > p {
+        font-size: .95rem;
+        line-height: 1.75;
     }
 }

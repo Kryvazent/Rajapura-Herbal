@@ -10,8 +10,11 @@ import helmet from 'helmet';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js'
-import { uploadThingRouter } from './routes/uploadthing.js';
+import { uploadThingRouter, customerUploadThingRouter } from './routes/uploadthing.js';
 import * as roleMiddleware from './middleware/roleMiddleware.js';
+
+import dns from "node:dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -179,9 +182,21 @@ const authLimiter = rateLimit({
     },
 });
 
+const registrationCodeLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many verification code requests. Please try again later.",
+    },
+});
+
 app.use("/auth/admin/login", authLimiter);
 app.use("/auth/customer/login", authLimiter);
 app.use("/auth/customer/register", authLimiter);
+app.use("/auth/customer/register/send-code", registrationCodeLimiter);
 app.use(["/auth", "/admin", "/user"], apiLimiter);
 app.use(csrfOriginGuard);
 
@@ -236,7 +251,7 @@ app.use("/auth/customer", customerSession);
 // UploadThing's Express adapter reads the request body itself. Mount it before
 // the JSON/urlencoded parsers, but after sessions so upload auth still works.
 app.use("/admin/uploadthing", uploadThingRouter);
-app.use("/user/uploadthing", uploadThingRouter);
+app.use("/user/uploadthing", customerUploadThingRouter);
 
 app.use(express.json({ limit: bodyLimit }));
 app.use(express.urlencoded({ limit: bodyLimit, extended: true }));
@@ -269,7 +284,7 @@ const requireDatabase = async (req, res, next) => {
         console.error("Database connection error:", error);
         res.status(503).json({
             success: false,
-            message: "Database connection is not available",
+            message: "The order service is temporarily unavailable because it could not connect to its database. Your order was not placed. Please try again in a few minutes.",
         });
     }
 };

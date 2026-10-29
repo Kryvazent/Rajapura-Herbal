@@ -1,25 +1,32 @@
+import { API_BASE_URL } from "../lib/api";
 import { Link } from "react-router";
-import { Package, Store, MapPin, ChevronRight, TrendingUp, Leaf } from "lucide-react";
+import { Package, Store, MapPin, ChevronRight, TrendingUp, Leaf, ClipboardList, Clock3, Truck, BadgeCheck, CreditCard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Product } from "../interfaces/productInterface";
 import axios from "axios";
 import { adminPath } from "./adminPaths";
 import { useLanguage } from "../i18n/LanguageContext";
 
+type DashboardOrder = { orderStatus?: string; paymentStatus?: string };
+
 export default function AdminDashboard() {
   const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [provinces, setProvinces] = useState<any[]>([]);
+  const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState(false);
 
   useEffect(() => {
     loadProducts();
     loadProvinces();
+    loadOrders();
   }, []);
 
   const loadProducts = async () => {
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+        API_BASE_URL + "/user/products-all"
       );
       
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
@@ -33,7 +40,7 @@ export default function AdminDashboard() {
   const loadProvinces = async () => {
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/shops"
+        API_BASE_URL + "/user/shops"
       );
       
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
@@ -41,6 +48,22 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Error fetching shops:", err);
       setProvinces([]);
+    }
+  };
+
+  const loadOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await axios.get(API_BASE_URL + "/admin/orders", { withCredentials: true });
+      const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      setOrders(Array.isArray(data) ? data : []);
+      setOrdersError(false);
+    } catch (err) {
+      console.error("Error fetching order summary:", err);
+      setOrders([]);
+      setOrdersError(true);
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -116,6 +139,15 @@ export default function AdminDashboard() {
       bg: "rgba(212,160,23,0.1)",
       link: adminPath("stores"),
     },
+  ];
+
+  const orderSummary = [
+    { label: "Total orders", value: orders.length, icon: ClipboardList, color: "#31551F", bg: "#EAF0DA" },
+    { label: "Pending", value: orders.filter((order) => order.orderStatus === "Pending").length, icon: Clock3, color: "#8B5E3C", bg: "#F6EFDF" },
+    { label: "Processing", value: orders.filter((order) => order.orderStatus === "Processing").length, icon: Package, color: "#4A7C23", bg: "rgba(74,124,35,.1)" },
+    { label: "Shipped", value: orders.filter((order) => order.orderStatus === "Shipped").length, icon: Truck, color: "#8B6C18", bg: "rgba(212,160,23,.12)" },
+    { label: "Delivered", value: orders.filter((order) => order.orderStatus === "Delivered").length, icon: BadgeCheck, color: "#2E6B42", bg: "#E6F1E5" },
+    { label: "Payments paid", value: orders.filter((order) => order.paymentStatus === "Paid").length, icon: CreditCard, color: "#38647A", bg: "#E7F0F3" },
   ];
 
   return (
@@ -231,6 +263,26 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      <section style={{ marginBottom: 28, padding: "20px 22px", border: "1px solid rgba(45,80,22,.1)", borderRadius: 20, background: "#FAF6EE", boxShadow: "0 2px 10px rgba(45,80,22,.06)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+          <div>
+            <p style={{ margin: "0 0 4px", color: "#9A7048", fontSize: ".68rem", fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase" }}>Sales overview</p>
+            <h3 style={{ margin: 0, color: "#244516", fontFamily: "'Playfair Display',serif", fontSize: "1.25rem" }}>Order summary</h3>
+          </div>
+          <Link to={adminPath("orders")} style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#4A7C23", fontSize: ".82rem", fontWeight: 700, textDecoration: "none" }}>View all orders <ChevronRight size={15} /></Link>
+        </div>
+        {ordersError ? <p role="status" style={{ margin: 0, padding: "12px 14px", border: "1px solid #E8C4BE", borderRadius: 11, color: "#8B2E25", background: "#FFF0ED", fontSize: ".85rem" }}>Order summary could not be loaded. You can still review orders from the Orders page.</p> : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {orderSummary.map(({ label, value, icon: Icon, color, bg }) => <Link key={label} to={adminPath("orders")} style={{ minWidth: 0, padding: "14px 13px", border: "1px solid rgba(45,80,22,.09)", borderRadius: 13, background: "#FFFEFA", textDecoration: "none", transition: "transform .18s, box-shadow .18s" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+              <span style={{ width: 34, height: 34, display: "grid", placeItems: "center", flexShrink: 0, borderRadius: 10, color, background: bg }}><Icon size={17} /></span>
+              {ordersLoading && <span aria-label="Loading" style={{ width: 12, height: 12, border: "2px solid rgba(45,80,22,.16)", borderTopColor: "#31551F", borderRadius: "50%", animation: "dashboard-order-spin .8s linear infinite" }} />}
+            </div>
+            <strong style={{ display: "block", marginTop: 10, color: "#244516", fontFamily: "'Playfair Display',serif", fontSize: "1.65rem", lineHeight: 1 }}>{ordersLoading ? "-" : value}</strong>
+            <span style={{ display: "block", marginTop: 6, color: "#65715B", fontSize: ".76rem", lineHeight: 1.3 }}>{label}</span>
+          </Link>)}
+        </div>}
+        <style>{"@keyframes dashboard-order-spin{to{transform:rotate(360deg)}}"}</style>
+      </section>
 
       <div className="grid lg:grid-cols-2 gap-6">
   

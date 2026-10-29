@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import axios from "axios";
 import { ArrowRight, Check, Clock3, Leaf, MapPin, Phone, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +31,7 @@ export default function Services() {
       setLoading(true);
       setLocations([]);
       try {
-        const response = await axios.get(import.meta.env.VITE_BACKEND_URL + `/user/services?lang=${language}`);
+        const response = await axios.get(API_BASE_URL + `/user/services?lang=${language}`);
         const data = response.data;
         const list = Array.isArray(data) ? data : data?.services ?? data?.data ?? data?.items ?? [];
         setLocations(Array.isArray(list) ? list : []);

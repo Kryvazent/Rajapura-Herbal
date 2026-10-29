@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Leaf, Award, Globe, ShieldCheck, MapPin } from "lucide-react";
 import { Link } from "react-router";
@@ -37,7 +38,7 @@ export default function About() {
 
   useEffect(() => {
     setTeam([]);
-    axios.get(`${import.meta.env.VITE_BACKEND_URL}/user/team?lang=${language}`)
+    axios.get(`${API_BASE_URL}/user/team?lang=${language}`)
       .then((response) => setTeam(Array.isArray(response.data?.data) ? response.data.data : []))
       .catch(() => setTeam([]));
   }, [language]);

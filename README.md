@@ -85,6 +85,7 @@ MONGO_URL=<your-mongodb-connection-string>
 SESSION_SECRET=<generate-a-long-random-session-secret>
 NODE_ENV=production
 UPLOADTHING_TOKEN=<your-uploadthing-token>
+UPLOADTHING_PAYMENT_TOKEN=<your-payment-uploadthing-token>
 BODY_LIMIT=1mb
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=300
@@ -94,6 +95,16 @@ CSP_IMG_SRC=https://www.rajapuraherbal.lk,https://rajapura-herbal-frontend.verce
 ```
 
 For local development, `NODE_ENV` can be `development` and `FRONTEND_URL` can include `http://localhost:5173`.
+
+### Customer authentication migration
+
+Customer accounts authenticate from the `customers` collection; admin and staff accounts authenticate from `users`. Before deploying this change to a database that already contains customer accounts, run the migration from the backend directory:
+
+```text
+npm run migrate:customer-auth
+```
+
+The migration moves existing `USER` credentials and profile details to their customer records, updates cart/order references, and removes legacy customer records from `users`. Back up the database before running it.
 
 ### Frontend
 
@@ -195,6 +206,7 @@ Required production environment variables:
 - `SESSION_SECRET`
 - `NODE_ENV=production`
 - `UPLOADTHING_TOKEN`
+- `UPLOADTHING_PAYMENT_TOKEN`
 
 After changing environment variables, redeploy or restart the backend service.
 
@@ -290,4 +302,3 @@ Product images are uploaded through UploadThing. The backend upload route checks
 - The admin path is hidden from sitemap and disallowed in robots.
 - Product price can be empty; public pages show `Contact for price`.
 - Product badge can be unset.
-

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Leaf, Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react";
@@ -23,7 +24,7 @@ export default function AdminLogin() {
     const checkExistingSession = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/admin/status`,
+          `${API_BASE_URL}/auth/admin/status`,
           { withCredentials: true }
         );
 
@@ -82,7 +83,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/admin/login`,
+        `${API_BASE_URL}/auth/admin/login`,
         { username, password },
         { withCredentials: true }
       );

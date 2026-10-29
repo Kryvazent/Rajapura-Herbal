@@ -30,6 +30,20 @@ export const pages: Record<string, { title: string; description: string }> = {
       "Learn about Rajapura Herbal Company, its Sri Lankan Ayurvedic heritage, founder story, certifications, and commitment to natural wellness.",
   },
 };
+export const utilityPages: Record<string, { title: string; description: string }> = {
+  "/cart": {
+    title: "Your Cart | Rajapura Herbal Company",
+    description: "Review your selected Rajapura Herbal products and continue to checkout.",
+  },
+  "/account": {
+    title: "Customer Account | Rajapura Herbal Company",
+    description: "Sign in or create a customer account with Rajapura Herbal Company.",
+  },
+  "/profile": {
+    title: "My Account | Rajapura Herbal Company",
+    description: "View your Rajapura Herbal customer profile, orders, and payment history.",
+  },
+};
 export const localizedPages = {
   si: { "/": { title: "රාජපුර හර්බල් | අව්‍යාජ ශ්‍රී ලාංකේය ආයුර්වේද නිෂ්පාදන", description: "ආයුර්වේද සම්ප්‍රදාය සහ ස්වභාවික අමුද්‍රව්‍ය සමඟ නිමවූ ශ්‍රී ලාංකේය ඖෂධීය නිෂ්පාදන ගවේෂණය කරන්න." }, "/products": { title: "ඖෂධීය නිෂ්පාදන | රාජපුර හර්බල්", description: "රාජපුර ආයුර්වේද තෙල්, ටොනික්, තේ, කුඩු සහ ස්වභාවික සුවතා නිෂ්පාදන බලන්න." }, "/services": { title: "ආයුර්වේද සේවාවන් | රාජපුර හර්බල්", description: "රාජපුර සුවතා සේවාවන්, ප්‍රතිකාර සහ ආයුර්වේද මධ්‍යස්ථාන සොයන්න." }, "/store-locator": { title: "වෙළඳසැල් සෙවුම | රාජපුර හර්බල්", description: "ශ්‍රී ලංකාව පුරා බලයලත් රාජපුර වෙළඳසැල් සොයන්න." }, "/about": { title: "රාජපුර ගැන | 1973 සිට ආයුර්වේද උරුමය", description: "රාජපුර සමාගම, එහි ආයුර්වේද උරුමය, නිර්මාතෘ, සහතික සහ ස්වභාවික සුවතාව පිළිබඳ දැනගන්න." } },
   ta: { "/": { title: "ராஜபுர ஹெர்பல் | உண்மையான இலங்கை ஆயுர்வேத தயாரிப்புகள்", description: "ஆயுர்வேத பாரம்பரியம் மற்றும் இயற்கை பொருட்களால் உருவாக்கப்பட்ட உண்மையான இலங்கை மூலிகை தயாரிப்புகளை ஆராயுங்கள்." }, "/products": { title: "மூலிகை தயாரிப்புகள் | ராஜபுர ஹெர்பல்", description: "ராஜபுர ஆயுர்வேத எண்ணெய்கள், டானிக்குகள், தேநீர், பொடிகள் மற்றும் இயற்கை நல தயாரிப்புகளைப் பாருங்கள்." }, "/services": { title: "ஆயுர்வேத சேவைகள் | ராஜபுர ஹெர்பல்", description: "ராஜபுர நல சேவைகள், சிகிச்சைகள் மற்றும் ஆயுர்வேத மையங்களைக் கண்டறியுங்கள்." }, "/store-locator": { title: "கடை கண்டுபிடிப்பான் | ராஜபுர ஹெர்பல்", description: "இலங்கை முழுவதும் அங்கீகரிக்கப்பட்ட ராஜபுர கடைகளைக் கண்டறியுங்கள்." }, "/about": { title: "ராஜபுர பற்றி | 1973 முதல் ஆயுர்வேத பாரம்பரியம்", description: "ராஜபுர நிறுவனம், அதன் ஆயுர்வேத பாரம்பரியம், நிறுவனர், சான்றிதழ்கள் மற்றும் இயற்கை நல அர்ப்பணிப்பைப் பற்றி அறியுங்கள்." } },
