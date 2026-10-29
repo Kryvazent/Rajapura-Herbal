@@ -243,6 +243,7 @@ export default function Cart() {
     setCheckoutSubmitting(true);
     setCheckoutError("");
     setOrderProgress(si ? (checkoutPaymentMethod === "Payment slip" ? "ඔබගේ ඇණවුම සූදානම් කරමින්…" : "ඔබගේ ඇණවුම යවමින්…") : (checkoutPaymentMethod === "Payment slip" ? "Preparing your order…" : "Submitting your order…"));
+    let checkoutStage = "prepare order";
     try {
       let paymentSlipUrl = "";
       let orderId: string | undefined;
@@ -254,6 +255,7 @@ export default function Cart() {
         const slipKind = paymentSlipKind(paymentSlip);
         if (!slipKind) throw new Error("Upload the payment slip as an image or PDF.");
         if (!pendingPaymentOrderId) {
+          checkoutStage = "prepare payment order";
           const preparation = await axios.post(`${API_BASE_URL}/user/orders/prepare`, {
             address: checkoutDetails.address,
             country: checkoutDetails.country,
@@ -271,11 +273,16 @@ export default function Cart() {
         paymentSlipFileName = `${orderId}${slipKind === "pdf" ? ".pdf" : originalExtension ?? mimeExtension}`;
         const renamedPaymentSlip = new File([paymentSlip], paymentSlipFileName, { type: mimeType, lastModified: paymentSlip.lastModified });
         setOrderProgress(si ? "ඔබගේ ගෙවීම් රිසිට්පත උඩුගත කරමින්…" : "Uploading your payment slip…");
+        checkoutStage = "upload payment slip";
         const uploaded = await startUpload([renamedPaymentSlip]);
         paymentSlipUrl = uploaded?.[0]?.ufsUrl ?? uploaded?.[0]?.url ?? "";
-        if (!paymentSlipUrl) throw new Error("The payment slip could not be uploaded. Please try again.");
+        if (!paymentSlipUrl) {
+          console.error("Payment slip upload returned no file URL", { fileRoute: "paymentSlip", resultCount: uploaded?.length ?? 0 });
+          throw new Error("The payment slip could not be uploaded. Please try again.");
+        }
       }
       setOrderProgress(si ? "ඔබගේ ඇණවුම යවමින්…" : "Submitting your order…");
+      checkoutStage = "submit order";
       const response = await axios.post(`${API_BASE_URL}/user/orders`, {
         ...checkoutDetails,
         ...(orderId && { orderId, paymentSlipFileName }),
@@ -298,6 +305,14 @@ export default function Cart() {
       });
       setCartError("");
     } catch (error: any) {
+      console.error("Checkout request failed", {
+        stage: checkoutStage,
+        name: error?.name,
+        message: error?.message,
+        status: error?.status ?? error?.response?.status,
+        data: error?.data ?? error?.response?.data,
+        cause: error?.cause?.message ?? error?.cause,
+      });
       setCheckoutOpen(false);
       setOrderResult({
         success: false,

@@ -140,6 +140,15 @@ uploadThingRouter.use(uploadThingRouteHandler);
 export const customerUploadThingRouter = express.Router();
 
 customerUploadThingRouter.use((req, res, next) => {
+  console.info("Payment slip UploadThing request", {
+    method: req.method,
+    path: req.path,
+    origin: req.get("origin") || null,
+    customerSessionPresent: Boolean(req.session?.role === "USER" && req.session.userId),
+    tokenConfigured: Boolean(paymentUploadThingToken),
+    callbackUrl: customerCallbackUrl || "inferred from request",
+  });
+
   if (!paymentUploadThingToken) {
     return res.status(503).json({
       success: false,
