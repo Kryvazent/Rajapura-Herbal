@@ -523,10 +523,17 @@ export default function Cart() {
         <h1 style={{ fontFamily: "'Playfair Display',serif", margin: 0 }}>{si ? "ඔබේ කරත්තය" : "Your cart"}</h1>
         {items.length > 0 && <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#526746", fontSize: ".84rem", fontWeight: 700, cursor: "pointer" }}><input type="checkbox" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? items.map((item) => String(item.product._id)) : [])} style={{ width: 17, height: 17, accentColor: "#31551F" }} />{si ? "සියල්ල තෝරන්න" : "Select all"}</label>}
       </div>
-      {items.map((item) => (
-        <article
-          key={String(item.product._id)}
+      {items.map((item) => {
+        const productId = String(item.product._id);
+        const isSelected = selectedIds.includes(productId);
+        const toggleSelection = () => setSelectedIds((current) =>
+          current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]
+        );
+
+        return <article
+          key={productId}
           className="cart-item"
+          onClick={toggleSelection}
           style={{
             display: "flex",
             alignItems: "center",
@@ -534,13 +541,14 @@ export default function Cart() {
             padding: 16,
             margin: "12px 0",
             background: "#FFFEFA",
-            border: "1px solid rgba(45,80,22,.1)",
+            border: isSelected ? "1px solid rgba(49,85,31,.58)" : "1px solid rgba(45,80,22,.1)",
             borderRadius: 16,
-            boxShadow: "0 5px 18px rgba(45,80,22,.045)",
+            boxShadow: isSelected ? "0 5px 18px rgba(45,80,22,.09), inset 0 0 0 1px rgba(49,85,31,.08)" : "0 5px 18px rgba(45,80,22,.045)",
+            cursor: "pointer",
           }}
         >
-          <label className="cart-item-select" aria-label={`Select ${item.product.name} for checkout`} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
-            <input type="checkbox" checked={selectedIds.includes(String(item.product._id))} onChange={(event) => setSelectedIds((current) => event.target.checked ? [...current, String(item.product._id)] : current.filter((id) => id !== String(item.product._id)))} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
+          <label className="cart-item-select" aria-label={`Select ${item.product.name} for checkout`} onClick={(event) => event.stopPropagation()} style={{ display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
+            <input type="checkbox" checked={isSelected} onChange={toggleSelection} style={{ width: 19, height: 19, accentColor: "#31551F", cursor: "pointer" }} />
           </label>
           <img
             className="cart-item-image"
@@ -557,7 +565,7 @@ export default function Cart() {
             <strong className="cart-item-name" style={{ flex: 1 }}>{productDisplayName(item.product, language)}</strong>
             <span className="cart-item-price">{formatUSDPrice(item.product.priceUSD || (item.product.price?.startsWith("USD ") ? item.product.price : "")) || (si ? "මිල සඳහා විමසන්න" : "Contact for price")}</span>
           </div>
-          <div className="cart-item-quantity" aria-label={`Quantity for ${item.product.name}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
+          <div className="cart-item-quantity" aria-label={`Quantity for ${item.product.name}`} onClick={(event) => event.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: 4, border: "1px solid rgba(45,80,22,.2)", borderRadius: 12, background: "#F5F3E9" }}>
             <button type="button" aria-label={`Decrease ${item.product.name} quantity`} disabled={item.qty <= 1} onClick={() => updateQuantity(item.product._id, item.qty - 1)} style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 9, color: "#2D5016", background: item.qty <= 1 ? "#E8E6DD" : "#E4EBD8", fontSize: "1.2rem", fontWeight: 700, cursor: item.qty <= 1 ? "not-allowed" : "pointer" }}>−</button>
             <input
               type="number"
@@ -589,7 +597,8 @@ export default function Cart() {
             className="cart-item-remove"
             type="button"
             aria-label={`Remove ${item.product.name} from cart`}
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation();
               setSelectedIds((current) => current.filter((id) => id !== String(item.product._id)));
               void save(items.filter((i) => i.product._id !== item.product._id));
             }}
@@ -597,8 +606,8 @@ export default function Cart() {
           >
             {si ? "ඉවත් කරන්න" : "Remove"}
           </button>
-        </article>
-      ))}
+        </article>;
+      })}
       </section>
       <aside className="cart-order-summary" style={{ position: "sticky", top: 24, padding: 24, background: "#FFFEFA", border: "1px solid rgba(45,80,22,.12)", borderRadius: 18, boxShadow: "0 12px 32px rgba(45,80,22,.08)" }}>
         <p style={{ margin: "0 0 7px", color: "#8B5E3C", fontSize: ".7rem", fontWeight: 700, letterSpacing: ".14em" }}>{si ? "ඇණවුම් සාරාංශය" : "ORDER SUMMARY"}</p>
