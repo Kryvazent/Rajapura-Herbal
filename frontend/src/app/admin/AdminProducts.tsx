@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useRef, useState } from "react";
 import {
   Plus,
@@ -453,7 +454,7 @@ export default function AdminProducts() {
     try {
       setLoading(true);
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL + "/user/products-all"
+        API_BASE_URL + "/user/products-all"
       );
 
       const data = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
@@ -470,7 +471,7 @@ export default function AdminProducts() {
 
   async function saveProduct(product: Product): Promise<void> {
     await axios.post(
-      import.meta.env.VITE_BACKEND_URL + "/admin/add-product",
+      API_BASE_URL + "/admin/add-product",
       { product },
       { withCredentials: true }
     );
@@ -478,7 +479,7 @@ export default function AdminProducts() {
 
   async function editProduct(product: Product): Promise<Product> {
     const response = await axios.put(
-      import.meta.env.VITE_BACKEND_URL + "/admin/update-product",
+      API_BASE_URL + "/admin/update-product",
       { product },
       { withCredentials: true }
     );
@@ -509,14 +510,14 @@ export default function AdminProducts() {
     id: Schema.Types.ObjectId | string
   ): Promise<void> {
     await axios.delete(
-      import.meta.env.VITE_BACKEND_URL + "/admin/delete-product",
+      API_BASE_URL + "/admin/delete-product",
       { data: { id }, withCredentials: true }
     );
   }
 
   async function deleteUploadedImageApi(key: string): Promise<void> {
     await axios.delete(
-      import.meta.env.VITE_BACKEND_URL + "/admin/uploadthing-file",
+      API_BASE_URL + "/admin/uploadthing-file",
       { data: { key }, withCredentials: true }
     );
   }

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -32,7 +33,7 @@ const SHOP_TYPES: ShopType[] = [
   "Supermarket",
 ];
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = API_BASE_URL;
 
 interface FormErrors {
   [key: string]: string;

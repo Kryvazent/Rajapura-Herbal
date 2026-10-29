@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import axios from "axios";
 import { Image, LoaderCircle, Pencil, Plus, Save, Trash2, UploadCloud, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -6,7 +7,7 @@ import LanguageTabs from "./LanguageTabs";
 import { Language, LocalizedText } from "../i18n/LanguageContext";
 
 interface TeamMember { _id?: string; name: string; title: string; description: string; imageUrl: string; displayOrder: number; translations: { name: LocalizedText; title: LocalizedText; description: LocalizedText } }
-const API = import.meta.env.VITE_BACKEND_URL;
+const API = API_BASE_URL;
 const blank = (): TeamMember => ({ name: "", title: "", description: "", imageUrl: "", displayOrder: 0, translations: { name: { en: "", si: "", ta: "" }, title: { en: "", si: "", ta: "" }, description: { en: "", si: "", ta: "" } } });
 const withTranslations = (member: any): TeamMember => ({ ...member, translations: { name: { en: member.name, ...member.translations?.name }, title: { en: member.title, ...member.translations?.title }, description: { en: member.description, ...member.translations?.description } } });
 

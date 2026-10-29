@@ -3,11 +3,19 @@ import * as authMiddleware from "../middleware/auth.js";
 import * as authController from "../controllers/authController.js";
 import {
   loginValidators,
+  customerRegistrationIdentityValidators,
   customerRegistrationValidators,
   handleValidationErrors,
 } from "../middleware/validators/index.js";
 
 const router = express.Router();
+
+router.post(
+  "/customer/register/send-code",
+  customerRegistrationIdentityValidators,
+  handleValidationErrors,
+  authController.sendCustomerRegistrationCode
+);
 
 router.post(
   "/customer/register",

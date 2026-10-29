@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useState } from "react";
 import {
   Plus,
@@ -21,7 +22,7 @@ import { useUploadThing } from "../lib/uploadthing";
 import LanguageTabs from "./LanguageTabs";
 import { Language, LocalizedText } from "../i18n/LanguageContext";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = API_BASE_URL;
 
 
 interface ServiceItem {

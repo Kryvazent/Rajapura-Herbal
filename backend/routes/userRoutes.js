@@ -13,6 +13,7 @@ router.put('/cart', cartController.requireCustomer, cartController.updateCart);
 router.post('/cart/items', cartController.requireCustomer, cartController.addCartItem);
 router.get('/orders', orderController.listCustomerOrders);
 router.get('/checkout-details', cartController.requireCustomer, orderController.getCheckoutDetails);
+router.post('/orders/prepare', cartController.requireCustomer, orderController.prepareCustomerOrder);
 router.post('/orders', cartController.requireCustomer, orderController.createCustomerOrder);
 
 router.get('/products-all', productController.getAllProducts);

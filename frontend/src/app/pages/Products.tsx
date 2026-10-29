@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart, Share2, Check } from "lucide-react";
+import { Search, Leaf, ChevronRight, X, Package, CheckCircle2, CircleAlert, ShoppingCart, Share2, Check, LoaderCircle } from "lucide-react";
 import { Product } from "../interfaces/productInterface";
 import { localized, localizedList, useLanguage } from "../i18n/LanguageContext";
 import { productsCopy } from "../i18n/translations/products";
@@ -16,6 +17,7 @@ export default function Products() {
   const shareLabel = language === "si" ? "බෙදාගන්න" : "Share";
   const copiedLabel = language === "si" ? "පිටපත් කළා" : "Copied";
   const addToCartLabel = language === "si" ? "කරත්තයට එක් කරන්න" : "Add to cart";
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
   const outOfStockLabel = language === "si" ? "තොග අවසන්" : "Out of stock";
   const categoryLabel = (category: string) =>
     category === "All"
@@ -98,8 +100,8 @@ export default function Products() {
     fetch("https://ipapi.co/json/")
       .then((r) => r.json())
       .then((data) => {
-        // setCountry(data.country_code ?? null)
-        setCountry("USA")
+        setCountry(data.country_code ?? null)
+        // setCountry("USA")
       })
       .catch(() => setCountry(null));
   }, [language]);
@@ -112,20 +114,25 @@ export default function Products() {
 
   const international = country !== null && country !== "LK";
   const addToCart = async (product: Product, quantity = qty) => {
+    const productId = String(product._id);
+    setAddingProductId(productId);
     try {
       if (!Number.isInteger(quantity) || quantity < 1) throw new Error("Enter a valid quantity.");
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
+      await axios.post(`${API_BASE_URL}/user/cart/items`, { productId: product._id, qty: quantity }, { withCredentials: true });
       window.dispatchEvent(new Event("rajapura:cart-updated"));
-      setCartNotice({ success: true, message: "Added to your cart" });
+      setCartNotice({ success: true, message: language === "si" ? "කරත්තයට එක් කරන ලදී" : "Added to your cart" });
       closeProduct();
       setQty(1);
     } catch (error) {
       const requestError = error as any;
+      const loginRequired = requestError.response?.status === 401;
       setCartNotice({
         success: false,
-        message: requestError.response?.data?.message ?? (error instanceof Error ? error.message : "Could not add this product to your cart."),
-        loginRequired: requestError.response?.status === 401,
+        message: language === "si" ? (loginRequired ? "කරත්තයට එක් කිරීමට පුරනය වන්න" : "කරත්තයට එක් කළ නොහැක. නැවත උත්සාහ කරන්න.") : requestError.response?.data?.message ?? (error instanceof Error ? error.message : "Could not add this product to your cart."),
+        loginRequired,
       });
+    } finally {
+      setAddingProductId((current) => current === productId ? null : current);
     }
   };
 
@@ -133,7 +140,7 @@ export default function Products() {
     setLoading(true);
     try {
       const res = await axios.get(
-        import.meta.env.VITE_BACKEND_URL +
+        API_BASE_URL +
           `/user/products-all?lang=${language}`,
       );
 
@@ -177,10 +184,11 @@ export default function Products() {
 
   return (
     <div style={{ fontFamily: "'Lato', sans-serif" }}>
+      <style>{"@keyframes product-cart-spin{to{transform:rotate(360deg)}}.product-card--sinhala .product-card__footer{align-items:stretch!important;flex-direction:column;gap:8px}.product-card--sinhala .product-card__actions{display:grid!important;grid-template-columns:1fr;gap:8px!important;width:100%;margin:0!important}.product-card--sinhala .product-card__actions>button,.product-card--sinhala .product-card__actions>a{width:100%;min-height:42px;box-sizing:border-box;justify-content:center;white-space:normal;line-height:1.35;text-align:center}.product-card--sinhala .product-card__actions>span{justify-self:start}"}</style>
       {cartNotice && <div role="status" aria-live="polite" style={{ position: "fixed", right: 22, bottom: 22, zIndex: 120, display: "flex", alignItems: "center", gap: 10, maxWidth: "min(420px, calc(100vw - 32px))", padding: "13px 18px", borderRadius: 14, color: cartNotice.success ? "#FAF6EE" : "#7D241D", background: cartNotice.success ? "#244516" : "#FFF3F0", border: cartNotice.success ? "1px solid #8BC34A" : "1px solid #E6B6AE", boxShadow: "0 10px 30px rgba(20,35,10,.2)", fontWeight: 700 }}>
         {cartNotice.success ? <CheckCircle2 size={19} /> : <CircleAlert size={19} />}{cartNotice.message}
-        {cartNotice.loginRequired && <Link to="/account" style={{ color: "inherit", textDecoration: "underline", fontWeight: 800 }}>Sign in</Link>}
-        <button type="button" onClick={() => setCartNotice(null)} aria-label="Dismiss message" style={{ marginLeft: 4, display: "grid", placeItems: "center", padding: 2, border: 0, background: "transparent", color: "inherit", cursor: "pointer" }}><X size={16} /></button>
+        {cartNotice.loginRequired && <Link to="/account" style={{ color: "inherit", textDecoration: "underline", fontWeight: 800 }}>{language === "si" ? "පුරනය වන්න" : "Sign in"}</Link>}
+        <button type="button" onClick={() => setCartNotice(null)} aria-label={language === "si" ? "දැනුම්දීම වසන්න" : "Dismiss message"} style={{ marginLeft: 4, display: "grid", placeItems: "center", padding: 2, border: 0, background: "transparent", color: "inherit", cursor: "pointer" }}><X size={16} /></button>
       </div>}
       <div
         style={{
@@ -349,7 +357,7 @@ export default function Products() {
                   display: "flex",
                   flexDirection: "column",
                 }}
-                className="group hover:shadow-lg"
+                className={`product-card${language === "si" ? " product-card--sinhala" : ""} group hover:shadow-lg`}
                 onClick={() => openProduct(product)}
               >
                 <div
@@ -536,7 +544,7 @@ export default function Products() {
                   </div>
 
                   <div
-                    className="flex items-center justify-between"
+                    className="product-card__footer flex items-center justify-between"
                     style={{ marginTop: "auto" }}
                   >
                     <span
@@ -554,13 +562,9 @@ export default function Products() {
                         } : {}),
                       }}
                     >
-                      {language === "si"
-                        ? "මිල සඳහා විමසන්න"
-                        : language === "ta"
-                          ? "விலை விவரங்களுக்கு விசாரிக்கவும்"
-                          : productPriceLabel(product)}
+                      {productPriceLabel(product)}
                     </span>
-                    <div className="flex gap-2" style={{ margin: "6px 0 10px" }}>
+                    <div className="product-card__actions flex gap-2" style={{ margin: "6px 0 10px" }}>
                       {international ? (
                         (product.stock ?? 0) > 0 && (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#2D5016", padding: "6px 10px", borderRadius: 50, background: "rgba(139,195,74,.2)", border: "1px solid rgba(45,80,22,.2)", fontSize: ".75rem", fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -608,8 +612,9 @@ export default function Products() {
                       ) : international ? (
                         <button
                           type="button"
-                          aria-label={`Add ${product.name} to cart`}
-                          title={addToCartLabel}
+                          aria-label={language === "si" ? `${product.name} කරත්තයට එක් කරන්න` : `Add ${product.name} to cart`}
+                          title={addingProductId === String(product._id) ? (language === "si" ? "කරත්තයට එක් කරමින්" : "Adding to cart") : addToCartLabel}
+                          disabled={addingProductId !== null}
                           onClick={(e) => {
                             e.stopPropagation();
                             addToCart(product, 1);
@@ -622,13 +627,14 @@ export default function Products() {
                             border: "1px solid #2D5016",
                             fontSize: "0.76rem",
                             fontWeight: 700,
-                            cursor: "pointer",
+                            cursor: addingProductId !== null ? "wait" : "pointer",
+                            opacity: addingProductId !== null ? .78 : 1,
                             display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          <ShoppingCart size={17} strokeWidth={2} aria-hidden="true" />
+                          {addingProductId === String(product._id) ? <LoaderCircle size={17} strokeWidth={2} aria-hidden="true" style={{ animation: "product-cart-spin .8s linear infinite" }} /> : <ShoppingCart size={17} strokeWidth={2} aria-hidden="true" />}
                         </button>
                       ) : (
                         <Link
@@ -976,6 +982,7 @@ export default function Products() {
                           }}
                         />}
                         {(selectedProduct.stock ?? 0) > 0 && <button
+                          disabled={addingProductId !== null}
                           onClick={() => addToCart(selectedProduct)}
                           style={{
                             padding: "9px 14px",
@@ -991,7 +998,7 @@ export default function Products() {
                                 ? "not-allowed"
                                 : "pointer",
                           }}
-                        >{addToCartLabel}</button>}
+                        >{addingProductId === String(selectedProduct._id) ? (language === "si" ? "කරත්තයට එක් කරමින්…" : "Adding to cart…") : addToCartLabel}</button>}
                       </div>
                     )}
 

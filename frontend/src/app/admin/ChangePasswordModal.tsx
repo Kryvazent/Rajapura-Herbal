@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../lib/api";
 
 import { useState } from "react";
 import { Lock, Eye, EyeOff, AlertCircle, Check, Shield } from "lucide-react";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = API_BASE_URL;
 
 interface Props {
   onSuccess: () => void;

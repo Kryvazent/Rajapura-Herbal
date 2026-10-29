@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -19,7 +20,7 @@ import {
 import axios from "axios";
 import { adminPath } from "./adminPaths";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_URL = API_BASE_URL;
 const PHONE_REGEX = /^\+?[\d\s\-\(\)]{7,20}$/;
 
 

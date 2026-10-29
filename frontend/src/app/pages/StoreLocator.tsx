@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../lib/api";
 import { useEffect, useState } from "react";
 import { MapPin, Phone, Clock, ChevronRight, ChevronDown, Leaf, Store } from "lucide-react";
 import { District, PanelProps, Province, Shop, Town } from "../interfaces/storeInterface";
@@ -112,7 +113,7 @@ export default function StoreLocator() {
     setSelectedProvince(null);
     setSelectedDistrict(null);
     setSelectedTown(null);
-    await axios.get(import.meta.env.VITE_BACKEND_URL + `/user/shops?lang=${language}`)
+    await axios.get(API_BASE_URL + `/user/shops?lang=${language}`)
       .then(res => {
         setProvinces(res.data);
       })
