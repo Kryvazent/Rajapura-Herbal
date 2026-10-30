@@ -10,6 +10,11 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { Language } from "../i18n/LanguageContext";
 
 type Item = { product: Product; qty: number };
+const isSriLankanPhone = (value: string) => {
+  const phone = value.trim().replace(/[\s().-]/g, "");
+  return /^(?:\+94|0094)7\d{8}$/.test(phone) || /^07\d{8}$/.test(phone);
+};
+const isSriLankanAddress = (value: string) => /\b(?:sri\s*lanka|sri\s*lankan|ceylon)\b/i.test(value);
 const paymentSlipKind = (file: File): "image" | "pdf" | null => {
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (file.type.toLowerCase() === "application/pdf" || extension === "pdf") return "pdf";
@@ -200,7 +205,7 @@ export default function Cart() {
     ? selectedPricedItems.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.qty, 0)
     : null;
   const allSelected = items.length > 0 && selectedItems.length === items.length;
-  const matchingCountries = countries.filter((name) => name.toLocaleLowerCase().includes(countryQuery.trim().toLocaleLowerCase()));
+  const matchingCountries = countries.filter((name) => name.toLocaleLowerCase() !== "sri lanka" && name.toLocaleLowerCase().includes(countryQuery.trim().toLocaleLowerCase()));
   const selectCountry = (name: string) => {
     setCheckoutDetails((current) => ({ ...current, country: name }));
     setCountryQuery(name);
@@ -239,6 +244,10 @@ export default function Cart() {
     event.preventDefault();
     if (!countries.includes(checkoutDetails.country)) {
       setCheckoutError("Select a country from the country list.");
+      return;
+    }
+    if (checkoutDetails.country.toLowerCase() === "sri lanka" || isSriLankanPhone(checkoutDetails.contactNumber) || isSriLankanAddress(checkoutDetails.address)) {
+      setCheckoutError("Orders cannot use a Sri Lankan delivery country, phone number, or address.");
       return;
     }
     if (!checkoutPaymentMethod) {
