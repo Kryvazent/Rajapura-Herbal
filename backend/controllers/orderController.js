@@ -4,6 +4,15 @@ import Cart from "../models/Cart.js";
 import mongoose from "mongoose";
 import { sendOrderNotifications, sendOrderStatusNotification } from "../services/gmailService.js";
 
+const isSriLankanCountry = (value) => /^(?:lk|sri\s*lanka)$/i.test(value.trim());
+const isSriLankanMobile = (value) => {
+  const phone = value.replace(/[\s().-]/g, "");
+  return /^(?:\+94|0094)7\d{8}$/.test(phone) || /^07\d{8}$/.test(phone);
+};
+const isSriLankanAddress = (value) => /\b(?:sri\s*lanka|sri\s*lankan|ceylon)\b/i.test(value);
+const hasSriLankanDeliveryDetails = ({ address, country, contactNumber }) =>
+  isSriLankanCountry(country) || isSriLankanMobile(contactNumber) || isSriLankanAddress(address);
+
 export const getCheckoutDetails = async (req, res) => {
   if (req.session?.role !== "USER") return res.status(403).json({ success: false, message: "Customer account required" });
   try {
@@ -31,6 +40,9 @@ export const createCustomerOrder = async (req, res) => {
   if (requestedCurrency !== undefined && !["USD", "LKR"].includes(requestedCurrency)) return res.status(422).json({ success: false, message: "Choose a valid order currency" });
   if (![address, country, contactNumber].every((value) => typeof value === "string" && value.trim())) {
     return res.status(422).json({ success: false, message: "Address, country, and contact number are required" });
+  }
+  if (hasSriLankanDeliveryDetails({ address, country, contactNumber })) {
+    return res.status(422).json({ success: false, message: "Orders cannot use a Sri Lankan delivery country, phone number, or address" });
   }
   if (!["Payment slip", "Online payment"].includes(paymentMethod)) return res.status(422).json({ success: false, message: "Choose a valid payment method" });
   if (paymentMethod === "Payment slip" && (typeof paymentSlipUrl !== "string" || !paymentSlipUrl.trim())) {
@@ -116,6 +128,9 @@ export const prepareCustomerOrder = async (req, res) => {
   const { address, country, contactNumber, productIds } = req.body ?? {};
   if (![address, country, contactNumber].every((value) => typeof value === "string" && value.trim())) {
     return res.status(422).json({ success: false, message: "Address, country, and contact number are required" });
+  }
+  if (hasSriLankanDeliveryDetails({ address, country, contactNumber })) {
+    return res.status(422).json({ success: false, message: "Orders cannot use a Sri Lankan delivery country, phone number, or address" });
   }
   if (!Array.isArray(productIds) || productIds.length === 0 || productIds.length > 100 || productIds.some((id) => !mongoose.isValidObjectId(id))) {
     return res.status(422).json({ success: false, message: "Select at least one valid item for checkout" });

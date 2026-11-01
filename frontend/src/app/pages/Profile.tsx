@@ -26,6 +26,7 @@ export default function Profile() {
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locationBlocked, setLocationBlocked] = useState(false);
   const [error, setError] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderDate, setOrderDate] = useState("");
@@ -69,15 +70,32 @@ export default function Profile() {
   }, [orders, orderDate, orderSearch, orderStatusFilter, si]);
 
   useEffect(() => {
-    Promise.all([
-      axios.get(`${api}/auth/customer/me`, { withCredentials: true }),
-      axios.get(`${api}/user/orders`, { withCredentials: true }),
-    ]).then(([profileResponse, ordersResponse]) => {
-      setProfile(profileResponse.data.data);
-      setOrders(ordersResponse.data.data ?? []);
-    }).catch((requestError) => {
-      if (requestError.response?.status !== 401) setError("We couldn't load your profile right now. Please refresh to try again.");
-    }).finally(() => setLoading(false));
+    const controller = new AbortController();
+    const loadProfile = async () => {
+      try {
+        const locationResponse = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+        if (locationResponse.ok) {
+          const locationData = await locationResponse.json();
+          if (String(locationData.country_code ?? "").toUpperCase() === "LK") {
+            setLocationBlocked(true);
+            return;
+          }
+        }
+        const [profileResponse, ordersResponse] = await Promise.all([
+          axios.get(`${api}/auth/customer/me`, { withCredentials: true }),
+          axios.get(`${api}/user/orders`, { withCredentials: true }),
+        ]);
+        setProfile(profileResponse.data.data);
+        setOrders(ordersResponse.data.data ?? []);
+      } catch (requestError: any) {
+        if (controller.signal.aborted) return;
+        if (requestError.response?.status !== 401) setError("We couldn't load your profile right now. Please refresh to try again.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void loadProfile();
+    return () => controller.abort();
   }, []);
 
   const signOut = async () => {
@@ -87,6 +105,7 @@ export default function Profile() {
   };
 
   if (loading) return <main style={{ minHeight: 440, display: "grid", placeItems: "center", color: "#2D5016", background: "#F0EDE6" }}>{language === "si" ? "ඔබගේ පැතිකඩ පූරණය වෙමින් පවතී..." : "Loading your profile..."}</main>;
+  if (locationBlocked) return <Navigate to="/" replace />;
   if (!profile) return <Navigate to="/account" replace />;
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
